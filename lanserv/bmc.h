@@ -299,10 +299,12 @@ struct lmc_data_s
     const char *chassis_control_prog;
 
     unsigned char power_value;
-#define MAX_LEDS 8
-#define MIN_ATCA_LEDS 2
+#define FAN_LED_MAX 10
+#define PSU_LED_MAX 1
+#define STATUS_LED_MAX 2
+#define MIN_ATCA_LEDS 6
     unsigned int  num_leds;
-    led_data_t leds[MAX_LEDS];
+    led_data_t leds[FAN_LED_MAX];
 
     /* Will be NULL if not valid. */
     sensor_t      *hs_sensor;

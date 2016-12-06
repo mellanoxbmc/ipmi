@@ -582,7 +582,7 @@ int
 ipmi_mc_set_num_leds(lmc_data_t   *mc,
 		     unsigned int count)
 {
-    if (count > MAX_LEDS)
+    if (count > FAN_LED_MAX)
 	return EINVAL;
     if (mc->emu->atca_mode && (count < MIN_ATCA_LEDS))
 	return EINVAL;
@@ -876,23 +876,14 @@ ipmi_emu_add_mc(emu_data_t    *emu,
     mc->hs_sensor = NULL;
 
     if (emu->atca_mode) {
-	mc->num_leds = 2;
+	mc->num_leds = MIN_ATCA_LEDS;
 
-	/* By default only blue LED has local control. */
-	mc->leds[0].loc_cnt = 1;
-	mc->leds[0].loc_cnt_sup = 1;
-
-	mc->leds[0].def_loc_cnt_color = 1; /* Blue LED */
-	mc->leds[0].def_override_color = 1;
-	mc->leds[0].color_sup = 0x2;
-	mc->leds[0].color = 0x1;
-
-	for (i=1; i<MAX_LEDS; i++) {
+	for (i=0; i<FAN_LED_MAX; i++) {
 	    /* Others default to red */
-	    mc->leds[i].def_loc_cnt_color = 2;
+        mc->leds[i].def_loc_cnt_color = 2;
 	    mc->leds[i].def_override_color = 2;
 	    mc->leds[i].color_sup = 0x2;
-	    mc->leds[i].color = 0x2;
+	    mc->leds[i].color = 0x2; // set RED by default
 	}
     }
 
