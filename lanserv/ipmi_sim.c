@@ -96,6 +96,7 @@
 
 #define MAX_ADDR 4
 
+#define MLNX_CONF_FILE_EXT       ".hw"
 #define BASE_CONF_STR SYSCONFDIR "/ipmi"
 static char *config_file = BASE_CONF_STR "/lan.conf";
 static const char *statedir = STATEDIR;
@@ -1533,7 +1534,7 @@ main(int argc, const char *argv[])
 	strcpy(command_file, BASE_CONF_STR);
 	strcat(command_file, "/");
 	strcat(command_file, sysinfo.name);
-	strcat(command_file, ".emu");
+	strcat(command_file, MLNX_CONF_FILE_EXT);
 	tf = fopen(command_file, "r");
 	if (!tf) {
 	    free(command_file);

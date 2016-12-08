@@ -1,0 +1,157 @@
+#
+# HW configuration file for the Mellanox BMC
+#
+
+#Turn on ATCA mode to be able to work with LEDs
+atca_enable
+
+# The BMC is the MC at address 20
+mc_setbmc 0x20
+
+# Now add the BMC
+#      IPMB DevID DevSDRs?       Rev   Maj   Min   Dev   MFG      Prod
+#                                      FW    FW    Sup   ID       Id
+#                                      Rev   Rev
+mc_add 0x20 0 no-device-sdrs  0x00  0x00  0x00  0x9f  0x00500f 0x0001 persist_sdr
+
+#Enable SEL device
+sel_enable 0x20 1000 0x0a
+
+
+#          MC LUN Sens# type reading
+
+########## Temperature ############
+
+# Ambient board Temp
+sensor_add 0x20  0    1     1     1 \
+	poll 5000 \
+	file "/sys/bus/i2c/devices/5-0049/hwmon/hwmon6/temp1_input"
+
+# ASIC Temp
+sensor_add 0x20  0    2     1     1 \
+        poll 5000 \
+        file "/sys/bus/i2c/devices/X-00YY/hwmon/hwmon7/temp1_input"
+
+# PSU1 Temp
+sensor_add 0x20  0    3     1     1 \
+        poll 5000 \
+        file "/sys/bus/i2c/devices/0-0059/hwmon/hwmon4/temp1_input"
+
+# PSU2 Temp
+sensor_add 0x20  0    4     1     1 \
+        poll 5000 \
+        file "/sys/bus/i2c/devices/0-0058/hwmon/hwmon5/temp1_input"
+
+########## FAN ############
+
+#Fan1
+sensor_add 0x20 0 0x70 4 1\
+        poll 5000 \
+        file "/sys/devices/platform/ahb/ahb:apb/1e786000.pwm/hwmon/hwmon1/tacho0_rpm"
+
+
+#Fan2
+sensor_add 0x20 0 0x71 4 1\
+        poll 5000 \
+        file "/sys/devices/platform/ahb/ahb:apb/1e786000.pwm/hwmon/hwmon1/tacho0_rpm"
+
+
+#Fan3
+sensor_add 0x20 0 0x72 4 1\
+        poll 5000 \
+        file "/sys/devices/platform/ahb/ahb:apb/1e786000.pwm/hwmon/hwmon1/tacho0_rpm"
+
+
+
+#Fan4
+sensor_add 0x20 0 0x73 4 1\
+        poll 5000 \
+        file "/sys/devices/platform/ahb/ahb:apb/1e786000.pwm/hwmon/hwmon1/tacho0_rpm"
+
+########## Voltage ############
+
+#Voltage <name>
+sensor_add 0x20 0 10 1 1\
+        poll 5000 \
+        file "/sys/bus/i2c/devices/6-0041/hwmon/hwmon10/in2_input"
+
+#Voltage <name>
+sensor_add 0x20 0 11 1 1\
+        poll 5000 \
+        file "/sys/bus/i2c/devices/6-0041/hwmon/hwmon10/in3_input"
+
+#Voltage <name>
+sensor_add 0x20 0 12 1 1\
+        poll 5000 \
+        file "/sys/bus/i2c/devices/6-0027/hwmon/hwmon9/in2_input"
+
+#Voltage <name>
+sensor_add 0x20 0 13 1 1\
+        poll 5000 \
+        file "/sys/bus/i2c/devices/6-0027/hwmon/hwmon9/in3_input"
+
+#PSU1 Voltage
+sensor_add 0x20 0 14 1 1\
+        poll 5000 \
+        file "/sys/bus/i2c/devices/0-0059/hwmon/hwmon4/in1_input"
+
+#PSU1 Voltage
+sensor_add 0x20 0 15 1 1\
+        poll 5000 \
+        file "/sys/bus/i2c/devices/0-0059/hwmon/hwmon4/in3_input"
+
+#PSU2 Voltage
+sensor_add 0x20 0 16 1 1\
+        poll 5000 \
+        file "/sys/bus/i2c/devices/0-0059/hwmon/hwmon5/in1_input"
+
+#PSU2 Voltage
+sensor_add 0x20 0 17 1 1\
+        poll 5000 \
+        file "/sys/bus/i2c/devices/0-0059/hwmon/hwmon5/in3_input"
+
+########## Power ############
+#PSU1 power
+sensor_add 0x20 0 20 1 1\
+        poll 5000 \
+        file "/sys/bus/i2c/devices/0-0059/hwmon/hwmon4/power1_input"
+
+#PSU1 power
+sensor_add 0x20 0 21 1 1\
+        poll 5000 \
+        file "/sys/bus/i2c/devices/0-0059/hwmon/hwmon4/power2_input"
+
+#PSU1 power
+sensor_add 0x20 0 22 1 1\
+        poll 5000 \
+        file "/sys/bus/i2c/devices/0-0058/hwmon/hwmon5/power1_input"
+
+#PSU2 power
+sensor_add 0x20 0 23 1 1\
+        poll 5000 \
+        file "/sys/bus/i2c/devices/0-0058/hwmon/hwmon5/power2_input"
+
+
+########### Current #########
+#PSU1 Current
+sensor_add 0x20 0 30 1 1\
+        poll 5000 \
+        file "/sys/bus/i2c/devices/0-0059/hwmon/hwmon4/current1_input"
+
+#PSU1 Current
+sensor_add 0x20 0 31 1 1\
+        poll 5000 \
+        file "/sys/bus/i2c/devices/0-0059/hwmon/hwmon4/current2_input"
+
+#PSU2 Current
+sensor_add 0x20 0 32 1 1\
+        poll 5000 \
+        file "/sys/bus/i2c/devices/0-0058/hwmon/hwmon5/current1_input"
+
+#PSU2 Current
+sensor_add 0x20 0 33 1 1\
+        poll 5000 \
+        file "/sys/bus/i2c/devices/0-0058/hwmon/hwmon5/current2_input"
+
+# Turn on the BMC
+mc_enable 0x20

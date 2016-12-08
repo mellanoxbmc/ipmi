@@ -1,0 +1,481 @@
+#ambient board temp sensor
+sdr type 1
+        sensor_owner_id         0x20
+        sensor_owner_lun        0
+        channel_number          0
+        sensor_number           1
+        entity_id               connectivity_switch
+        entity_instance         1
+        sensor_type             Temperature
+        event_reading_type_code 1
+        init_scanning           true
+        init_sensor_type        true
+        default_sensor_scan_on  true
+        base_unit               degrees_C
+        linearization           linear
+        sensor_direction        input
+        m                       1
+        b                       0
+        r_exp                   0
+        b_exp                   0
+        id_string               "ambient temp"
+endsdr
+
+#ASIC temp sensor
+sdr type 1
+        sensor_owner_id         0x20
+        sensor_owner_lun        0
+        channel_number          0
+        sensor_number           2
+        entity_id               connectivity_switch
+        entity_instance         1
+        sensor_type             Temperature
+        event_reading_type_code 1
+        init_scanning           true
+        init_sensor_type        true
+        default_sensor_scan_on  true
+        base_unit               degrees_C
+        linearization           linear
+        sensor_direction        input
+        m                       1
+        b                       0
+        r_exp                   0
+        b_exp                   0
+        id_string               "asic temp"
+endsdr
+
+#PSU1 temp sensor
+sdr type 1
+        sensor_owner_id         0x20
+        sensor_owner_lun        0
+        channel_number          0
+        sensor_number           3
+        entity_id               connectivity_switch
+        entity_instance         1
+        sensor_type             Temperature
+        event_reading_type_code 1
+        init_scanning           true
+        init_sensor_type        true
+        default_sensor_scan_on  true
+        base_unit               degrees_C
+        linearization           linear
+        sensor_direction        input
+        m                       1
+        b                       0
+        r_exp                   0
+        b_exp                   0
+        id_string               "PSU2 temp"
+endsdr
+
+
+#PSU2 temp sensor
+sdr type 1
+        sensor_owner_id         0x20
+        sensor_owner_lun        0
+        channel_number          0
+        sensor_number           4
+        entity_id               connectivity_switch
+        entity_instance         1
+        sensor_type             Temperature
+        event_reading_type_code 1
+        init_scanning           true
+        init_sensor_type        true
+        default_sensor_scan_on  true
+        base_unit               degrees_C
+        linearization           linear
+        sensor_direction        input
+        m                       1
+        b                       0
+        r_exp                   0
+        b_exp                   0
+        id_string               "PSU2 temp"
+endsdr
+
+#Voltage 1
+sdr type 1
+        sensor_owner_id         0x20
+        sensor_owner_lun        0
+        channel_number          0
+        sensor_number           10
+        entity_id               connectivity_switch
+        entity_instance         1
+        sensor_type             Voltage
+        event_reading_type_code 1
+        base_unit               Volts
+        m                       1
+        b                       0
+        r_exp                   0
+        b_exp                   0
+        init_scanning           true
+        init_sensor_type        true
+        default_sensor_scan_on  true
+        analog_data_format      unsigned
+        linearization           linear
+        sensor_direction        input
+        id_string               "Voltage 1"
+endsdr
+
+# Switch Voltage 2
+sdr type 1
+        sensor_owner_id         0x20
+        sensor_owner_lun        0
+        channel_number          0
+        sensor_number           11
+        entity_id               connectivity_switch
+        entity_instance         1
+        sensor_type             Voltage
+        event_reading_type_code 1
+        base_unit               Volts
+        m                       1
+        b                       0
+        r_exp                   0
+        b_exp                   0
+        init_scanning           true
+        init_sensor_type        true
+        default_sensor_scan_on  true
+        analog_data_format      unsigned
+        linearization           linear
+        sensor_direction        input
+        id_string               "Voltage 2"
+endsdr
+
+# Switch Voltage 3
+sdr type 1
+        sensor_owner_id         0x20
+        sensor_owner_lun        0
+        channel_number          0
+        sensor_number           12
+        entity_id               connectivity_switch
+        entity_instance         1
+        sensor_type             Voltage
+        event_reading_type_code 1
+        base_unit               Volts
+        m                       1
+        b                       0
+        r_exp                   0
+        b_exp                   0
+        init_scanning           true
+        init_sensor_type        true
+        default_sensor_scan_on  true
+        analog_data_format      unsigned
+        linearization           linear
+        sensor_direction        input
+        id_string               "Voltage 3"
+endsdr
+
+# Switch Voltage 4
+sdr type 1
+        sensor_owner_id         0x20
+        sensor_owner_lun        0
+        channel_number          0
+        sensor_number           13
+        entity_id               connectivity_switch
+        entity_instance         1
+        sensor_type             Voltage
+        event_reading_type_code 1
+        base_unit               Volts
+        m                       1
+        b                       0
+        r_exp                   0
+        b_exp                   0
+        init_scanning           true
+        init_sensor_type        true
+        default_sensor_scan_on  true
+        analog_data_format      unsigned
+        linearization           linear
+        sensor_direction        input
+        id_string               "Voltage 4"
+endsdr
+
+# PSU1 voltage sensor 1
+sdr type 1
+        sensor_owner_id          0x20
+        sensor_owner_lun         0
+        channel_number           0
+        sensor_number            14
+        entity_id                power_supply
+        entity_instance          1
+        sensor_type              Voltage
+        event_reading_type_code  1
+        base_unit                Volts
+        m                        1
+        b                        0
+        r_exp                    0
+        b_exp                    3
+        init_scanning            true
+        default_sensor_scan_on   true
+        linearization            linear
+        sensor_direction         input
+        id_string                "PSU1 voltage 1"
+endsdr
+
+# PSU1 voltage sensor 2
+sdr type 1
+        sensor_owner_id          0x20
+        sensor_owner_lun         0
+        channel_number           0
+        sensor_number            15
+        entity_id                power_supply
+        entity_instance          1
+        sensor_type              Voltage
+        event_reading_type_code  1
+        base_unit                Volts
+        m                        1
+        b                        0
+        r_exp                    0
+        b_exp                    3
+        init_scanning            true
+        default_sensor_scan_on   true
+        linearization            linear
+        sensor_direction         input
+        id_string                "PSU1 voltage 2"
+endsdr
+
+# PSU2 voltage sensor 1
+sdr type 1
+        sensor_owner_id          0x20
+        sensor_owner_lun         0
+        channel_number           0
+        sensor_number            16
+        entity_id                power_supply
+        entity_instance          1
+        sensor_type              Voltage
+        event_reading_type_code  1
+        base_unit                Volts
+        m                        1
+        b                        0
+        r_exp                    0
+        b_exp                    3
+        init_scanning            true
+        default_sensor_scan_on   true
+        linearization            linear
+        sensor_direction         input
+        id_string                "PSU2 voltage 1"
+endsdr
+
+# PSU2 voltage sensor 2
+sdr type 1
+        sensor_owner_id          0x20
+        sensor_owner_lun         0
+        channel_number           0
+        sensor_number            17
+        entity_id                power_supply
+        entity_instance          1
+        sensor_type              Voltage
+        event_reading_type_code  1
+        base_unit                Volts
+        m                        1
+        b                        0
+        r_exp                    0
+        b_exp                    0
+        init_scanning            true
+        default_sensor_scan_on   true
+        linearization            linear
+        sensor_direction         input
+        id_string                "PSU2 voltage 2"
+endsdr
+
+# PSU1 power sensor (/sys/bus/i2c/devices/10-0059/hwmon/hwmon4/power1_input)
+sdr type 1
+        sensor_owner_id         0x20
+        sensor_owner_lun        0
+        channel_number          0
+        sensor_number           30
+        entity_id               power_supply
+        entity_instance         1
+        sensor_type             Current
+        event_reading_type_code 1
+        base_unit               Watts
+        m                       1
+        b                       0
+        r_exp                   0
+        b_exp                   0
+        init_scanning           true
+        init_events             true
+        init_sensor_type        true
+        default_sensor_scan_on  true
+        sensor_direction        input
+        id_string               "PSU1 power 1"
+endsdr
+
+# PSU1 power sensor (/sys/bus/i2c/devices/10-0059/hwmon/hwmon4/power2_input)
+sdr type 1
+        sensor_owner_id         0x20
+        sensor_owner_lun        0
+        channel_number          0
+        sensor_number           21
+        entity_id               power_supply
+        entity_instance         1
+        sensor_type             Current
+        event_reading_type_code 1
+        base_unit               Watts
+        m                       1
+        b                       0
+        r_exp                   0
+        b_exp                   0
+        init_scanning           true
+        init_events             true
+        init_sensor_type        true
+        default_sensor_scan_on  true
+        sensor_direction        input
+        id_string               "PSU1 power 2"
+endsdr
+
+# PSU2 power sensor (/sys/bus/i2c/devices/10-0058/hwmon/hwmon5/power1_input)
+sdr type 1
+        sensor_owner_id         0x20
+        sensor_owner_lun        0
+        channel_number          0
+        sensor_number           22
+        entity_id               power_supply
+        entity_instance         1
+        sensor_type             Current
+        event_reading_type_code 1
+        base_unit               Watts
+        m                       1
+        b                       0
+        r_exp                   0
+        b_exp                   0
+        init_scanning           true
+        init_events             true
+        init_sensor_type        true
+        default_sensor_scan_on  true
+        sensor_direction        input
+        id_string               "PSU2 power 1"
+endsdr
+
+# PSU2 power sensor (/sys/bus/i2c/devices/10-0058/hwmon/hwmon5/power2_input)
+sdr type 1
+        sensor_owner_id         0x20
+        sensor_owner_lun        0
+        channel_number          0
+        sensor_number           23
+        entity_id               power_supply
+        entity_instance         1
+        sensor_type             Current
+        event_reading_type_code 1
+        base_unit               Watts
+        m                       1
+        b                       0
+        r_exp                   0
+        b_exp                   0
+        init_scanning           true
+        init_events             true
+        init_sensor_type        true
+        default_sensor_scan_on  true
+        sensor_direction        input
+        id_string               "PSU2 power 2"
+endsdr
+
+# PSU1 current sensor (/sys/bus/i2c/devices/10-0059/hwmon/hwmon4/current1_input)
+sdr type 1
+        sensor_owner_id         0x20
+        sensor_owner_lun        0
+        channel_number          0
+        sensor_number           30
+        entity_id               power_supply
+        entity_instance         1
+        sensor_type             Current
+        event_reading_type_code 1
+        base_unit               Amps
+        m                       1
+        b                       0
+        r_exp                   0
+        b_exp                   0
+        init_scanning           true
+        init_events             true
+        init_sensor_type        true
+        default_sensor_scan_on  true
+        sensor_direction        input
+        id_string               "PSU1 current"
+endsdr
+
+# PSU1 current sensor (/sys/bus/i2c/devices/10-0059/hwmon/hwmon4/current2_input)
+sdr type 1
+        sensor_owner_id         0x20
+        sensor_owner_lun        0
+        channel_number          0
+        sensor_number           31
+        entity_id               power_supply
+        entity_instance         1
+        sensor_type             Current
+        event_reading_type_code 1
+        base_unit               Amps
+        m                       1
+        b                       0
+        r_exp                   0
+        b_exp                   0
+        init_scanning           true
+        init_events             true
+        init_sensor_type        true
+        default_sensor_scan_on  true
+        sensor_direction        input
+        id_string               "PSU1 current 2"
+endsdr
+
+# PSU1 current sensor (/sys/bus/i2c/devices/10-0058/hwmon/hwmon5/current1_input)
+sdr type 1
+        sensor_owner_id         0x20
+        sensor_owner_lun        0
+        channel_number          0
+        sensor_number           32
+        entity_id               power_supply
+        entity_instance         1
+        sensor_type             Current
+        event_reading_type_code 1
+        base_unit               Amps
+        m                       1
+        b                       0
+        r_exp                   0
+        b_exp                   0
+        init_scanning           true
+        init_events             true
+        init_sensor_type        true
+        default_sensor_scan_on  true
+        sensor_direction        input
+        id_string               "PSU2 current 1"
+endsdr
+
+# PSU1 current sensor (/sys/bus/i2c/devices/10-0058/hwmon/hwmon5/current2_input)
+sdr type 1
+        sensor_owner_id         0x20
+        sensor_owner_lun        0
+        channel_number          0
+        sensor_number           33
+        entity_id               power_supply
+        entity_instance         1
+        sensor_type             Current
+        event_reading_type_code 1
+        base_unit               Amps
+        m                       1
+        b                       0
+        r_exp                   0
+        b_exp                   0
+        init_scanning           true
+        init_events             true
+        init_sensor_type        true
+        default_sensor_scan_on  true
+        sensor_direction        input
+        id_string               "PSU2 current 2"
+endsdr
+
+#fan1 sensor
+sdr type 1
+        sensor_owner_id         0x20
+        sensor_owner_lun        0
+        channel_number          0
+        sensor_number           0x70
+        entity_id               fan_cooling_device
+        entity_instance         1
+        sensor_type             Fan
+        event_reading_type_code 1
+        base_unit               RPM
+        r_exp                   0
+        b_exp                   0
+        b                       0
+        m                       1
+        init_scanning           true
+        init_sensor_type        true
+        default_sensor_scan_on  true
+        id_string               "fan1"
+endsdr
