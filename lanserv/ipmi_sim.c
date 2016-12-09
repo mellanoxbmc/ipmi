@@ -98,7 +98,7 @@
 
 #define MLNX_CONF_FILE_EXT       ".hw"
 #define BASE_CONF_STR SYSCONFDIR "/ipmi"
-static char *config_file = BASE_CONF_STR "/lan.conf";
+static char *config_file = BASE_CONF_STR "/mellanox.lan.conf";
 static const char *statedir = STATEDIR;
 static char *command_string = NULL;
 static char *command_file = NULL;
