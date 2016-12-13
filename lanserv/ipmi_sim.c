@@ -1497,7 +1497,7 @@ main(int argc, const char *argv[])
 	exit(1);
     }
 
-    err = persist_init("ipmi_sim", sysinfo.name, statedir);
+    err = persist_init("mlnx_ipmid", sysinfo.name, statedir);
     if (err) {
 	fprintf(stderr, "Unable to initialize persistence: %s\n",
 		strerror(err));

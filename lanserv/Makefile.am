@@ -50,9 +50,10 @@ EXTRA_DIST = atca.emu README.vm lan.conf ipmisim1.emu $(man_MANS)
 
 install-data-local:
 	$(INSTALL) -m 755 -d "$(DESTDIR)$(sysconfdir)/ipmi/"; \
+	$(INSTALL) -m 755 -d "$(DESTDIR)$(localstatedir)/mlnx_ipmid/mellanox/"; \
 	$(INSTALL) -m 644 $(srcdir)/mellanox.lan.conf "$(DESTDIR)$(sysconfdir)/ipmi/"; \
 	$(INSTALL) -m 644 $(srcdir)/mellanox.hw "$(DESTDIR)$(sysconfdir)/ipmi/"; \
-	$(INSTALL) -m 644 $(srcdir)/mellanox.sdrs "$(DESTDIR)$(sysconfdir)/ipmi/";
+	$(INSTALL) -m 644 $(srcdir)/sdr.20.main "$(DESTDIR)$(localstatedir)/mlnx_ipmid/mellanox/";
 
 uninstall-local:
 	-rm -f "$(DESTDIR)$(sysconfdir)/ipmi/lan.conf"
