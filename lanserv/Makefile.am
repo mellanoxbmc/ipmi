@@ -6,8 +6,8 @@ PVERSION="1.0.13"
 
 BUILD_CC = @BUILD_CC@
 
-SUBDIRS = OpenIPMI sdrcomp @MARVELL_BMC_DIR@
-DIST_SUBDIRS = OpenIPMI sdrcomp marvell-bmc
+SUBDIRS = OpenIPMI sdrcomp @MARVELL_BMC_DIR@ @MELLANOX_DIR@
+DIST_SUBDIRS = OpenIPMI sdrcomp marvell-bmc mellanox
 
 AM_CFLAGS = -Wall -Wsign-compare -I$(top_srcdir)/include -DIPMI_CHECK_LOCKS \
 	$(OPENSSLINCS) -DPVERSION="\"$(PVERSION)\""
@@ -51,9 +51,9 @@ EXTRA_DIST = atca.emu README.vm lan.conf ipmisim1.emu $(man_MANS)
 install-data-local:
 	$(INSTALL) -m 755 -d "$(DESTDIR)$(sysconfdir)/ipmi/"; \
 	$(INSTALL) -m 755 -d "$(DESTDIR)$(localstatedir)/mlnx_ipmid/mellanox/"; \
-	$(INSTALL) -m 644 $(srcdir)/mellanox.lan.conf "$(DESTDIR)$(sysconfdir)/ipmi/"; \
-	$(INSTALL) -m 644 $(srcdir)/mellanox.hw "$(DESTDIR)$(sysconfdir)/ipmi/"; \
-	$(INSTALL) -m 644 $(srcdir)/sdr.20.main "$(DESTDIR)$(localstatedir)/mlnx_ipmid/mellanox/";
+	$(INSTALL) -m 644 $(srcdir)/mellanox/mellanox.lan.conf "$(DESTDIR)$(sysconfdir)/ipmi/"; \
+	$(INSTALL) -m 644 $(srcdir)/mellanox/mellanox.hw "$(DESTDIR)$(sysconfdir)/ipmi/"; \
+	$(INSTALL) -m 644 $(srcdir)/mellanox/sdr.20.main "$(DESTDIR)$(localstatedir)/mlnx_ipmid/mellanox/";
 
 uninstall-local:
 	-rm -f "$(DESTDIR)$(sysconfdir)/ipmi/lan.conf"
