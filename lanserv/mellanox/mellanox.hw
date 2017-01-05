@@ -2,9 +2,6 @@
 # HW configuration file for the Mellanox BMC
 #
 
-#Turn on ATCA mode to be able to work with LEDs
-atca_enable
-
 # The BMC is the MC at address 20
 mc_setbmc 0x20
 

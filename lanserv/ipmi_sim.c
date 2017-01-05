@@ -96,9 +96,13 @@
 
 #define MAX_ADDR 4
 
-#define MLNX_CONF_FILE_EXT       ".hw"
 #define BASE_CONF_STR SYSCONFDIR "/ipmi"
+#ifdef MLX_IPMID
+#define MLNX_CONF_FILE_EXT       ".hw"
 static char *config_file = BASE_CONF_STR "/mellanox.lan.conf";
+#else
+static char *config_file = BASE_CONF_STR "/lan.conf";
+#endif
 static const char *statedir = STATEDIR;
 static char *command_string = NULL;
 static char *command_file = NULL;
@@ -1497,7 +1501,11 @@ main(int argc, const char *argv[])
 	exit(1);
     }
 
+#ifdef MLX_IPMID
     err = persist_init("mlnx_ipmid", sysinfo.name, statedir);
+#else
+    err = persist_init("ipmi_sim", sysinfo.name, statedir);
+#endif
     if (err) {
 	fprintf(stderr, "Unable to initialize persistence: %s\n",
 		strerror(err));
@@ -1534,7 +1542,11 @@ main(int argc, const char *argv[])
 	strcpy(command_file, BASE_CONF_STR);
 	strcat(command_file, "/");
 	strcat(command_file, sysinfo.name);
-	strcat(command_file, MLNX_CONF_FILE_EXT);
+#ifdef MLX_IPMID
+        strcat(command_file, MLNX_CONF_FILE_EXT);
+#else
+        strcat(command_file, ".emu");
+#endif
 	tf = fopen(command_file, "r");
 	if (!tf) {
 	    free(command_file);

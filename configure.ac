@@ -280,6 +280,7 @@ AC_SUBST([MARVELL_BMC_DIR])
 MELLANOX_DIR=
 AC_ARG_WITH(mellanox,
 [  --with-mellanox            Enable the Mellanox BMC.],
+    AC_DEFINE(MLX_IPMID, 1, [define to 1])
     MELLANOX_DIR=mellanox
 )
 AC_SUBST([MELLANOX_DIR])

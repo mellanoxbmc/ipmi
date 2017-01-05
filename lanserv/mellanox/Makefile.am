@@ -5,8 +5,17 @@ pkglib_LTLIBRARIES = mellanox.la
 mellanox_la_SOURCES = mellanox.c
 mellanox_la_LDFLAGS = -module
 
-sdrs.bin: mellanox.sdrs \
-		$(top_builddir)/lanserv/sdrcomp/sdrcomp
-	$(top_builddir)/lanserv/sdrcomp/sdrcomp mellanox.sdrs >sdrs.bin
+install-data-local:
+	$(INSTALL) -m 755 -d "$(DESTDIR)$(sysconfdir)/ipmi/"; \
+	$(INSTALL) -m 755 -d "$(DESTDIR)$(localstatedir)/mlnx_ipmid/mellanox/"; \
+	$(INSTALL) -m 644 $(srcdir)/mellanox.lan.conf "$(DESTDIR)$(sysconfdir)/ipmi/"; \
+	$(INSTALL) -m 644 $(srcdir)/mellanox.hw "$(DESTDIR)$(sysconfdir)/ipmi/"; \
+	$(INSTALL) -m 644 $(srcdir)/sdr.20.main "$(DESTDIR)$(localstatedir)/mlnx_ipmid/mellanox/"; \
+	$(INSTALL) -m 775 $(srcdir)/sel_set_log_size.sh "$(DESTDIR)$(bindir)";
 
-noinst_DATA = sdrs.bin
+uninstall-local:
+	-rm -f "$(DESTDIR)$(sysconfdir)/ipmi/mellanox.lan.conf"
+	-rm -f "$(DESTDIR)$(sysconfdir)/ipmi/mellanox.hw"
+	-rm -f "$(DESTDIR)$(sysconfdir)/ipmi/sdr.20.main"
+	-rm -f "$(DESTDIR)$(bindir)/sel_set_log_size.sh
+	-rmdir "$(DESTDIR)$(sysconfdir)/ipmi" 2>/dev/null
