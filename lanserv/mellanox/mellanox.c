@@ -18,11 +18,14 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <semaphore.h>
+#include <stdlib.h>
 
 #include <OpenIPMI/ipmi_err.h>
 #include <OpenIPMI/ipmi_msgbits.h>
 #include <OpenIPMI/ipmi_bits.h>
+#include <OpenIPMI/ipmi_mc.h>
 #include <OpenIPMI/serv.h>
+#include "../bmc.h"
 
 /**************************************************************************
  *                  Mellanox custom commands codes                        *
@@ -34,11 +37,18 @@
 #define IPMI_OEM_MLX_SET_LED_BLINKING_CMD   0x33
 
 /* IPMI_APP_NETFN (0x06) */
+#define IPMI_OEM_MLX_SEL_BUFFER_SET_CMD     0x5B
 #define IPMI_OEM_MLX_SYSTEM_HARD_RESET_CMD  0x5d
 #define IPMI_OEM_MLX_CPU_HARD_RESET_CMD     0x5e
 #define IPMI_OEM_MLX_CPU_SOFT_RESET_CMD     0x5f
 
-// FAN PWM file
+#define IPMI_OEM_MLX_SEL_LOG_SIZE_MIN       1000
+#define IPMI_OEM_MLX_SEL_LOG_SIZE_MAX       0xFFFF
+
+/* Set sel log size script file path */
+#define SEL_SET_SCRIPT_NAME "sel_set_log_size.sh"
+
+/* FAN PWM file */
 #define MLX_FAN_PWM_FILE    "/bsp/fan/pwm"
 
 /**  LED FUNCTIONALITY DEFINES  **/
@@ -503,6 +513,41 @@ handle_cpu_soft_reset(lmc_data_t    *mc,
     *rdata_len = 1;
 }
 
+/**
+ *
+ *  ipmitool raw 0x06  0x5B size_LSB size_MSB
+ *
+ **/
+static void
+handle_sel_buffer_set(lmc_data_t    *mc,
+              msg_t         *msg,
+              unsigned char *rdata,
+              unsigned int  *rdata_len,
+              void          *cb_data)
+{
+    uint16_t max_entries = 0;
+    char sel_set_cmd_buf[100];
+
+    if (check_msg_length(msg, 2, rdata, rdata_len)){
+        return;
+    }
+
+    max_entries = msg->data[0] | (((uint16_t) msg->data[1]) << 8);
+
+    if ((max_entries < IPMI_OEM_MLX_SEL_LOG_SIZE_MIN) ||
+        (max_entries > IPMI_OEM_MLX_SEL_LOG_SIZE_MAX)){
+        rdata[0] = IPMI_INVALID_DATA_FIELD_CC;
+        *rdata_len = 1;
+        return;
+    }
+
+    snprintf(sel_set_cmd_buf, sizeof(sel_set_cmd_buf), "%s %d", SEL_SET_SCRIPT_NAME, max_entries);
+    rdata[0] = system(sel_set_cmd_buf);
+
+    ipmi_mc_enable_sel(mc, max_entries, mc->sel.flags);
+    *rdata_len = 1;
+}
+
 int
 ipmi_sim_module_print_version(sys_data_t *sys, char *initstr)
 {
@@ -550,6 +595,9 @@ ipmi_sim_module_init(sys_data_t *sys, const char *initstr_i)
 
     rv = ipmi_emu_register_cmd_handler(IPMI_APP_NETFN, IPMI_OEM_MLX_SYSTEM_HARD_RESET_CMD,
                                        handle_system_hard_reset, sys);
+
+    rv = ipmi_emu_register_cmd_handler(IPMI_APP_NETFN, IPMI_OEM_MLX_SEL_BUFFER_SET_CMD,
+                                       handle_sel_buffer_set, sys);
 
     if (rv) {
 	sys->log(sys, OS_ERROR, NULL,

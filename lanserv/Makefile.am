@@ -53,7 +53,8 @@ install-data-local:
 	$(INSTALL) -m 755 -d "$(DESTDIR)$(localstatedir)/mlnx_ipmid/mellanox/"; \
 	$(INSTALL) -m 644 $(srcdir)/mellanox/mellanox.lan.conf "$(DESTDIR)$(sysconfdir)/ipmi/"; \
 	$(INSTALL) -m 644 $(srcdir)/mellanox/mellanox.hw "$(DESTDIR)$(sysconfdir)/ipmi/"; \
-	$(INSTALL) -m 644 $(srcdir)/mellanox/sdr.20.main "$(DESTDIR)$(localstatedir)/mlnx_ipmid/mellanox/";
+	$(INSTALL) -m 644 $(srcdir)/mellanox/sdr.20.main "$(DESTDIR)$(localstatedir)/mlnx_ipmid/mellanox/"; \
+	$(INSTALL) -m 775 $(srcdir)/sel_set_log_size.sh "$(DESTDIR)$(bindir)"; 
 
 uninstall-local:
 	-rm -f "$(DESTDIR)$(sysconfdir)/ipmi/lan.conf"
