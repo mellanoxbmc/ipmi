@@ -22,22 +22,22 @@ sel_enable 0x20 1000 0x0a
 # Ambient board Temp
 sensor_add 0x20  0    1     1     1 \
 	poll 5000 \
-	file "/sys/bus/i2c/devices/5-0049/hwmon/hwmon6/temp1_input"
+	file "/bmc/thermal/amb_carier_temp"
 
-# ASIC Temp
+# Ambient switch Temp
 sensor_add 0x20  0    2     1     1 \
-        poll 5000 \
-        file "/sys/bus/i2c/devices/X-00YY/hwmon/hwmon7/temp1_input"
+	poll 5000 \
+	file "/bmc/thermal/amb_switch_temp"
 
 # PSU1 Temp
 sensor_add 0x20  0    3     1     1 \
         poll 5000 \
-        file "/sys/bus/i2c/devices/0-0059/hwmon/hwmon4/temp1_input"
+        file "/bmc/thermal/psu1_temp"
 
 # PSU2 Temp
 sensor_add 0x20  0    4     1     1 \
         poll 5000 \
-        file "/sys/bus/i2c/devices/0-0058/hwmon/hwmon5/temp1_input"
+        file "/bmc/thermal/psu2_temp"
 
 ########## FAN ############
 
@@ -80,75 +80,106 @@ sensor_add 0x20 0 11 1 1\
 #Voltage <name>
 sensor_add 0x20 0 12 1 1\
         poll 5000 \
-        file "/sys/bus/i2c/devices/6-0027/hwmon/hwmon9/in2_input"
+        file "/sys/bus/i2c/devices/11-0027/hwmon/hwmon9/in2_input"
 
 #Voltage <name>
 sensor_add 0x20 0 13 1 1\
         poll 5000 \
-        file "/sys/bus/i2c/devices/6-0027/hwmon/hwmon9/in3_input"
+        file "/sys/bus/i2c/devices/11-0027/hwmon/hwmon9/in3_input"
 
 #PSU1 Voltage
 sensor_add 0x20 0 14 1 1\
         poll 5000 \
-        file "/sys/bus/i2c/devices/0-0059/hwmon/hwmon4/in1_input"
+        file "/bsp/environment/psu1_vin"
 
 #PSU1 Voltage
 sensor_add 0x20 0 15 1 1\
         poll 5000 \
-        file "/sys/bus/i2c/devices/0-0059/hwmon/hwmon4/in3_input"
+        file "/bsp/environment/psu1_vout"
 
 #PSU2 Voltage
 sensor_add 0x20 0 16 1 1\
         poll 5000 \
-        file "/sys/bus/i2c/devices/0-0059/hwmon/hwmon5/in1_input"
+        file "/bsp/environment/psu2_vin"
 
 #PSU2 Voltage
 sensor_add 0x20 0 17 1 1\
         poll 5000 \
-        file "/sys/bus/i2c/devices/0-0059/hwmon/hwmon5/in3_input"
+        file "/bsp/environment/psu2_vout"
 
 ########## Power ############
 #PSU1 power
 sensor_add 0x20 0 20 1 1\
         poll 5000 \
-        file "/sys/bus/i2c/devices/0-0059/hwmon/hwmon4/power1_input"
+        file "/bsp/environment/psu1_pin"
 
 #PSU1 power
 sensor_add 0x20 0 21 1 1\
         poll 5000 \
-        file "/sys/bus/i2c/devices/0-0059/hwmon/hwmon4/power2_input"
+        file "/bsp/environment/psu1_pout"
 
 #PSU1 power
 sensor_add 0x20 0 22 1 1\
         poll 5000 \
-        file "/sys/bus/i2c/devices/0-0058/hwmon/hwmon5/power1_input"
+        file "/bsp/environment/psu2_pin"
 
 #PSU2 power
 sensor_add 0x20 0 23 1 1\
         poll 5000 \
-        file "/sys/bus/i2c/devices/0-0058/hwmon/hwmon5/power2_input"
+        file "/bsp/environment/psu2_pout"
 
 
 ########### Current #########
 #PSU1 Current
 sensor_add 0x20 0 30 1 1\
         poll 5000 \
-        file "/sys/bus/i2c/devices/0-0059/hwmon/hwmon4/current1_input"
+        file "/bsp/environment/psu1_iin"
 
 #PSU1 Current
 sensor_add 0x20 0 31 1 1\
         poll 5000 \
-        file "/sys/bus/i2c/devices/0-0059/hwmon/hwmon4/current2_input"
+        file "/bsp/environment/psu1_iout"
 
 #PSU2 Current
 sensor_add 0x20 0 32 1 1\
         poll 5000 \
-        file "/sys/bus/i2c/devices/0-0058/hwmon/hwmon5/current1_input"
+        file "/bsp/environment/psu2_iin"
 
 #PSU2 Current
 sensor_add 0x20 0 33 1 1\
         poll 5000 \
-        file "/sys/bus/i2c/devices/0-0058/hwmon/hwmon5/current2_input"
+        file "/bsp/environment/psu2_iout"
+
+#############EEPROM############
+mc_add_fru_data 0x20 0 1024 \
+  file 0 "/bsp/fru/sys_fru_eeprom"
+
+mc_add_fru_data 0x20 1 1024 \
+  file 0 "/bsp/fru/swboard_eeprom"
+
+mc_add_fru_data 0x20 2 1024 \
+  file 0 "/bsp/fru/carier_board_eeprom"
+
+mc_add_fru_data 0x20 3 1024 \
+  file 0 "/bsp/fru/bmc_eeprom"
+
+mc_add_fru_data 0x20 4 1024 \
+  file 0 "/bsp/fru/psu1_eeprom"
+
+mc_add_fru_data 0x20 5 1024 \
+  file 0 "/bsp/fru/psu2_eeprom"
+
+mc_add_fru_data 0x20 6 1024 \
+  file 0 "/bsp/fru/fan1_eeprom"
+
+mc_add_fru_data 0x20 7 1024 \
+  file 0 "/bsp/fru/fan2_eeprom"
+
+mc_add_fru_data 0x20 8 1024 \
+  file 0 "/bsp/fru/fan3_eeprom"
+
+mc_add_fru_data 0x20 0 1024 \
+  file 0 "/bsp/fru/fan4_eeprom"
 
 # Turn on the BMC
 mc_enable 0x20
