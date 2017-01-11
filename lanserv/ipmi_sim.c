@@ -90,8 +90,9 @@
 #include <OpenIPMI/serv.h>
 #include <OpenIPMI/lanserv.h>
 #include <OpenIPMI/serserv.h>
+#ifdef MLX_IPMID
 #include <OpenIPMI/ipmi_types.h>
-
+#endif
 #include "emu.h"
 #include <OpenIPMI/persist.h>
 
@@ -431,19 +432,10 @@ static void
 ser_send(serserv_data_t *ser, unsigned char *data, unsigned int data_len)
 {
     int rv;
-    unsigned int i;
 
     if (ser->con_fd == -1)
 	/* Not connected */
 	return;
-
-    if (ser->sysinfo->debug & DEBUG_MSG){
-    printf("ser_send\n");
-    printf("data [");
-    for (i=0; i< data_len; i++)
-        printf("0x%02x ", data[i]);
-    printf("]\n");
-    }
 
     rv = write(ser->con_fd, data, data_len);
     if (rv) {
@@ -521,7 +513,6 @@ ser_bt_data_ready(int fd, void *cb_data, os_hnd_fd_id_t *id)
     serserv_data_t *ser = cb_data;
     unsigned int  len;
     unsigned char msgd[256];
-    unsigned int i;
 
     len = read(fd, msgd, sizeof(msgd));
 
@@ -538,13 +529,6 @@ ser_bt_data_ready(int fd, void *cb_data, os_hnd_fd_id_t *id)
         close(fd);
         ser->con_fd = -1;
         return;
-    }
-
-    if (ser->sysinfo->debug & DEBUG_MSG){
-        printf(">data [");
-        for (i=0; i<len; i++)
-            printf("0x%02x ", msgd[i]);
-        printf("]\n");
     }
 
     ser->bind_fd = -1;

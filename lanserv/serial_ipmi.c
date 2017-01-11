@@ -1091,9 +1091,7 @@ bt_handle_char(unsigned char ch, serserv_data_t *si)
     unsigned int len = info->recv_msg_len;
 
     if (si->bind_fd == 0) {
-        if (info->recv_msg_len == 0) {
-            /* Nothing to do */
-        } else {
+        if (info->recv_msg_len != 0){
             bt_handle_msg(info->recv_msg, info->recv_msg_len, si);
             info->recv_msg_len = 0;
         }
