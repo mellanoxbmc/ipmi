@@ -281,6 +281,7 @@ MELLANOX_DIR=
 AC_ARG_WITH(mellanox,
 [  --with-mellanox            Enable the Mellanox BMC.],
     AC_DEFINE(MLX_IPMID, 1, [define to 1])
+    AM_CONDITIONAL([MLX_IPMID],[true])
     MELLANOX_DIR=mellanox
 )
 AC_SUBST([MELLANOX_DIR])
