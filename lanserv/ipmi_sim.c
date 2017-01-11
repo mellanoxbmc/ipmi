@@ -1502,7 +1502,7 @@ main(int argc, const char *argv[])
     }
 
 #ifdef MLX_IPMID
-    err = persist_init("mlnx_ipmid", sysinfo.name, statedir);
+    err = persist_init("mlx_ipmid", sysinfo.name, statedir);
 #else
     err = persist_init("ipmi_sim", sysinfo.name, statedir);
 #endif
