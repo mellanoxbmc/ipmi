@@ -48,8 +48,11 @@
 /* Set sel log size script file path */
 #define SEL_SET_SCRIPT_NAME "sel_set_log_size.sh"
 
-/* FAN PWM file */
-#define MLX_FAN_PWM_FILE    "/bsp/fan/pwm"
+/* FAN PWM */
+#define MLX_FAN_PWM_FILE            "/bsp/fan/pwm"
+#define MLX_FAN_PWM_ENABLE_FILE     "/bsp/fan/pwm_en"
+#define MLX_PWM_MIN                 0
+#define MLX_PWM_MAX                 9
 
 /**  LED FUNCTIONALITY DEFINES  **/
 #define MLX_STATUS_LED_MAX 1
@@ -92,6 +95,23 @@ static const char* amber_led[MLX_STATUS_LED_MAX] =
     LED_STATUS_FILE"amber/"
 };
 
+static unsigned char set_fan_enable()
+{
+    FILE *f_en;
+
+    f_en = fopen(MLX_FAN_PWM_ENABLE_FILE, "w");
+
+    if (!f_en) {
+            printf("\nUnable to open pwm_en file");
+            return IPMI_DESTINATION_UNAVAILABLE_CC;
+    } else
+        fprintf(f_en, "%u", 1);
+
+    fclose(f_en);
+
+    return 0;
+}
+
 /**
  *
  * ipmitool raw 0x04  0x030  Speed (0x00-0xFF)
@@ -105,6 +125,14 @@ handle_set_fan_speed_cmd (lmc_data_t    *mc,
                 void          *cb_data)
 {
     FILE *f_pwm;
+    unsigned char pwm = 0;
+
+    pwm = msg->data[0];
+    if (pwm > MLX_PWM_MAX) {
+        rdata[0] = IPMI_INVALID_DATA_FIELD_CC;
+        *rdata_len = 1;
+        return;
+    }
 
     f_pwm = fopen(MLX_FAN_PWM_FILE, "w");
 
@@ -113,8 +141,14 @@ handle_set_fan_speed_cmd (lmc_data_t    *mc,
             rdata[0] = IPMI_COULD_NOT_PROVIDE_RESPONSE_CC;
             *rdata_len = 1;
             return;
+    } else {
+        if (IPMI_DESTINATION_UNAVAILABLE_CC == set_fan_enable()) {
+            rdata[0] = IPMI_COULD_NOT_PROVIDE_RESPONSE_CC;
+            *rdata_len = 1;
+            return;
     } else
-        fprintf(f_pwm, "%u", msg->data[0]);
+        fprintf(f_pwm, "%u", pwm);
+    }
 
     fclose(f_pwm);
     rdata[0] = 0;
@@ -571,6 +605,13 @@ ipmi_sim_module_init(sys_data_t *sys, const char *initstr_i)
     int rv;
 
     printf("IPMI Simulator Mellanox module");
+
+    rv = set_fan_enable();
+
+    if (rv) {
+        sys->log(sys, OS_ERROR, NULL,
+                 "Unable to enable pwm_en: %s", strerror(rv));
+    }
 
     rv = ipmi_emu_register_cmd_handler(IPMI_SENSOR_EVENT_NETFN, IPMI_OEM_MLX_SET_FAN_SPEED_CMD,
                                        handle_set_fan_speed_cmd, sys);
