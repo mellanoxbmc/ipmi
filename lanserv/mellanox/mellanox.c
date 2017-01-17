@@ -42,8 +42,8 @@
 #define IPMI_OEM_MLX_CPU_HARD_RESET_CMD     0x5e
 #define IPMI_OEM_MLX_CPU_SOFT_RESET_CMD     0x5f
 
-#define IPMI_OEM_MLX_SEL_LOG_SIZE_MIN       1000
-#define IPMI_OEM_MLX_SEL_LOG_SIZE_MAX       0xFFFF
+#define IPMI_OEM_MLX_SEL_LOG_SIZE_MIN       0x40
+#define IPMI_OEM_MLX_SEL_LOG_SIZE_MAX       0x0fff
 
 /* Set sel log size script file path */
 #define SEL_SET_SCRIPT_NAME "sel_set_log_size.sh"
