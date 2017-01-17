@@ -95,6 +95,12 @@ static const char* amber_led[MLX_STATUS_LED_MAX] =
     LED_STATUS_FILE"amber/"
 };
 
+/* Reset links */
+#define MLX_BMC_SOFT_RESET   "/bsp/reset/bmc_reset_soft"
+#define MLX_CPU_HARD_RESET   "/bsp/reset/cpu_reset_hard"
+#define MLX_CPU_SOFT_RESET   "/bsp/reset/cpu_reset_soft"
+#define MLX_SYS_HARD_RESET   "/bsp/reset/system_reset_hard"
+
 static unsigned char set_fan_enable()
 {
     FILE *f_en;
@@ -489,6 +495,20 @@ handle_bmc_cold_reset(lmc_data_t    *mc,
 {
     printf("\n %d: %s, %s(); %x %X", __LINE__, __FILE__, __FUNCTION__, msg->data[0], msg->data[1]);
 
+    FILE *freset;
+
+    freset = fopen(MLX_BMC_SOFT_RESET, "w");
+
+    if (!freset) {
+            printf("\nUnable to open reset file");
+            rdata[0] = IPMI_COULD_NOT_PROVIDE_RESPONSE_CC;
+            *rdata_len = 1;
+            return;
+    } else {
+        fprintf(freset, "%u", 1);
+    }
+
+    fclose(freset);
     rdata[0] = 0;
     *rdata_len = 1;
 }
@@ -507,6 +527,20 @@ handle_system_hard_reset(lmc_data_t    *mc,
 {
     printf("\n %d: %s, %s()", __LINE__, __FILE__, __FUNCTION__);
 
+    FILE *freset;
+
+    freset = fopen(MLX_SYS_HARD_RESET, "w");
+
+    if (!freset) {
+            printf("\nUnable to open reset file");
+            rdata[0] = IPMI_COULD_NOT_PROVIDE_RESPONSE_CC;
+            *rdata_len = 1;
+            return;
+    } else {
+        fprintf(freset, "%u", 1);
+    }
+
+    fclose(freset);
     rdata[0] = 0;
     *rdata_len = 1;
 }
@@ -525,6 +559,20 @@ handle_cpu_hard_reset(lmc_data_t    *mc,
 {
     printf("\n %d: %s, %s()", __LINE__, __FILE__, __FUNCTION__);
 
+    FILE *freset;
+
+    freset = fopen(MLX_CPU_HARD_RESET, "w");
+
+    if (!freset) {
+            printf("\nUnable to open reset file");
+            rdata[0] = IPMI_COULD_NOT_PROVIDE_RESPONSE_CC;
+            *rdata_len = 1;
+            return;
+    } else {
+        fprintf(freset, "%u", 1);
+    }
+
+    fclose(freset);
     rdata[0] = 0;
     *rdata_len = 1;
 }
@@ -543,6 +591,20 @@ handle_cpu_soft_reset(lmc_data_t    *mc,
 {
     printf("\n %d: %s, %s()", __LINE__, __FILE__, __FUNCTION__);
 
+    FILE *freset;
+
+    freset = fopen(MLX_CPU_SOFT_RESET, "w");
+
+    if (!freset) {
+            printf("\nUnable to open reset file");
+            rdata[0] = IPMI_COULD_NOT_PROVIDE_RESPONSE_CC;
+            *rdata_len = 1;
+            return;
+    } else {
+        fprintf(freset, "%u", 1);
+    }
+
+    fclose(freset);
     rdata[0] = 0;
     *rdata_len = 1;
 }
