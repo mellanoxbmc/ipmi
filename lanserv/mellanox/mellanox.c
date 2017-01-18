@@ -41,6 +41,7 @@
 #define IPMI_OEM_MLX_SYSTEM_HARD_RESET_CMD  0x5d
 #define IPMI_OEM_MLX_CPU_HARD_RESET_CMD     0x5e
 #define IPMI_OEM_MLX_CPU_SOFT_RESET_CMD     0x5f
+#define IPMI_OEM_MLX_RESET_PHY_CMD          0x60
 
 #define IPMI_OEM_MLX_SEL_LOG_SIZE_MIN       0x40
 #define IPMI_OEM_MLX_SEL_LOG_SIZE_MAX       0x0fff
@@ -100,6 +101,8 @@ static const char* amber_led[MLX_STATUS_LED_MAX] =
 #define MLX_CPU_HARD_RESET   "/bsp/reset/cpu_reset_hard"
 #define MLX_CPU_SOFT_RESET   "/bsp/reset/cpu_reset_soft"
 #define MLX_SYS_HARD_RESET   "/bsp/reset/system_reset_hard"
+#define MLX_RESET_PHY        "/bsp/reset/reset_phy"
+
 
 static unsigned char set_fan_enable()
 {
@@ -611,6 +614,38 @@ handle_cpu_soft_reset(lmc_data_t    *mc,
 
 /**
  *
+ *  ipmitool raw 0x06  0x60
+ *
+ **/
+static void
+handle_reset_phy(lmc_data_t    *mc,
+                     msg_t         *msg,
+                     unsigned char *rdata,
+                     unsigned int  *rdata_len,
+                     void          *cb_data)
+{
+    printf("\n %d: %s, %s()", __LINE__, __FILE__, __FUNCTION__);
+
+    FILE *freset;
+
+    freset = fopen(MLX_RESET_PHY, "w");
+
+    if (!freset) {
+            printf("\nUnable to open reset file");
+            rdata[0] = IPMI_COULD_NOT_PROVIDE_RESPONSE_CC;
+            *rdata_len = 1;
+            return;
+    } else {
+        fprintf(freset, "%u", 1);
+    }
+
+    fclose(freset);
+    rdata[0] = 0;
+    *rdata_len = 1;
+}
+
+/**
+ *
  *  ipmitool raw 0x06  0x5B size_LSB size_MSB
  *
  **/
@@ -698,6 +733,9 @@ ipmi_sim_module_init(sys_data_t *sys, const char *initstr_i)
 
     rv = ipmi_emu_register_cmd_handler(IPMI_APP_NETFN, IPMI_OEM_MLX_SYSTEM_HARD_RESET_CMD,
                                        handle_system_hard_reset, sys);
+
+    rv = ipmi_emu_register_cmd_handler(IPMI_APP_NETFN, IPMI_OEM_MLX_RESET_PHY_CMD,
+                                       handle_reset_phy, sys);
 
     rv = ipmi_emu_register_cmd_handler(IPMI_APP_NETFN, IPMI_OEM_MLX_SEL_BUFFER_SET_CMD,
                                        handle_sel_buffer_set, sys);

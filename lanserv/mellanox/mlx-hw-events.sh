@@ -31,6 +31,7 @@ if [ "$1" == "add" ]; then
     ln -s $3$4/cpu_reset_hard /bsp/reset/cpu_reset_hard
     ln -s $3$4/cpu_reset_soft /bsp/reset/cpu_reset_soft
     ln -s $3$4/system_reset_hard /bsp/reset/system_reset_hard
+    ln -s $3$4/system_reset_hard /bsp/reset/reset_phy
   fi
 else
   if [ "$2" == "amb_current" ] || [ "$2" == "amb_switch" ]; then
@@ -58,5 +59,6 @@ else
     unlink /bsp/reset/cpu_reset_hard
     unlink /bsp/reset/cpu_reset_soft
     unlink /bsp/reset/system_reset_hard
+    unlink /bsp/reset/reset_phy
   fi
 fi
