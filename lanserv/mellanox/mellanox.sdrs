@@ -9,7 +9,37 @@ sdr type 1
         sensor_type             Temperature
         event_reading_type_code 1
         init_scanning           true
+        init_events             true
+        init_thresholds         true
+        init_hysteresis         true
         init_sensor_type        true
+        sensor_event_msg_ctrl   per_state
+        return_lnc              true
+        return_lc               true
+        return_unc              true
+        return_uc               true
+        return_unr              true
+        deassert_lncgl          true
+        assert_lncgl            true
+        deassert_lcgl           true
+        assert_lcgl             true
+        assert_uncgh            true
+        deassert_uncgh          true
+        assert_ucgh             true
+        deassert_ucgh           true
+        assert_unrgh            true
+        deassert_unrgh          true
+        lc_thrsh_settable       true
+        lnc_thrsh_settable      true
+        unr_thrsh_settable      true
+        uc_thrsh_settable       true
+        unc_thrsh_settable      true
+        lc_thrsh_readable       true
+        lnc_thrsh_readable      true
+        unr_thrsh_readable      true
+        uc_thrsh_readable       true
+        unc_thrsh_readable      true
+        default_event_gen_on    true
         default_sensor_scan_on  true
         base_unit               degrees_C
         linearization           linear
@@ -18,6 +48,13 @@ sdr type 1
         b                       0
         r_exp                   0
         b_exp                   0
+        unr_thresh              90
+        uc_fthresh              75
+        unc_fthresh             60
+        lnc_fthresh             10
+        lc_fthresh              0
+        positive_hysteresis     2
+        negative_hysteresis     2
         id_string               "ambient temp"
 endsdr
 
@@ -32,7 +69,37 @@ sdr type 1
         sensor_type             Temperature
         event_reading_type_code 1
         init_scanning           true
+        init_events             true
+        init_thresholds         true
+        init_hysteresis         true
         init_sensor_type        true
+        sensor_event_msg_ctrl   per_state
+        return_lnc              true
+        return_lc               true
+        return_unc              true
+        return_uc               true
+        return_unr              true
+        deassert_lncgl          true
+        assert_lncgl            true
+        deassert_lcgl           true
+        assert_lcgl             true
+        assert_uncgh            true
+        deassert_uncgh          true
+        assert_ucgh             true
+        deassert_ucgh           true
+        assert_unrgh            true
+        deassert_unrgh          true
+        lc_thrsh_settable       true
+        lnc_thrsh_settable      true
+        unr_thrsh_settable      true
+        uc_thrsh_settable       true
+        unc_thrsh_settable      true
+        lc_thrsh_readable       true
+        lnc_thrsh_readable      true
+        unr_thrsh_readable      true
+        uc_thrsh_readable       true
+        unc_thrsh_readable      true
+        default_event_gen_on    true
         default_sensor_scan_on  true
         base_unit               degrees_C
         linearization           linear
@@ -41,6 +108,13 @@ sdr type 1
         b                       0
         r_exp                   0
         b_exp                   0
+        unr_thresh              90
+        uc_fthresh              75
+        unc_fthresh             60
+        lnc_fthresh             10
+        lc_fthresh              0
+        positive_hysteresis     2
+        negative_hysteresis     2
         id_string               "asic temp"
 endsdr
 
@@ -55,7 +129,37 @@ sdr type 1
         sensor_type             Temperature
         event_reading_type_code 1
         init_scanning           true
+        init_events             true
+        init_thresholds         true
+        init_hysteresis         true
         init_sensor_type        true
+        sensor_event_msg_ctrl   per_state
+        return_lnc              true
+        return_lc               true
+        return_unc              true
+        return_uc               true
+        return_unr              true
+        deassert_lncgl          true
+        assert_lncgl            true
+        deassert_lcgl           true
+        assert_lcgl             true
+        assert_uncgh            true
+        deassert_uncgh          true
+        assert_ucgh             true
+        deassert_ucgh           true
+        assert_unrgh            true
+        deassert_unrgh          true
+        lc_thrsh_settable       true
+        lnc_thrsh_settable      true
+        unr_thrsh_settable      true
+        uc_thrsh_settable       true
+        unc_thrsh_settable      true
+        lc_thrsh_readable       true
+        lnc_thrsh_readable      true
+        unr_thrsh_readable      true
+        uc_thrsh_readable       true
+        unc_thrsh_readable      true
+        default_event_gen_on    true
         default_sensor_scan_on  true
         base_unit               degrees_C
         linearization           linear
@@ -64,6 +168,13 @@ sdr type 1
         b                       0
         r_exp                   0
         b_exp                   0
+        unr_thresh              90
+        uc_fthresh              75
+        unc_fthresh             60
+        lnc_fthresh             10
+        lc_fthresh              0
+        positive_hysteresis     2
+        negative_hysteresis     2
         id_string               "PSU2 temp"
 endsdr
 
@@ -79,7 +190,37 @@ sdr type 1
         sensor_type             Temperature
         event_reading_type_code 1
         init_scanning           true
+        init_events             true
+        init_thresholds         true
+        init_hysteresis         true
         init_sensor_type        true
+        sensor_event_msg_ctrl   per_state
+        return_lnc              true
+        return_lc               true
+        return_unc              true
+        return_uc               true
+        return_unr              true
+        deassert_lncgl          true
+        assert_lncgl            true
+        deassert_lcgl           true
+        assert_lcgl             true
+        assert_uncgh            true
+        deassert_uncgh          true
+        assert_ucgh             true
+        deassert_ucgh           true
+        assert_unrgh            true
+        deassert_unrgh          true
+        lc_thrsh_settable       true
+        lnc_thrsh_settable      true
+        unr_thrsh_settable      true
+        uc_thrsh_settable       true
+        unc_thrsh_settable      true
+        lc_thrsh_readable       true
+        lnc_thrsh_readable      true
+        unr_thrsh_readable      true
+        uc_thrsh_readable       true
+        unc_thrsh_readable      true
+        default_event_gen_on    true
         default_sensor_scan_on  true
         base_unit               degrees_C
         linearization           linear
@@ -88,6 +229,13 @@ sdr type 1
         b                       0
         r_exp                   0
         b_exp                   0
+        unr_thresh              90
+        uc_fthresh              75
+        unc_fthresh             60
+        lnc_fthresh             10
+        lc_fthresh              0
+        positive_hysteresis     2
+        negative_hysteresis     2
         id_string               "PSU2 temp"
 endsdr
 
@@ -101,13 +249,55 @@ sdr type 1
         entity_instance         1
         sensor_type             Voltage
         event_reading_type_code 1
+        sensor_event_msg_ctrl   per_state
+        return_lnc              true
+        return_lc               true
+        return_unc              true
+        return_uc               true
+        return_unr              true
+        deassert_lncgl          true
+        assert_lncgl            true
+        deassert_lcgl           true
+        assert_lcgl             true
+        assert_uncgh            true
+        deassert_uncgh          true
+        assert_ucgh             true
+        deassert_ucgh           true
+        assert_unrgh            true
+        deassert_unrgh          true
+        lc_thrsh_settable       true
+        lnc_thrsh_settable      true
+        unr_thrsh_settable      true
+        uc_thrsh_settable       true
+        unc_thrsh_settable      true
+        lc_thrsh_readable       true
+        lnc_thrsh_readable      true
+        unr_thrsh_readable      true
+        uc_thrsh_readable       true
+        unc_thrsh_readable      true
         base_unit               Volts
-        m                       1
-        b                       0
-        r_exp                   0
-        b_exp                   0
+        accuracy                1
+        accuracy_exp            0
+        m                       156
+        b                       16
+        r_exp                   -5
+        b_exp                   4
+        nominal_specified       true
+        nominal_freading        1.8
+        sensor_maximum          255
+        sensor_minimum          0
+        uc_fthresh              1.89
+        unc_fthresh             1.854
+        lnc_fthresh             1.746
+        lc_fthresh              1.71
+        positive_hysteresis     2
+        negative_hysteresis     2
         init_scanning           true
+        init_events             true
+        init_thresholds         true
+        init_hysteresis         true
         init_sensor_type        true
+        default_event_gen_on    true
         default_sensor_scan_on  true
         analog_data_format      unsigned
         linearization           linear
@@ -125,13 +315,55 @@ sdr type 1
         entity_instance         1
         sensor_type             Voltage
         event_reading_type_code 1
+        sensor_event_msg_ctrl   per_state
+        return_lnc              true
+        return_lc               true
+        return_unc              true
+        return_uc               true
+        return_unr              true
+        deassert_lncgl          true
+        assert_lncgl            true
+        deassert_lcgl           true
+        assert_lcgl             true
+        assert_uncgh            true
+        deassert_uncgh          true
+        assert_ucgh             true
+        deassert_ucgh           true
+        assert_unrgh            true
+        deassert_unrgh          true
+        lc_thrsh_settable       true
+        lnc_thrsh_settable      true
+        unr_thrsh_settable      true
+        uc_thrsh_settable       true
+        unc_thrsh_settable      true
+        lc_thrsh_readable       true
+        lnc_thrsh_readable      true
+        unr_thrsh_readable      true
+        uc_thrsh_readable       true
+        unc_thrsh_readable      true
         base_unit               Volts
-        m                       1
-        b                       0
-        r_exp                   0
-        b_exp                   0
+        accuracy                1
+        accuracy_exp            0
+        m                       156
+        b                       16
+        r_exp                   -5
+        b_exp                   4
+        nominal_specified       true
+        nominal_freading        1.8
+        sensor_maximum          255
+        sensor_minimum          0
+        uc_fthresh              1.89
+        unc_fthresh             1.854
+        lnc_fthresh             1.746
+        lc_fthresh              1.71
+        positive_hysteresis     2
+        negative_hysteresis     2
         init_scanning           true
+        init_events             true
+        init_thresholds         true
+        init_hysteresis         true
         init_sensor_type        true
+        default_event_gen_on    true
         default_sensor_scan_on  true
         analog_data_format      unsigned
         linearization           linear
@@ -149,13 +381,55 @@ sdr type 1
         entity_instance         1
         sensor_type             Voltage
         event_reading_type_code 1
+        sensor_event_msg_ctrl   per_state
+        return_lnc              true
+        return_lc               true
+        return_unc              true
+        return_uc               true
+        return_unr              true
+        deassert_lncgl          true
+        assert_lncgl            true
+        deassert_lcgl           true
+        assert_lcgl             true
+        assert_uncgh            true
+        deassert_uncgh          true
+        assert_ucgh             true
+        deassert_ucgh           true
+        assert_unrgh            true
+        deassert_unrgh          true
+        lc_thrsh_settable       true
+        lnc_thrsh_settable      true
+        unr_thrsh_settable      true
+        uc_thrsh_settable       true
+        unc_thrsh_settable      true
+        lc_thrsh_readable       true
+        lnc_thrsh_readable      true
+        unr_thrsh_readable      true
+        uc_thrsh_readable       true
+        unc_thrsh_readable      true
         base_unit               Volts
-        m                       1
-        b                       0
-        r_exp                   0
-        b_exp                   0
+        accuracy                1
+        accuracy_exp            0
+        m                       156
+        b                       16
+        r_exp                   -5
+        b_exp                   4
+        nominal_specified       true
+        nominal_freading        1.8
+        sensor_maximum          255
+        sensor_minimum          0
+        uc_fthresh              1.89
+        unc_fthresh             1.854
+        lnc_fthresh             1.746
+        lc_fthresh              1.71
+        positive_hysteresis     2
+        negative_hysteresis     2
         init_scanning           true
+        init_events             true
+        init_thresholds         true
+        init_hysteresis         true
         init_sensor_type        true
+        default_event_gen_on    true
         default_sensor_scan_on  true
         analog_data_format      unsigned
         linearization           linear
@@ -173,13 +447,55 @@ sdr type 1
         entity_instance         1
         sensor_type             Voltage
         event_reading_type_code 1
+        sensor_event_msg_ctrl   per_state
+        return_lnc              true
+        return_lc               true
+        return_unc              true
+        return_uc               true
+        return_unr              true
+        deassert_lncgl          true
+        assert_lncgl            true
+        deassert_lcgl           true
+        assert_lcgl             true
+        assert_uncgh            true
+        deassert_uncgh          true
+        assert_ucgh             true
+        deassert_ucgh           true
+        assert_unrgh            true
+        deassert_unrgh          true
+        lc_thrsh_settable       true
+        lnc_thrsh_settable      true
+        unr_thrsh_settable      true
+        uc_thrsh_settable       true
+        unc_thrsh_settable      true
+        lc_thrsh_readable       true
+        lnc_thrsh_readable      true
+        unr_thrsh_readable      true
+        uc_thrsh_readable       true
+        unc_thrsh_readable      true
         base_unit               Volts
-        m                       1
-        b                       0
-        r_exp                   0
-        b_exp                   0
+        accuracy                1
+        accuracy_exp            0
+        m                       156
+        b                       16
+        r_exp                   -5
+        b_exp                   4
+        nominal_specified       true
+        nominal_freading        1.8
+        sensor_maximum          255
+        sensor_minimum          0
+        uc_fthresh              1.89
+        unc_fthresh             1.854
+        lnc_fthresh             1.746
+        lc_fthresh              1.71
+        positive_hysteresis     2
+        negative_hysteresis     2
         init_scanning           true
+        init_events             true
+        init_thresholds         true
+        init_hysteresis         true
         init_sensor_type        true
+        default_event_gen_on    true
         default_sensor_scan_on  true
         analog_data_format      unsigned
         linearization           linear
@@ -197,13 +513,57 @@ sdr type 1
         entity_instance          1
         sensor_type              Voltage
         event_reading_type_code  1
+        sensor_event_msg_ctrl    per_state
+        return_lnc               true
+        return_lc                true
+        return_unc               true
+        return_uc                true
+        return_unr               true
+        deassert_lncgl           true
+        assert_lncgl             true
+        deassert_lcgl            true
+        assert_lcgl              true
+        assert_uncgh             true
+        deassert_uncgh           true
+        assert_ucgh              true
+        deassert_ucgh            true
+        assert_unrgh             true
+        deassert_unrgh           true
+        lc_thrsh_settable        true
+        lnc_thrsh_settable       true
+        unr_thrsh_settable       true
+        uc_thrsh_settable        true
+        unc_thrsh_settable       true
+        lc_thrsh_readable        true
+        lnc_thrsh_readable       true
+        unr_thrsh_readable       true
+        uc_thrsh_readable        true
+        unc_thrsh_readable       true
         base_unit                Volts
-        m                        1
-        b                        0
-        r_exp                    0
-        b_exp                    3
+        accuracy                 1
+        accuracy_exp             0
+        m                        156
+        b                        16
+        r_exp                    -5
+        b_exp                    4
+        nominal_specified        true
+        nominal_freading         1.8
+        sensor_maximum           255
+        sensor_minimum           0
+        uc_fthresh               1.89
+        unc_fthresh              1.854
+        lnc_fthresh              1.746
+        lc_fthresh               1.71
+        positive_hysteresis      2
+        negative_hysteresis      2
         init_scanning            true
+        init_events              true
+        init_thresholds          true
+        init_hysteresis          true
+        init_sensor_type         true
+        default_event_gen_on     true
         default_sensor_scan_on   true
+        analog_data_format       unsigned
         linearization            linear
         sensor_direction         input
         id_string                "PSU1 voltage 1"
@@ -219,13 +579,57 @@ sdr type 1
         entity_instance          1
         sensor_type              Voltage
         event_reading_type_code  1
+        sensor_event_msg_ctrl    per_state
+        return_lnc               true
+        return_lc                true
+        return_unc               true
+        return_uc                true
+        return_unr               true
+        deassert_lncgl           true
+        assert_lncgl             true
+        deassert_lcgl            true
+        assert_lcgl              true
+        assert_uncgh             true
+        deassert_uncgh           true
+        assert_ucgh              true
+        deassert_ucgh            true
+        assert_unrgh             true
+        deassert_unrgh           true
+        lc_thrsh_settable        true
+        lnc_thrsh_settable       true
+        unr_thrsh_settable       true
+        uc_thrsh_settable        true
+        unc_thrsh_settable       true
+        lc_thrsh_readable        true
+        lnc_thrsh_readable       true
+        unr_thrsh_readable       true
+        uc_thrsh_readable        true
+        unc_thrsh_readable       true
         base_unit                Volts
-        m                        1
-        b                        0
-        r_exp                    0
-        b_exp                    3
+        accuracy                 1
+        accuracy_exp             0
+        m                        156
+        b                        16
+        r_exp                    -5
+        b_exp                    4
+        nominal_specified        true
+        nominal_freading         1.8
+        sensor_maximum           255
+        sensor_minimum           0
+        uc_fthresh               1.89
+        unc_fthresh              1.854
+        lnc_fthresh              1.746
+        lc_fthresh               1.71
+        positive_hysteresis      2
+        negative_hysteresis      2
         init_scanning            true
+        init_events              true
+        init_thresholds          true
+        init_hysteresis          true
+        init_sensor_type         true
+        default_event_gen_on     true
         default_sensor_scan_on   true
+        analog_data_format       unsigned
         linearization            linear
         sensor_direction         input
         id_string                "PSU1 voltage 2"
@@ -241,13 +645,57 @@ sdr type 1
         entity_instance          1
         sensor_type              Voltage
         event_reading_type_code  1
+        sensor_event_msg_ctrl    per_state
+        return_lnc               true
+        return_lc                true
+        return_unc               true
+        return_uc                true
+        return_unr               true
+        deassert_lncgl           true
+        assert_lncgl             true
+        deassert_lcgl            true
+        assert_lcgl              true
+        assert_uncgh             true
+        deassert_uncgh           true
+        assert_ucgh              true
+        deassert_ucgh            true
+        assert_unrgh             true
+        deassert_unrgh           true
+        lc_thrsh_settable        true
+        lnc_thrsh_settable       true
+        unr_thrsh_settable       true
+        uc_thrsh_settable        true
+        unc_thrsh_settable       true
+        lc_thrsh_readable        true
+        lnc_thrsh_readable       true
+        unr_thrsh_readable       true
+        uc_thrsh_readable        true
+        unc_thrsh_readable       true
         base_unit                Volts
-        m                        1
-        b                        0
-        r_exp                    0
-        b_exp                    3
+        accuracy                 1
+        accuracy_exp             0
+        m                        156
+        b                        16
+        r_exp                    -5
+        b_exp                    4
+        nominal_specified        true
+        nominal_freading         1.8
+        sensor_maximum           255
+        sensor_minimum           0
+        uc_fthresh               1.89
+        unc_fthresh              1.854
+        lnc_fthresh              1.746
+        lc_fthresh               1.71
+        positive_hysteresis      2
+        negative_hysteresis      2
         init_scanning            true
+        init_events              true
+        init_thresholds          true
+        init_hysteresis          true
+        init_sensor_type         true
+        default_event_gen_on     true
         default_sensor_scan_on   true
+        analog_data_format       unsigned
         linearization            linear
         sensor_direction         input
         id_string                "PSU2 voltage 1"
@@ -263,13 +711,57 @@ sdr type 1
         entity_instance          1
         sensor_type              Voltage
         event_reading_type_code  1
+        sensor_event_msg_ctrl    per_state
+        return_lnc               true
+        return_lc                true
+        return_unc               true
+        return_uc                true
+        return_unr               true
+        deassert_lncgl           true
+        assert_lncgl             true
+        deassert_lcgl            true
+        assert_lcgl              true
+        assert_uncgh             true
+        deassert_uncgh           true
+        assert_ucgh              true
+        deassert_ucgh            true
+        assert_unrgh             true
+        deassert_unrgh           true
+        lc_thrsh_settable        true
+        lnc_thrsh_settable       true
+        unr_thrsh_settable       true
+        uc_thrsh_settable        true
+        unc_thrsh_settable       true
+        lc_thrsh_readable        true
+        lnc_thrsh_readable       true
+        unr_thrsh_readable       true
+        uc_thrsh_readable        true
+        unc_thrsh_readable       true
         base_unit                Volts
-        m                        1
-        b                        0
-        r_exp                    0
-        b_exp                    0
+        accuracy                 1
+        accuracy_exp             0
+        m                        156
+        b                        16
+        r_exp                    -5
+        b_exp                    4
+        nominal_specified        true
+        nominal_freading         1.8
+        sensor_maximum           255
+        sensor_minimum           0
+        uc_fthresh               1.89
+        unc_fthresh              1.854
+        lnc_fthresh              1.746
+        lc_fthresh               1.71
+        positive_hysteresis      2
+        negative_hysteresis      2
         init_scanning            true
+        init_events              true
+        init_thresholds          true
+        init_hysteresis          true
+        init_sensor_type         true
+        default_event_gen_on     true
         default_sensor_scan_on   true
+        analog_data_format       unsigned
         linearization            linear
         sensor_direction         input
         id_string                "PSU2 voltage 2"
@@ -285,15 +777,44 @@ sdr type 1
         entity_instance         1
         sensor_type             Current
         event_reading_type_code 1
+        sensor_event_msg_ctrl   per_state
+        return_unc              true
+        return_uc               true
+        return_unr              true
+        assert_uncgh            true
+        deassert_uncgh          true
+        assert_ucgh             true
+        deassert_ucgh           true
+        assert_unrgh            true
+        deassert_unrgh          true
+        unr_thrsh_settable      true
+        uc_thrsh_settable       true
+        unc_thrsh_settable      true
+        unr_thrsh_readable      true
+        uc_thrsh_readable       true
+        unc_thrsh_readable      true
         base_unit               Watts
-        m                       1
+        m                       78
         b                       0
-        r_exp                   0
+        r_exp                   -4
         b_exp                   0
+        nominal_specified       true
+        nominal_freading        1.5
+        sensor_maximum          255
+        sensor_minimum          0
+        unr_fthresh             2
+        uc_fthresh              1.9
+        unc_fthresh             1.85
+        positive_hysteresis     2
+        negative_hysteresis     2
         init_scanning           true
         init_events             true
+        init_thresholds         true
+        init_hysteresis         true
         init_sensor_type        true
+        default_event_gen_on    true
         default_sensor_scan_on  true
+        linearization           linear
         sensor_direction        input
         id_string               "PSU1 power 1"
 endsdr
@@ -308,15 +829,44 @@ sdr type 1
         entity_instance         1
         sensor_type             Current
         event_reading_type_code 1
+        sensor_event_msg_ctrl   per_state
+        return_unc              true
+        return_uc               true
+        return_unr              true
+        assert_uncgh            true
+        deassert_uncgh          true
+        assert_ucgh             true
+        deassert_ucgh           true
+        assert_unrgh            true
+        deassert_unrgh          true
+        unr_thrsh_settable      true
+        uc_thrsh_settable       true
+        unc_thrsh_settable      true
+        unr_thrsh_readable      true
+        uc_thrsh_readable       true
+        unc_thrsh_readable      true
         base_unit               Watts
-        m                       1
+        m                       78
         b                       0
-        r_exp                   0
+        r_exp                   -4
         b_exp                   0
+        nominal_specified       true
+        nominal_freading        1.5
+        sensor_maximum          255
+        sensor_minimum          0
+        unr_fthresh             2
+        uc_fthresh              1.9
+        unc_fthresh             1.85
+        positive_hysteresis     2
+        negative_hysteresis     2
         init_scanning           true
         init_events             true
+        init_thresholds         true
+        init_hysteresis         true
         init_sensor_type        true
+        default_event_gen_on    true
         default_sensor_scan_on  true
+        linearization           linear
         sensor_direction        input
         id_string               "PSU1 power 2"
 endsdr
@@ -331,15 +881,44 @@ sdr type 1
         entity_instance         1
         sensor_type             Current
         event_reading_type_code 1
+        sensor_event_msg_ctrl   per_state
+        return_unc              true
+        return_uc               true
+        return_unr              true
+        assert_uncgh            true
+        deassert_uncgh          true
+        assert_ucgh             true
+        deassert_ucgh           true
+        assert_unrgh            true
+        deassert_unrgh          true
+        unr_thrsh_settable      true
+        uc_thrsh_settable       true
+        unc_thrsh_settable      true
+        unr_thrsh_readable      true
+        uc_thrsh_readable       true
+        unc_thrsh_readable      true
         base_unit               Watts
-        m                       1
+        m                       78
         b                       0
-        r_exp                   0
+        r_exp                   -4
         b_exp                   0
+        nominal_specified       true
+        nominal_freading        1.5
+        sensor_maximum          255
+        sensor_minimum          0
+        unr_fthresh             2
+        uc_fthresh              1.9
+        unc_fthresh             1.85
+        positive_hysteresis     2
+        negative_hysteresis     2
         init_scanning           true
         init_events             true
+        init_thresholds         true
+        init_hysteresis         true
         init_sensor_type        true
+        default_event_gen_on    true
         default_sensor_scan_on  true
+        linearization           linear
         sensor_direction        input
         id_string               "PSU2 power 1"
 endsdr
@@ -350,19 +929,48 @@ sdr type 1
         sensor_owner_lun        0
         channel_number          0
         sensor_number           23
-        entity_id               power_supply
+         entity_id               power_supply
         entity_instance         1
         sensor_type             Current
         event_reading_type_code 1
+        sensor_event_msg_ctrl   per_state
+        return_unc              true
+        return_uc               true
+        return_unr              true
+        assert_uncgh            true
+        deassert_uncgh          true
+        assert_ucgh             true
+        deassert_ucgh           true
+        assert_unrgh            true
+        deassert_unrgh          true
+        unr_thrsh_settable      true
+        uc_thrsh_settable       true
+        unc_thrsh_settable      true
+        unr_thrsh_readable      true
+        uc_thrsh_readable       true
+        unc_thrsh_readable      true
         base_unit               Watts
-        m                       1
+        m                       78
         b                       0
-        r_exp                   0
+        r_exp                   -4
         b_exp                   0
+        nominal_specified       true
+        nominal_freading        1.5
+        sensor_maximum          255
+        sensor_minimum          0
+        unr_fthresh             2
+        uc_fthresh              1.9
+        unc_fthresh             1.85
+        positive_hysteresis     2
+        negative_hysteresis     2
         init_scanning           true
         init_events             true
+        init_thresholds         true
+        init_hysteresis         true
         init_sensor_type        true
+        default_event_gen_on    true
         default_sensor_scan_on  true
+        linearization           linear
         sensor_direction        input
         id_string               "PSU2 power 2"
 endsdr
@@ -467,15 +1075,39 @@ sdr type 1
         sensor_number           0x70
         entity_id               fan_cooling_device
         entity_instance         1
+        init_events             true
+        init_thresholds         true
+        init_hysteresis         true
+        init_events             true
+        init_thresholds         true
+        init_hysteresis         true
         sensor_type             Fan
         event_reading_type_code 1
+        return_lnc              true
+        return_lc               true
+        deassert_lncgl          true
+        assert_lncgl            true
+        deassert_lcgl           true
+        assert_lcgl             true
+        deassert_lnrgl          true
+        assert_lnrgl            true
+        lc_thrsh_readable       true
+        lnc_thrsh_readable      true
+        lnr_thrsh_readable      true
         base_unit               RPM
-        r_exp                   0
+        r_exp                   -1
         b_exp                   0
         b                       0
-        m                       1
+        m                       98
+        accuracy                1
+        accuracy_exp            0
+        sensor_maximum          255
+        sensor_minimum          0
         init_scanning           true
         init_sensor_type        true
         default_sensor_scan_on  true
+        lnc_fthresh             300
+        lc_fthresh              250
+        lnr_fthresh             10
         id_string               "fan1"
 endsdr
