@@ -22,48 +22,60 @@ sel_enable 0x20 1000 0x0a
 # Ambient board Temp
 sensor_add 0x20  0    1     1     1 \
 	poll 5000 \
-	file "/bmc/thermal/amb_carier_temp"
+	file "/bsp/thermal/amb_carrier_temp" div=1000
 
 # Ambient switch Temp
 sensor_add 0x20  0    2     1     1 \
 	poll 5000 \
-	file "/bmc/thermal/amb_switch_temp"
+	file "/bsp/thermal/amb_switch_temp" div=1000
 
 # PSU1 Temp
 sensor_add 0x20  0    3     1     1 \
         poll 5000 \
-        file "/bmc/thermal/psu1_temp"
+        file "/bsp/thermal/psu1_temp" div=1000
 
 # PSU2 Temp
 sensor_add 0x20  0    4     1     1 \
         poll 5000 \
-        file "/bmc/thermal/psu2_temp"
+        file "/bsp/thermal/psu2_temp" div=1000
 
 ########## FAN ############
 
 #Fan1
 sensor_add 0x20 0 0x70 4 1\
         poll 5000 \
-        file "/sys/devices/platform/ahb/ahb:apb/1e786000.pwm/hwmon/hwmon1/tacho0_rpm"
+        file "/bsp/fan/tacho1_rpm" div=392 mult=10
 
-
-#Fan2
 sensor_add 0x20 0 0x71 4 1\
         poll 5000 \
-        file "/sys/devices/platform/ahb/ahb:apb/1e786000.pwm/hwmon/hwmon1/tacho0_rpm"
+        file "/bsp/fan/tacho2_rpm" div=392 mult=10
 
-
-#Fan3
+#Fan2
 sensor_add 0x20 0 0x72 4 1\
         poll 5000 \
-        file "/sys/devices/platform/ahb/ahb:apb/1e786000.pwm/hwmon/hwmon1/tacho0_rpm"
+        file "/bsp/fan/tacho3_rpm" div=392 mult=10
 
-
-
-#Fan4
 sensor_add 0x20 0 0x73 4 1\
         poll 5000 \
-        file "/sys/devices/platform/ahb/ahb:apb/1e786000.pwm/hwmon/hwmon1/tacho0_rpm"
+        file "/bsp/fan/tacho4_en" div=392 mult=10
+
+#Fan3
+sensor_add 0x20 0 0x74 4 1\
+        poll 5000 \
+        file "/bsp/fan/tacho5_rpm" div=392 mult=10
+
+sensor_add 0x20 0 0x75 4 1\
+        poll 5000 \
+        file "/bsp/fan/tacho6_en" div=392 mult=10
+
+#Fan4
+sensor_add 0x20 0 0x76 4 1\
+        poll 5000 \
+        file "/bsp/fan/tacho7_rpm" div=392 mult=10
+
+sensor_add 0x20 0 0x77 4 1\
+        poll 5000 \
+        file "/bsp/fan/tacho8_en" div=392 mult=10
 
 ########## Voltage ############
 

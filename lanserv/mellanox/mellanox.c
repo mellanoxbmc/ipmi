@@ -49,11 +49,25 @@
 /* Set sel log size script file path */
 #define SEL_SET_SCRIPT_NAME "sel_set_log_size.sh"
 
-/* FAN PWM */
+/**  FAN FUNCTIONALITY DEFINES  **/
+#define MLX_FAN_MAX   8
+#define MLX_FAN_TACHO_FILE  "/bsp/fan/tacho"
 #define MLX_FAN_PWM_FILE            "/bsp/fan/pwm"
 #define MLX_FAN_PWM_ENABLE_FILE     "/bsp/fan/pwm_en"
 #define MLX_PWM_MIN                 0
 #define MLX_PWM_MAX                 9
+
+static const char* fan_tacho_en[MLX_FAN_MAX] =
+{
+    MLX_FAN_TACHO_FILE"1_en",
+    MLX_FAN_TACHO_FILE"2_en",
+    MLX_FAN_TACHO_FILE"3_en",
+    MLX_FAN_TACHO_FILE"4_en",
+    MLX_FAN_TACHO_FILE"5_en",
+    MLX_FAN_TACHO_FILE"6_en",
+    MLX_FAN_TACHO_FILE"7_en",
+    MLX_FAN_TACHO_FILE"8_en"
+};
 
 /**  LED FUNCTIONALITY DEFINES  **/
 #define MLX_STATUS_LED_MAX 1
@@ -104,14 +118,14 @@ static const char* amber_led[MLX_STATUS_LED_MAX] =
 #define MLX_RESET_PHY        "/bsp/reset/reset_phy"
 
 
-static unsigned char set_fan_enable()
+static unsigned char set_fan_enable(const char* fname)
 {
     FILE *f_en;
 
-    f_en = fopen(MLX_FAN_PWM_ENABLE_FILE, "w");
+    f_en = fopen(fname, "w");
 
     if (!f_en) {
-            printf("\nUnable to open pwm_en file");
+            printf("\nUnable to open %s file", fname);
             return IPMI_DESTINATION_UNAVAILABLE_CC;
     } else
         fprintf(f_en, "%u", 1);
@@ -151,7 +165,7 @@ handle_set_fan_speed_cmd (lmc_data_t    *mc,
             *rdata_len = 1;
             return;
     } else {
-        if (IPMI_DESTINATION_UNAVAILABLE_CC == set_fan_enable()) {
+        if (IPMI_DESTINATION_UNAVAILABLE_CC == set_fan_enable(MLX_FAN_PWM_ENABLE_FILE)) {
             rdata[0] = IPMI_COULD_NOT_PROVIDE_RESPONSE_CC;
             *rdata_len = 1;
             return;
@@ -700,14 +714,24 @@ int
 ipmi_sim_module_init(sys_data_t *sys, const char *initstr_i)
 {
     int rv;
+    unsigned int i;
 
-    printf("IPMI Simulator Mellanox module");
+    printf("IPMI Mellanox module");
 
-    rv = set_fan_enable();
+    rv = set_fan_enable(MLX_FAN_PWM_ENABLE_FILE);
 
     if (rv) {
         sys->log(sys, OS_ERROR, NULL,
                  "Unable to enable pwm_en: %s", strerror(rv));
+    }
+
+    for (i = 0; i < MLX_FAN_MAX; ++i) {
+        rv = set_fan_enable(fan_tacho_en[i]);
+
+        if (rv) {
+            sys->log(sys, OS_ERROR, NULL,
+                     "Unable to enable tacho for FAN%i: %s", i, strerror(rv));
+        }
     }
 
     rv = ipmi_emu_register_cmd_handler(IPMI_SENSOR_EVENT_NETFN, IPMI_OEM_MLX_SET_FAN_SPEED_CMD,

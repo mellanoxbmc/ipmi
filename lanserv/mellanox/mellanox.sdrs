@@ -55,10 +55,10 @@ sdr type 1
         lc_fthresh              0
         positive_hysteresis     2
         negative_hysteresis     2
-        id_string               "ambient temp"
+        id_string               "ambient carrier temp"
 endsdr
 
-#ASIC temp sensor
+#Ambient switch temp sensor
 sdr type 1
         sensor_owner_id         0x20
         sensor_owner_lun        0
@@ -115,7 +115,7 @@ sdr type 1
         lc_fthresh              0
         positive_hysteresis     2
         negative_hysteresis     2
-        id_string               "asic temp"
+        id_string               "ambient switch temp"
 endsdr
 
 #PSU1 temp sensor
@@ -802,7 +802,7 @@ sdr type 1
         nominal_freading        1.5
         sensor_maximum          255
         sensor_minimum          0
-        unr_fthresh             2
+        unr_fthresh             1.95
         uc_fthresh              1.9
         unc_fthresh             1.85
         positive_hysteresis     2
@@ -854,7 +854,7 @@ sdr type 1
         nominal_freading        1.5
         sensor_maximum          255
         sensor_minimum          0
-        unr_fthresh             2
+        unr_fthresh             1.95
         uc_fthresh              1.9
         unc_fthresh             1.85
         positive_hysteresis     2
@@ -906,7 +906,7 @@ sdr type 1
         nominal_freading        1.5
         sensor_maximum          255
         sensor_minimum          0
-        unr_fthresh             2
+        unr_fthresh             1.95
         uc_fthresh              1.9
         unc_fthresh             1.85
         positive_hysteresis     2
@@ -958,7 +958,7 @@ sdr type 1
         nominal_freading        1.5
         sensor_maximum          255
         sensor_minimum          0
-        unr_fthresh             2
+        unr_fthresh             1.95
         uc_fthresh              1.9
         unc_fthresh             1.85
         positive_hysteresis     2
@@ -1078,6 +1078,45 @@ sdr type 1
         init_events             true
         init_thresholds         true
         init_hysteresis         true
+        sensor_type             Fan
+        event_reading_type_code 1
+        return_lnc              true
+        return_lc               true
+        deassert_lncgl          true
+        assert_lncgl            true
+        deassert_lcgl           true
+        assert_lcgl             true
+        deassert_lnrgl          true
+        assert_lnrgl            true
+        lc_thrsh_readable       true
+        lnc_thrsh_readable      true
+        lnr_thrsh_readable      true
+        base_unit               RPM
+        r_exp                   -1
+        b_exp                   0
+        b                       0
+        m                       98
+        accuracy                1
+        accuracy_exp            0
+        sensor_maximum          255
+        sensor_minimum          0
+        init_scanning           true
+        init_sensor_type        true
+        default_sensor_scan_on  true
+        lnc_fthresh             300
+        lc_fthresh              250
+        lnr_fthresh             10
+        id_string               "fan1_1"
+endsdr
+
+#fan1 sensor
+sdr type 1
+        sensor_owner_id         0x20
+        sensor_owner_lun        0
+        channel_number          0
+        sensor_number           0x71
+        entity_id               fan_cooling_device
+        entity_instance         1
         init_events             true
         init_thresholds         true
         init_hysteresis         true
@@ -1109,5 +1148,257 @@ sdr type 1
         lnc_fthresh             300
         lc_fthresh              250
         lnr_fthresh             10
-        id_string               "fan1"
+        id_string               "fan1_2"
+endsdr
+
+#fan1 sensor
+sdr type 1
+        sensor_owner_id         0x20
+        sensor_owner_lun        0
+        channel_number          0
+        sensor_number           0x72
+        entity_id               fan_cooling_device
+        entity_instance         1
+        init_events             true
+        init_thresholds         true
+        init_hysteresis         true
+        sensor_type             Fan
+        event_reading_type_code 1
+        return_lnc              true
+        return_lc               true
+        deassert_lncgl          true
+        assert_lncgl            true
+        deassert_lcgl           true
+        assert_lcgl             true
+        deassert_lnrgl          true
+        assert_lnrgl            true
+        lc_thrsh_readable       true
+        lnc_thrsh_readable      true
+        lnr_thrsh_readable      true
+        base_unit               RPM
+        r_exp                   -1
+        b_exp                   0
+        b                       0
+        m                       98
+        accuracy                1
+        accuracy_exp            0
+        sensor_maximum          255
+        sensor_minimum          0
+        init_scanning           true
+        init_sensor_type        true
+        default_sensor_scan_on  true
+        lnc_fthresh             300
+        lc_fthresh              250
+        lnr_fthresh             10
+        id_string               "fan2_1"
+endsdr
+
+#fan1 sensor
+sdr type 1
+        sensor_owner_id         0x20
+        sensor_owner_lun        0
+        channel_number          0
+        sensor_number           0x73
+        entity_id               fan_cooling_device
+        entity_instance         1
+        init_events             true
+        init_thresholds         true
+        init_hysteresis         true
+        sensor_type             Fan
+        event_reading_type_code 1
+        return_lnc              true
+        return_lc               true
+        deassert_lncgl          true
+        assert_lncgl            true
+        deassert_lcgl           true
+        assert_lcgl             true
+        deassert_lnrgl          true
+        assert_lnrgl            true
+        lc_thrsh_readable       true
+        lnc_thrsh_readable      true
+        lnr_thrsh_readable      true
+        base_unit               RPM
+        r_exp                   -1
+        b_exp                   0
+        b                       0
+        m                       98
+        accuracy                1
+        accuracy_exp            0
+        sensor_maximum          255
+        sensor_minimum          0
+        init_scanning           true
+        init_sensor_type        true
+        default_sensor_scan_on  true
+        lnc_fthresh             300
+        lc_fthresh              250
+        lnr_fthresh             10
+        id_string               "fan2_2"
+endsdr
+
+#fan1 sensor
+sdr type 1
+        sensor_owner_id         0x20
+        sensor_owner_lun        0
+        channel_number          0
+        sensor_number           0x74
+        entity_id               fan_cooling_device
+        entity_instance         1
+        init_events             true
+        init_thresholds         true
+        init_hysteresis         true
+        sensor_type             Fan
+        event_reading_type_code 1
+        return_lnc              true
+        return_lc               true
+        deassert_lncgl          true
+        assert_lncgl            true
+        deassert_lcgl           true
+        assert_lcgl             true
+        deassert_lnrgl          true
+        assert_lnrgl            true
+        lc_thrsh_readable       true
+        lnc_thrsh_readable      true
+        lnr_thrsh_readable      true
+        base_unit               RPM
+        r_exp                   -1
+        b_exp                   0
+        b                       0
+        m                       98
+        accuracy                1
+        accuracy_exp            0
+        sensor_maximum          255
+        sensor_minimum          0
+        init_scanning           true
+        init_sensor_type        true
+        default_sensor_scan_on  true
+        lnc_fthresh             300
+        lc_fthresh              250
+        lnr_fthresh             10
+        id_string               "fan3_1"
+endsdr
+
+#fan1 sensor
+sdr type 1
+        sensor_owner_id         0x20
+        sensor_owner_lun        0
+        channel_number          0
+        sensor_number           0x75
+        entity_id               fan_cooling_device
+        entity_instance         1
+        init_events             true
+        init_thresholds         true
+        init_hysteresis         true
+        sensor_type             Fan
+        event_reading_type_code 1
+        return_lnc              true
+        return_lc               true
+        deassert_lncgl          true
+        assert_lncgl            true
+        deassert_lcgl           true
+        assert_lcgl             true
+        deassert_lnrgl          true
+        assert_lnrgl            true
+        lc_thrsh_readable       true
+        lnc_thrsh_readable      true
+        lnr_thrsh_readable      true
+        base_unit               RPM
+        r_exp                   -1
+        b_exp                   0
+        b                       0
+        m                       98
+        accuracy                1
+        accuracy_exp            0
+        sensor_maximum          255
+        sensor_minimum          0
+        init_scanning           true
+        init_sensor_type        true
+        default_sensor_scan_on  true
+        lnc_fthresh             300
+        lc_fthresh              250
+        lnr_fthresh             10
+        id_string               "fan3_2"
+endsdr
+
+#fan1 sensor
+sdr type 1
+        sensor_owner_id         0x20
+        sensor_owner_lun        0
+        channel_number          0
+        sensor_number           0x76
+        entity_id               fan_cooling_device
+        entity_instance         1
+        init_events             true
+        init_thresholds         true
+        init_hysteresis         true
+        sensor_type             Fan
+        event_reading_type_code 1
+        return_lnc              true
+        return_lc               true
+        deassert_lncgl          true
+        assert_lncgl            true
+        deassert_lcgl           true
+        assert_lcgl             true
+        deassert_lnrgl          true
+        assert_lnrgl            true
+        lc_thrsh_readable       true
+        lnc_thrsh_readable      true
+        lnr_thrsh_readable      true
+        base_unit               RPM
+        r_exp                   -1
+        b_exp                   0
+        b                       0
+        m                       98
+        accuracy                1
+        accuracy_exp            0
+        sensor_maximum          255
+        sensor_minimum          0
+        init_scanning           true
+        init_sensor_type        true
+        default_sensor_scan_on  true
+        lnc_fthresh             300
+        lc_fthresh              250
+        lnr_fthresh             10
+        id_string               "fan4_1"
+endsdr
+
+#fan1 sensor
+sdr type 1
+        sensor_owner_id         0x20
+        sensor_owner_lun        0
+        channel_number          0
+        sensor_number           0x77
+        entity_id               fan_cooling_device
+        entity_instance         1
+        init_events             true
+        init_thresholds         true
+        init_hysteresis         true
+        sensor_type             Fan
+        event_reading_type_code 1
+        return_lnc              true
+        return_lc               true
+        deassert_lncgl          true
+        assert_lncgl            true
+        deassert_lcgl           true
+        assert_lcgl             true
+        deassert_lnrgl          true
+        assert_lnrgl            true
+        lc_thrsh_readable       true
+        lnc_thrsh_readable      true
+        lnr_thrsh_readable      true
+        base_unit               RPM
+        r_exp                   -1
+        b_exp                   0
+        b                       0
+        m                       98
+        accuracy                1
+        accuracy_exp            0
+        sensor_maximum          255
+        sensor_minimum          0
+        init_scanning           true
+        init_sensor_type        true
+        default_sensor_scan_on  true
+        lnc_fthresh             300
+        lc_fthresh              250
+        lnr_fthresh             10
+        id_string               "fan4_2"
 endsdr
