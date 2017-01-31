@@ -42,6 +42,7 @@
 #define IPMI_OEM_MLX_CPU_HARD_RESET_CMD     0x5e
 #define IPMI_OEM_MLX_CPU_SOFT_RESET_CMD     0x5f
 #define IPMI_OEM_MLX_RESET_PHY_CMD          0x60
+#define IPMI_OEM_MLX_SET_UART_TO_BMC_CMD    0x61
 
 #define IPMI_OEM_MLX_SEL_LOG_SIZE_MIN       0x40
 #define IPMI_OEM_MLX_SEL_LOG_SIZE_MAX       0x0fff
@@ -116,6 +117,8 @@ static const char* amber_led[MLX_STATUS_LED_MAX] =
 #define MLX_CPU_SOFT_RESET   "/bsp/reset/cpu_reset_soft"
 #define MLX_SYS_HARD_RESET   "/bsp/reset/system_reset_hard"
 #define MLX_RESET_PHY        "/bsp/reset/reset_phy"
+
+#define MLX_UART_TO_BMC      "/bsp/reset/reset_uart_to_bmc"
 
 
 static unsigned char set_fan_enable(const char* fname)
@@ -660,6 +663,38 @@ handle_reset_phy(lmc_data_t    *mc,
 
 /**
  *
+ *  ipmitool raw 0x06  0x61
+ *
+ **/
+static void
+handle_set_uart_to_bmc(lmc_data_t    *mc,
+                     msg_t         *msg,
+                     unsigned char *rdata,
+                     unsigned int  *rdata_len,
+                     void          *cb_data)
+{
+    printf("\n %d: %s, %s()", __LINE__, __FILE__, __FUNCTION__);
+
+    FILE *fset;
+
+    fset = fopen(MLX_UART_TO_BMC, "w");
+
+    if (!fset) {
+            printf("\nUnable to open file");
+            rdata[0] = IPMI_COULD_NOT_PROVIDE_RESPONSE_CC;
+            *rdata_len = 1;
+            return;
+    } else {
+        fprintf(fset, "%u", 0);
+    }
+
+    fclose(fset);
+    rdata[0] = 0;
+    *rdata_len = 1;
+}
+
+/**
+ *
  *  ipmitool raw 0x06  0x5B size_LSB size_MSB
  *
  **/
@@ -760,6 +795,9 @@ ipmi_sim_module_init(sys_data_t *sys, const char *initstr_i)
 
     rv = ipmi_emu_register_cmd_handler(IPMI_APP_NETFN, IPMI_OEM_MLX_RESET_PHY_CMD,
                                        handle_reset_phy, sys);
+
+    rv = ipmi_emu_register_cmd_handler(IPMI_APP_NETFN, IPMI_OEM_MLX_SET_UART_TO_BMC_CMD,
+                                       handle_set_uart_to_bmc, sys);
 
     rv = ipmi_emu_register_cmd_handler(IPMI_APP_NETFN, IPMI_OEM_MLX_SEL_BUFFER_SET_CMD,
                                        handle_sel_buffer_set, sys);

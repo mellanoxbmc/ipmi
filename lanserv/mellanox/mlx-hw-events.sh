@@ -26,7 +26,6 @@ if [ "$1" == "add" ]; then
     else
       i2cset -f -y 10 0x59 x3b 0x3c 0x00 0x90 i
     fi
-
   fi
   if [ "$2" == "A2D" ]; then
     mkdir -p /bsp/environment/
@@ -65,6 +64,7 @@ if [ "$1" == "add" ]; then
     ln -s $3$4/cpu_reset_soft /bsp/reset/cpu_reset_soft
     ln -s $3$4/system_reset_hard /bsp/reset/system_reset_hard
     ln -s $3$4/system_reset_hard /bsp/reset/reset_phy
+    ln -s $3$4/bmc_uart_en /bsp/reset/reset_uart_to_bmc
   fi
   if [ "$2" == "fan" ]; then
     mkdir -p /bsp/fan/
