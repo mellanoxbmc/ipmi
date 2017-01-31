@@ -80,44 +80,117 @@ sensor_add 0x20 0 0x77 4 1\
 ########## Voltage ############
 
 #Voltage <name>
-sensor_add 0x20 0 10 1 1\
+sensor_add 0x20 0 150 1 1\
         poll 5000 \
         file "/sys/bus/i2c/devices/6-0041/hwmon/hwmon10/in2_input"
 
 #Voltage <name>
-sensor_add 0x20 0 11 1 1\
+sensor_add 0x20 0 151 1 1\
         poll 5000 \
         file "/sys/bus/i2c/devices/6-0041/hwmon/hwmon10/in3_input"
 
 #Voltage <name>
-sensor_add 0x20 0 12 1 1\
+sensor_add 0x20 0 152 1 1\
         poll 5000 \
         file "/sys/bus/i2c/devices/11-0027/hwmon/hwmon9/in2_input"
 
 #Voltage <name>
-sensor_add 0x20 0 13 1 1\
+sensor_add 0x20 0 153 1 1\
         poll 5000 \
         file "/sys/bus/i2c/devices/11-0027/hwmon/hwmon9/in3_input"
 
 #PSU1 Voltage
-sensor_add 0x20 0 14 1 1\
+sensor_add 0x20 0 154 1 1\
         poll 5000 \
         file "/bsp/environment/psu1_vin"
 
 #PSU1 Voltage
-sensor_add 0x20 0 15 1 1\
+sensor_add 0x20 0 155 1 1\
         poll 5000 \
         file "/bsp/environment/psu1_vout"
 
 #PSU2 Voltage
-sensor_add 0x20 0 16 1 1\
+sensor_add 0x20 0 156 1 1\
         poll 5000 \
         file "/bsp/environment/psu2_vin"
 
 #PSU2 Voltage
-sensor_add 0x20 0 17 1 1\
+sensor_add 0x20 0 157 1 1\
         poll 5000 \
         file "/bsp/environment/psu2_vout"
+
+#A2D Voltage
+sensor_add 0x20 0 158 1 1\
+        poll 5000 \
+        file "/bsp/environment/A2D_18v"
+
+sensor_add 0x20 0 159 1 1\
+        poll 5000 \
+        file "/bsp/environment/A2D_12v"
+
+sensor_add 0x20 0 160 1 1\
+        poll 5000 \
+        file "/bsp/environment/A2D_vcore"
+
+sensor_add 0x20 0 161 1 1\
+        poll 5000 \
+        file "/bsp/environment/A2D_12vswb"
+
+sensor_add 0x20 0 162 1 1\
+        poll 5000 \
+        file "/bsp/environment/A2D_3auxswb"
+
+sensor_add 0x20 0 163 1 1\
+        poll 5000 \
+        file "/bsp/environment/A2D_3senswb"
+
+
+#ADC Voltage
+sensor_add 0x20 0 164 1 1\
+        poll 5000 \
+        file "/bsp/environment/ADC_12v"
+
+sensor_add 0x20 0 165 1 1\
+        poll 5000 \
+        file "/bsp/environment/ADC_5v"
+
+sensor_add 0x20 0 166 1 1\
+        poll 5000 \
+        file "/bsp/environment/ADC_5vusb"
+
+sensor_add 0x20 0 167 1 1\
+        poll 5000 \
+        file "/bsp/environment/ADC_3vaux"
+
+sensor_add 0x20 0 168 1 1\
+        poll 5000 \
+        file "/bsp/environment/ADC_3vbmc"
+
+sensor_add 0x20 0 169 1 1\
+        poll 5000 \
+        file "/bsp/environment/ADC_2vddr"
+
+sensor_add 0x20 0 170 1 1\
+        poll 5000 \
+        file "/bsp/environment/ADC_1ddr"
+
+sensor_add 0x20 0 171 1 1\
+        poll 5000 \
+        file "/bsp/environment/ADC_1vcore"
+
+
+#UCD Voltage
+sensor_add 0x20 0 172 1 1\
+        poll 5000 \
+        file "/bsp/environment/UCD_vin"
+
+sensor_add 0x20 0 173 1 1\
+        poll 5000 \
+        file "/bsp/environment/UCD_vout"
+
+sensor_add 0x20 0 174 1 1\
+        poll 5000 \
+        file "/bsp/environment/VcoreUCD"
 
 ########## Power ############
 #PSU1 power
