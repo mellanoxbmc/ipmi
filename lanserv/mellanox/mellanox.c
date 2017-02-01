@@ -118,7 +118,7 @@ static const char* amber_led[MLX_STATUS_LED_MAX] =
 #define MLX_SYS_HARD_RESET   "/bsp/reset/system_reset_hard"
 #define MLX_RESET_PHY        "/bsp/reset/reset_phy"
 
-#define MLX_UART_TO_BMC      "/bsp/reset/reset_uart_to_bmc"
+#define MLX_UART_TO_BMC      "/bsp/reset/uart_sel"
 
 
 static unsigned char set_fan_enable(const char* fname)

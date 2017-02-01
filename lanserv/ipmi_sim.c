@@ -1756,6 +1756,14 @@ main(int argc, const char *argv[])
 	goto out;
     }
 
+#ifdef MLX_IPMID
+/*Uart to CPU*/
+    system("echo 1 > /bsp/reset/uart_sel");
+
+/*CPU go*/
+    system("echo 1 > /bsp/reset/cpu_reset_hard");
+#endif
+
     data.os_hnd->operation_loop(data.os_hnd);
     rv = 0;
   out:

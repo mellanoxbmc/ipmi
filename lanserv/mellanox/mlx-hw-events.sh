@@ -64,7 +64,8 @@ if [ "$1" == "add" ]; then
     ln -s $3$4/cpu_reset_soft /bsp/reset/cpu_reset_soft
     ln -s $3$4/system_reset_hard /bsp/reset/system_reset_hard
     ln -s $3$4/system_reset_hard /bsp/reset/reset_phy
-    ln -s $3$4/bmc_uart_en /bsp/reset/reset_uart_to_bmc
+    ln -s $3$4/bmc_uart_en /bsp/reset/bmc_uart_en
+    ln -s $3$4/uart_sel /bsp/reset/uart_sel
   fi
   if [ "$2" == "fan" ]; then
     mkdir -p /bsp/fan/
