@@ -22,9 +22,9 @@ if [ "$1" == "add" ]; then
 
     #FAN spped set
     if [ "$2" == "psu1" ]; then
-      i2cset -f -y 10 0x59 x3b 0x3c 0x00 0xbc i
+      i2cset -f -y 3 0x58 0x3b 0x3c wp
     else
-      i2cset -f -y 10 0x59 x3b 0x3c 0x00 0x90 i
+      i2cset -f -y 3 0x59 0x3b 0x3c wp
     fi
   fi
   if [ "$2" == "A2D" ]; then
@@ -63,7 +63,7 @@ if [ "$1" == "add" ]; then
     ln -s $3$4/cpu_reset_hard /bsp/reset/cpu_reset_hard
     ln -s $3$4/cpu_reset_soft /bsp/reset/cpu_reset_soft
     ln -s $3$4/system_reset_hard /bsp/reset/system_reset_hard
-    ln -s $3$4/system_reset_hard /bsp/reset/reset_phy
+    ln -s $3$4/phy_reset /bsp/reset/reset_phy
     ln -s $3$4/bmc_uart_en /bsp/reset/bmc_uart_en
     ln -s $3$4/uart_sel /bsp/reset/uart_sel
   fi
@@ -109,6 +109,56 @@ if [ "$1" == "add" ]; then
     mkdir -p /bsp/fan/
     ln -s $3$4/eeprom /bsp/fan/fan4_eeprom
   fi
+  if [ "$2" == "fan1_green" ]; then
+    mkdir -p /bsp/leds/fan/green/1/
+    ln -s $3$4/brightness /bsp/leds/fan/green/1/brightness
+    ln -s $3$4/trigger /bsp/leds/fan/green/1/trigger
+  fi
+  if [ "$2" == "fan1_red" ]; then
+    mkdir -p /bsp/leds/fan/red/1/
+    ln -s $3$4/brightness /bsp/leds/fan/red/1/brightness
+    ln -s $3$4/trigger /bsp/leds/fan/red/1/trigger
+  fi
+  if [ "$2" == "fan2_green" ]; then
+    mkdir -p /bsp/leds/fan/green/2/
+    ln -s $3$4/brightness /bsp/leds/fan/green/2/brightness
+    ln -s $3$4/trigger /bsp/leds/fan/green/2/trigger
+  fi
+  if [ "$2" == "fan2_red" ]; then
+    mkdir -p /bsp/leds/fan/red/2/
+    ln -s $3$4/brightness /bsp/leds/fan/red/2/brightness
+    ln -s $3$4/trigger /bsp/leds/fan/red/2/trigger
+  fi
+  if [ "$2" == "fan3_green" ]; then
+    mkdir -p /bsp/leds/fan/green/3/
+    ln -s $3$4/brightness /bsp/leds/fan/green/3/brightness
+    ln -s $3$4/trigger /bsp/leds/fan/green/3/trigger
+  fi
+  if [ "$2" == "fan3_red" ]; then
+    mkdir -p /bsp/leds/fan/red/3/
+    ln -s $3$4/brightness /bsp/leds/fan/red/3/brightness
+    ln -s $3$4/trigger /bsp/leds/fan/red/3/trigger
+  fi
+  if [ "$2" == "fan4_green" ]; then
+    mkdir -p /bsp/leds/fan/green/4/
+    ln -s $3$4/brightness /bsp/leds/fan/green/4/brightness
+    ln -s $3$4/trigger /bsp/leds/fan/green/4/trigger
+  fi
+  if [ "$2" == "fan4_red" ]; then
+    mkdir -p /bsp/leds/fan/red/4/
+    ln -s $3$4/brightness /bsp/leds/fan/red/4/brightness
+    ln -s $3$4/trigger /bsp/leds/fan/red/4/trigger
+  fi
+  if [ "$2" == "status_green" ]; then
+    mkdir -p /bsp/leds/status/green/
+    ln -s $3$4/brightness /bsp/leds/status/green/brightness
+    ln -s $3$4/trigger /bsp/leds/status/green/trigger
+  fi
+  if [ "$2" == "status_red" ]; then
+    mkdir -p /bsp/leds/fan/red/1/
+    ln -s $3$4/brightness /bsp/leds/status/red/brightness
+    ln -s $3$4/trigger /bsp/leds/status/red/trigger
+  fi
 else
   if [ "$2" == "amb_current" ] || [ "$2" == "amb_switch" ]; then
     unlink /bsp/thermal/$2_temp
@@ -136,12 +186,40 @@ else
     unlink /bsp/environment/$2_vin
     unlink /bsp/environment/$2_vout
   fi
+  if [ "$2" == "A2D" ]; then
+    unlink /bsp/environment/$2_voltage_scale
+    unlink /bsp/environment/$2_18v
+    unlink /bsp/environment/$2_12v
+    unlink /bsp/environment/$2_vcore
+    unlink /bsp/environment/$2_12vswb
+    unlink /bsp/environment/$2_3auxswb
+    unlink /bsp/environment/$2_3senswb
+  fi
+  if [ "$2" == "ADC" ]; then
+    unlink /bsp/environment/$2_12v
+    unlink /bsp/environment/$2_5v
+    unlink /bsp/environment/$2_5vusb
+    unlink /bsp/environment/$2_3vaux
+    unlink /bsp/environment/$2_3vbmc
+    unlink /bsp/environment/$2_2vddr
+    unlink /bsp/environment/$2_1ddr
+    unlink /bsp/environment/$2_1vcore
+  fi
+  if [ "$2" == "UCD" ]; then
+    unlink /bsp/environment/$2_vin
+    unlink /bsp/environment/$2_vout
+  fi
+  if [ "$2" == "VcoreUCD" ]; then
+    unlink /bsp/environment/$2
+  fi
   if [ "$2" == "reset" ]]; then
     unlink /bsp/reset/bmc_reset_soft
     unlink /bsp/reset/cpu_reset_hard
     unlink /bsp/reset/cpu_reset_soft
     unlink /bsp/reset/system_reset_hard
     unlink /bsp/reset/reset_phy
+    unlink /bsp/reset/bmc_uart_en
+    unlink /bsp/reset/uart_sel
   fi
   if [ "$2" == "fan" ]; then
     unlink /bsp/fan/tacho1_en
@@ -173,5 +251,45 @@ else
   fi
   if [ "$2" == "eeprom_fan4" ]; then
     unlink /bsp/fan/fan4_eeprom
+  fi
+  if [ "$2" == "fan1_green" ]; then
+    unlink /bsp/leds/fan/green/1/brightness
+    unlink /bsp/leds/fan/green/1/trigger
+  fi
+  if [ "$2" == "fan1_red" ]; then
+    unlink/bsp/leds/fan/red/1/brightness
+    unlink /bsp/leds/fan/red/1/trigger
+  fi
+  if [ "$2" == "fan2_green" ]; then
+    unlink /bsp/leds/fan/green/2/brightness
+    unlink /bsp/leds/fan/green/2/trigger
+  fi
+  if [ "$2" == "fan2_red" ]; then
+    unlink /bsp/leds/fan/red/2/brightness
+    unlink /bsp/leds/fan/red/2/trigger
+  fi
+  if [ "$2" == "fan3_green" ]; then
+    unlink /bsp/leds/fan/green/3/brightness
+    unlink /bsp/leds/fan/green/3/trigger
+  fi
+  if [ "$2" == "fan3_red" ]; then
+    unlink /bsp/leds/fan/red/3/brightness
+    unlink /bsp/leds/fan/red/3/trigger
+  fi
+  if [ "$2" == "fan4_green" ]; then
+    unlink /bsp/leds/fan/green/4/brightness
+    unlink /bsp/leds/fan/green/4/trigger
+  fi
+  if [ "$2" == "fan4_red" ]; then
+    unlink /bsp/leds/fan/red/4/brightness
+    unlink /bsp/leds/fan/red/4/trigger
+  fi
+  if [ "$2" == "status_green" ]; then
+    unlink /bsp/leds/status/green/brightness
+    unlink /bsp/leds/status/green/trigger
+  fi
+  if [ "$2" == "status_red" ]; then
+    unlink /bsp/leds/status/red/brightness
+    unlink /bsp/leds/status/red/trigger
   fi
 fi

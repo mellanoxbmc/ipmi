@@ -39,3 +39,34 @@ SUBSYSTEM=="hwmon", DEVPATH=="/devices/platform/ahb/ahb:apb/1e78a000.i2c/i2c-14/
 
 SUBSYSTEM=="hwmon", DEVPATH=="/devices/platform/ahb/ahb:apb/1e78a000.i2c/i2c-14/i2c-17/17-0050/hwmon/hwmon?", ACTION=="add", RUN+="/usr/bin/mlx-hw-events.sh add eeprom_fan4 %S %p"
 SUBSYSTEM=="hwmon", DEVPATH=="/devices/platform/ahb/ahb:apb/1e78a000.i2c/i2c-14/i2c-17/17-0050/hwmon/hwmon?", ACTION=="remove", RUN+="/usr/bin/mlx-hw-events.sh rm eeprom_fan4 %S %p"
+
+SUBSYSTEM=="leds", DEVPATH=="/devices/platform/ahb/ahb:apb/1e78a000.i2c/i2c-4/i2c-4/4-0071/leds/mlnxcpld_ctrl:fan1:green", ACTION=="add", RUN+="/usr/bin/mlx-hw-events.sh add fan1_green %S %p"
+SUBSYSTEM=="leds", DEVPATH=="/devices/platform/ahb/ahb:apb/1e78a000.i2c/i2c-4/i2c-4/4-0071/leds/mlnxcpld_ctrl:fan1:green", ACTION=="remove", RUN+="/usr/bin/mlx-hw-events.sh rm fan1_green %S %p"
+
+SUBSYSTEM=="leds", DEVPATH=="/devices/platform/ahb/ahb:apb/1e78a000.i2c/i2c-4/i2c-4/4-0071/leds/mlnxcpld_ctrl:fan1:red", ACTION=="add", RUN+="/usr/bin/mlx-hw-events.sh add fan1_red %S %p"
+SUBSYSTEM=="leds", DEVPATH=="/devices/platform/ahb/ahb:apb/1e78a000.i2c/i2c-4/i2c-4/4-0071/leds/mlnxcpld_ctrl:fan1:red", ACTION=="remove", RUN+="/usr/bin/mlx-hw-events.sh rm fan1_red %S %p"
+
+SUBSYSTEM=="leds", DEVPATH=="/devices/platform/ahb/ahb:apb/1e78a000.i2c/i2c-4/i2c-4/4-0071/leds/mlnxcpld_ctrl:fan2:green", ACTION=="add", RUN+="/usr/bin/mlx-hw-events.sh add fan2_green %S %p"
+SUBSYSTEM=="leds", DEVPATH=="/devices/platform/ahb/ahb:apb/1e78a000.i2c/i2c-4/i2c-4/4-0071/leds/mlnxcpld_ctrl:fan2:green", ACTION=="remove", RUN+="/usr/bin/mlx-hw-events.sh rm fan2_green %S %p"
+
+SUBSYSTEM=="leds", DEVPATH=="/devices/platform/ahb/ahb:apb/1e78a000.i2c/i2c-4/i2c-4/4-0071/leds/mlnxcpld_ctrl:fan2:red", ACTION=="add", RUN+="/usr/bin/mlx-hw-events.sh add fan2_red %S %p"
+SUBSYSTEM=="leds", DEVPATH=="/devices/platform/ahb/ahb:apb/1e78a000.i2c/i2c-4/i2c-4/4-0071/leds/mlnxcpld_ctrl:fan2:red", ACTION=="remove", RUN+="/usr/bin/mlx-hw-events.sh rm fan2_red %S %p"
+
+SUBSYSTEM=="leds", DEVPATH=="/devices/platform/ahb/ahb:apb/1e78a000.i2c/i2c-4/i2c-4/4-0071/leds/mlnxcpld_ctrl:fan3:green", ACTION=="add", RUN+="/usr/bin/mlx-hw-events.sh add fan3_green %S %p"
+SUBSYSTEM=="leds", DEVPATH=="/devices/platform/ahb/ahb:apb/1e78a000.i2c/i2c-4/i2c-4/4-0071/leds/mlnxcpld_ctrl:fan3:green", ACTION=="remove", RUN+="/usr/bin/mlx-hw-events.sh rm fan3_green %S %p"
+
+SUBSYSTEM=="leds", DEVPATH=="/devices/platform/ahb/ahb:apb/1e78a000.i2c/i2c-4/i2c-4/4-0071/leds/mlnxcpld_ctrl:fan3:red", ACTION=="add", RUN+="/usr/bin/mlx-hw-events.sh add fan3_red %S %p"
+SUBSYSTEM=="leds", DEVPATH=="/devices/platform/ahb/ahb:apb/1e78a000.i2c/i2c-4/i2c-4/4-0071/leds/mlnxcpld_ctrl:fan3:red", ACTION=="remove", RUN+="/usr/bin/mlx-hw-events.sh rm fan3_red %S %p"
+
+SUBSYSTEM=="leds", DEVPATH=="/devices/platform/ahb/ahb:apb/1e78a000.i2c/i2c-4/i2c-4/4-0071/leds/mlnxcpld_ctrl:fan4:green", ACTION=="add", RUN+="/usr/bin/mlx-hw-events.sh add fan4_green %S %p"
+SUBSYSTEM=="leds", DEVPATH=="/devices/platform/ahb/ahb:apb/1e78a000.i2c/i2c-4/i2c-4/4-0071/leds/mlnxcpld_ctrl:fan4:green", ACTION=="remove", RUN+="/usr/bin/mlx-hw-events.sh rm fan4_green %S %p"
+
+SUBSYSTEM=="leds", DEVPATH=="/devices/platform/ahb/ahb:apb/1e78a000.i2c/i2c-4/i2c-4/4-0071/leds/mlnxcpld_ctrl:fan4:red", ACTION=="add", RUN+="/usr/bin/mlx-hw-events.sh add fan4_red %S %p"
+SUBSYSTEM=="leds", DEVPATH=="/devices/platform/ahb/ahb:apb/1e78a000.i2c/i2c-4/i2c-4/4-0071/leds/mlnxcpld_ctrl:fan4:red", ACTION=="remove", RUN+="/usr/bin/mlx-hw-events.sh rm fan4_red %S %p"
+
+SUBSYSTEM=="leds", DEVPATH=="/devices/platform/ahb/ahb:apb/1e78a000.i2c/i2c-4/i2c-4/4-0071/leds/mlnxcpld_ctrl:status:green", ACTION=="add", RUN+="/usr/bin/mlx-hw-events.sh add status_green %S %p"
+SUBSYSTEM=="leds", DEVPATH=="/devices/platform/ahb/ahb:apb/1e78a000.i2c/i2c-4/i2c-4/4-0071/leds/mlnxcpld_ctrl:status:green", ACTION=="remove", RUN+="/usr/bin/mlx-hw-events.sh rm status_green %S %p"
+
+SUBSYSTEM=="leds", DEVPATH=="/devices/platform/ahb/ahb:apb/1e78a000.i2c/i2c-4/i2c-4/4-0071/leds/mlnxcpld_ctrl:status:red", ACTION=="add", RUN+="/usr/bin/mlx-hw-events.sh add status_red %S %p"
+SUBSYSTEM=="leds", DEVPATH=="/devices/platform/ahb/ahb:apb/1e78a000.i2c/i2c-4/i2c-4/4-0071/leds/mlnxcpld_ctrl:status:red", ACTION=="remove", RUN+="/usr/bin/mlx-hw-events.sh rm status_red %S %p"
+
