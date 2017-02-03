@@ -252,14 +252,6 @@ sdr type 1
         entity_instance          1
         sensor_type              Voltage
         event_reading_type_code  1
-        init_scanning            true
-        init_events              true
-        init_thresholds          true
-        init_hysteresis          true
-        init_sensor_type         true
-        default_event_gen_on     true
-        default_sensor_scan_on   true
-        sensor_auto_rearm        true
         sensor_event_msg_ctrl    per_state
         sensor_threshold_access  settable
         return_lc                true
@@ -275,22 +267,30 @@ sdr type 1
         base_unit                Volts
         accuracy                 1
         accuracy_exp             0
-        m                        100
+        m                        56
         b                        0
-        r_exp                    -2
+        r_exp                    -3
         b_exp                    0
         nominal_specified        true
-        nominal_reading          230
+        nominal_reading          12
         sensor_maximum           255
         sensor_minimum           0
-        uc_fthresh               250
-        lc_fthresh               170
+        uc_fthresh               13.2
+        lc_fthresh               10.8
         positive_hysteresis      2
         negative_hysteresis      2
+        init_scanning            true
+        init_events              true
+        init_thresholds          true
+        init_hysteresis          true
+        init_sensor_type         true
+        sensor_auto_rearm        true
+        default_event_gen_on     true
+        default_sensor_scan_on   true
         analog_data_format       unsigned
         linearization            linear
         sensor_direction         input
-        id_string                "PSU2 vout"
+        id_string                "PSU1 vout"
 endsdr
 
 # PSU2 voltage sensor 1
