@@ -30,12 +30,12 @@ if [ "$1" == "add" ]; then
   if [ "$2" == "A2D" ]; then
     mkdir -p /bsp/environment/
     ln -s $3$4/in_voltage_voltage_scale /bsp/environment/$2_voltage_scale
-    ln -s $3$4/in_voltage0_raw /bsp/environment/$2_18v
-    ln -s $3$4/in_voltage0_raw /bsp/environment/$2_12v
-    ln -s $3$4/in_voltage0_raw /bsp/environment/$2_vcore
-    ln -s $3$4/in_voltage0_raw /bsp/environment/$2_12vswb
-    ln -s $3$4/in_voltage0_raw /bsp/environment/$2_3auxswb
-    ln -s $3$4/in_voltage0_raw /bsp/environment/$2_3senswb
+    ln -s $3$4/in_voltage6_raw /bsp/environment/$2_18v
+    ln -s $3$4/in_voltage5_raw /bsp/environment/$2_12v
+    ln -s $3$4/in_voltage4_raw /bsp/environment/$2_vcore
+    ln -s $3$4/in_voltage3_raw /bsp/environment/$2_12vswb
+    ln -s $3$4/in_voltage2_raw /bsp/environment/$2_3auxswb
+    ln -s $3$4/in_voltage1_raw /bsp/environment/$2_3senswb
   fi
   if [ "$2" == "ADC" ]; then
     mkdir -p /bsp/environment/
@@ -93,21 +93,29 @@ if [ "$1" == "add" ]; then
     for i in /bsp/fan/tacho[1-8]_en; do echo 1 > $i; done
     echo 6 > /bsp/fan/pwm
   fi
-  if [ "$2" == "eeprom_fan1" ]; then
+  if [ "$2" == "eeprom_psu1" ]; then
     mkdir -p /bsp/fan/
-    ln -s $3$4/eeprom /bsp/fan/fan1_eeprom
+    ln -s $3$4/eeprom /bsp/fru/psu1_eeprom
+  fi
+  if [ "$2" == "eeprom_psu2" ]; then
+    mkdir -p /bsp/fan/
+    ln -s $3$4/eeprom /bsp/fru/psu2_eeprom
+  fi
+  if [ "$2" == "eeprom_fan1" ]; then
+    mkdir -p /bsp/fru/
+    ln -s $3$4/eeprom /bsp/fru/fan1_eeprom
   fi
   if [ "$2" == "eeprom_fan2" ]; then
-    mkdir -p /bsp/fan/
-    ln -s $3$4/eeprom /bsp/fan/fan2_eeprom
+    mkdir -p /bsp/fru/
+    ln -s $3$4/eeprom /bsp/fru/fan2_eeprom
   fi
   if [ "$2" == "eeprom_fan3" ]; then
-    mkdir -p /bsp/fan/
-    ln -s $3$4/eeprom /bsp/fan/fan3_eeprom
+    mkdir -p /bsp/fru/
+    ln -s $3$4/eeprom /bsp/fru/fan3_eeprom
   fi
   if [ "$2" == "eeprom_fan4" ]; then
-    mkdir -p /bsp/fan/
-    ln -s $3$4/eeprom /bsp/fan/fan4_eeprom
+    mkdir -p /bsp/fru/
+    ln -s $3$4/eeprom /bsp/fru/fan4_eeprom
   fi
   if [ "$2" == "fan1_green" ]; then
     mkdir -p /bsp/leds/fan/green/1/
@@ -182,10 +190,6 @@ else
   if [ "$2" == "ADC" ]; then
     unlink 
   fi
-  if [ "$2" == "11-0041" ] || [ "$2" == "11-0027" ]; then
-    unlink /bsp/environment/$2_vin
-    unlink /bsp/environment/$2_vout
-  fi
   if [ "$2" == "A2D" ]; then
     unlink /bsp/environment/$2_voltage_scale
     unlink /bsp/environment/$2_18v
@@ -240,17 +244,23 @@ else
     unlink /bsp/fan/tacho7_rpm
     unlink /bsp/fan/tacho8_rpm
   fi
+  if [ "$2" == "eeprom_psu1" ]; then
+    unlink /bsp/fru/psu1_eeprom
+  fi
+  if [ "$2" == "eeprom_psu2" ]; then
+    unlink /bsp/fru/psu2_eeprom
+  fi
   if [ "$2" == "eeprom_fan1" ]; then
-    unlink /bsp/fan/fan1_eeprom
+    unlink /bsp/fru/fan1_eeprom
   fi
   if [ "$2" == "eeprom_fan2" ]; then
-    unlink /bsp/fan/fan2_eeprom
+    unlink /bsp/fru/fan2_eeprom
   fi
   if [ "$2" == "eeprom_fan3" ]; then
-    unlink /bsp/fan/fan3_eeprom
+    unlink /bsp/fru/fan3_eeprom
   fi
   if [ "$2" == "eeprom_fan4" ]; then
-    unlink /bsp/fan/fan4_eeprom
+    unlink /bsp/fru/fan4_eeprom
   fi
   if [ "$2" == "fan1_green" ]; then
     unlink /bsp/leds/fan/green/1/brightness

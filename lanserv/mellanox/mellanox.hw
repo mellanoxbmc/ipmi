@@ -286,7 +286,7 @@ mc_add_fru_data 0x20 7 1024 \
 mc_add_fru_data 0x20 8 1024 \
   file 0 "/bsp/fru/fan3_eeprom"
 
-mc_add_fru_data 0x20 0 1024 \
+mc_add_fru_data 0x20 9 1024 \
   file 0 "/bsp/fru/fan4_eeprom"
 
 # Turn on the BMC
