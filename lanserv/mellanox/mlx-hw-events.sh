@@ -168,6 +168,25 @@ if [ "$1" == "add" ]; then
     ln -s $3$4/brightness /bsp/leds/status/red/brightness
     ln -s $3$4/trigger /bsp/leds/status/red/trigger
   fi
+elif [ "$1" == "change" ]; then
+  if [ "$2" == "reset" ]; then
+    unlink /bsp/reset/bmc_reset_soft
+    unlink /bsp/reset/cpu_reset_hard
+    unlink /bsp/reset/cpu_reset_soft
+    unlink /bsp/reset/system_reset_hard
+    unlink /bsp/reset/reset_phy
+    unlink /bsp/reset/bmc_uart_en
+    unlink /bsp/reset/uart_sel
+    unlink /bsp/reset/bmc_upgrade
+    ln -s $3$4/bmc_reset_soft /bsp/reset/bmc_reset_soft
+    ln -s $3$4/cpu_reset_hard /bsp/reset/cpu_reset_hard
+    ln -s $3$4/cpu_reset_soft /bsp/reset/cpu_reset_soft
+    ln -s $3$4/system_reset_hard /bsp/reset/system_reset_hard
+    ln -s $3$4/phy_reset /bsp/reset/reset_phy
+    ln -s $3$4/bmc_uart_en /bsp/reset/bmc_uart_en
+    ln -s $3$4/uart_sel /bsp/reset/uart_sel
+    ln -s $3$4/bmc_upgrade /bsp/reset/bmc_upgrade
+  fi
 else
   if [ "$2" == "amb_current" ] || [ "$2" == "amb_switch" ]; then
     unlink /bsp/thermal/$2_temp
@@ -217,7 +236,7 @@ else
   if [ "$2" == "VcoreUCD" ]; then
     unlink /bsp/environment/$2
   fi
-  if [ "$2" == "reset" ]]; then
+  if [ "$2" == "reset" ]; then
     unlink /bsp/reset/bmc_reset_soft
     unlink /bsp/reset/cpu_reset_hard
     unlink /bsp/reset/cpu_reset_soft
