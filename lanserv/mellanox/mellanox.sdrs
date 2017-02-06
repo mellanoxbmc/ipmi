@@ -751,7 +751,7 @@ sdr type 1
         analog_data_format       unsigned
         linearization            linear
         sensor_direction         input
-        id_string                "12v"
+        id_string                "ADC 12v"
 endsdr
 
 #5V
@@ -802,7 +802,7 @@ sdr type 1
         analog_data_format       unsigned
         linearization            linear
         sensor_direction         input
-        id_string                "5v"
+        id_string                "ADC 5v"
 endsdr
 
 #5V USB
@@ -853,7 +853,7 @@ sdr type 1
         analog_data_format       unsigned
         linearization            linear
         sensor_direction         input
-        id_string                "5v usb"
+        id_string                "ADC 5v usb"
 endsdr
 
 #3.3V_AUX
@@ -904,7 +904,7 @@ sdr type 1
         analog_data_format       unsigned
         linearization            linear
         sensor_direction         input
-        id_string                "3.3v_aux"
+        id_string                "ADC 3.3v_aux"
 endsdr
 
 #3.3V_BMC
@@ -955,7 +955,7 @@ sdr type 1
         analog_data_format       unsigned
         linearization            linear
         sensor_direction         input
-        id_string                "3.3v_bmc"
+        id_string                "ADC 3.3v_bmc"
 endsdr
 
 #2.5V_DDR
@@ -1006,7 +1006,7 @@ sdr type 1
         analog_data_format       unsigned       
         linearization            linear
         sensor_direction         input
-        id_string                "2.5v_ddr"
+        id_string                "ADC 2.5v_ddr"
 endsdr
 
 #1.2_DDR
@@ -1057,7 +1057,7 @@ sdr type 1
         analog_data_format       unsigned
         linearization            linear
         sensor_direction         input
-        id_string                "1.2v_ddr"
+        id_string                "ADC 1.2v_ddr"
 endsdr
 
 #1.15_VCORE
@@ -1108,7 +1108,7 @@ sdr type 1
         analog_data_format       unsigned
         linearization            linear
         sensor_direction         input
-        id_string                "1.15v_Vcore"
+        id_string                "ADC 1.15v_Vcore"
 endsdr
 
 
@@ -1309,7 +1309,7 @@ sdr type 1
         analog_data_format      unsigned
         linearization           linear
         sensor_direction        input
-        id_string               "PSU1_in power"
+        id_string               "PSU1_pin"
 endsdr
 
 # PSU1_pout power sensor (/sys/bus/i2c/devices/10-0059/hwmon/hwmon4/power2_input)
@@ -1354,7 +1354,7 @@ sdr type 1
         analog_data_format      unsigned
         linearization           linear
         sensor_direction        input
-        id_string               "PSU1_out power"
+        id_string               "PSU1_pout"
 endsdr
 
 # PSU2_pin power sensor (/sys/bus/i2c/devices/10-0058/hwmon/hwmon5/power1_input)
@@ -1399,7 +1399,7 @@ sdr type 1
         analog_data_format      unsigned
         linearization           linear
         sensor_direction        input
-        id_string               "PSU2_in power"
+        id_string               "PSU2_pin"
 endsdr
 
 # PSU2_pout power sensor (/sys/bus/i2c/devices/10-0058/hwmon/hwmon5/power2_input)
@@ -1444,7 +1444,7 @@ sdr type 1
         analog_data_format      unsigned
         linearization           linear
         sensor_direction        input
-        id_string               "PSU2_out power"
+        id_string               "PSU2_pout"
 endsdr
 
 # PSU1-in current sensor (/sys/bus/i2c/devices/10-0059/hwmon/hwmon4/current1_input)
@@ -1489,7 +1489,7 @@ sdr type 1
         analog_data_format      unsigned
         linearization           linear
         sensor_direction        input
-        id_string               "PSU1_in current"
+        id_string               "PSU1_iin"
 endsdr
 
 # PSU1_out vcurrent sensor (/sys/bus/i2c/devices/10-0059/hwmon/hwmon4/current2_input)
@@ -1534,7 +1534,7 @@ sdr type 1
         analog_data_format      unsigned
         linearization           linear
         sensor_direction        input
-        id_string               "PSU1_out current"
+        id_string               "PSU1_iout"
 endsdr
 
 # PSU2_in current sensor (/sys/bus/i2c/devices/10-0058/hwmon/hwmon5/current1_input)
@@ -1579,7 +1579,7 @@ sdr type 1
         analog_data_format      unsigned
         linearization           linear
         sensor_direction        input
-        id_string               "PSU2_in current"
+        id_string               "PSU2_iin"
 endsdr
 
 # PSU2_out current sensor (/sys/bus/i2c/devices/10-0058/hwmon/hwmon5/current2_input)
@@ -1624,7 +1624,7 @@ sdr type 1
         analog_data_format      unsigned
         linearization           linear
         sensor_direction        input
-        id_string               "PSU2_out current"
+        id_string               "PSU2_iout"
 endsdr
 
 #fan1_1 sensor

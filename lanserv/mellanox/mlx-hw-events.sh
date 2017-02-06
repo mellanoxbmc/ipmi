@@ -33,9 +33,9 @@ if [ "$1" == "add" ]; then
     ln -s $3$4/in_voltage6_raw /bsp/environment/$2_18v
     ln -s $3$4/in_voltage5_raw /bsp/environment/$2_12v
     ln -s $3$4/in_voltage4_raw /bsp/environment/$2_vcore
-    ln -s $3$4/in_voltage3_raw /bsp/environment/$2_12vswb
-    ln -s $3$4/in_voltage2_raw /bsp/environment/$2_3auxswb
-    ln -s $3$4/in_voltage1_raw /bsp/environment/$2_3senswb
+    ln -s $3$4/in_voltage3_raw /bsp/environment/swb_$2_12v
+    ln -s $3$4/in_voltage2_raw /bsp/environment/swb_$2_3aux
+    ln -s $3$4/in_voltage1_raw /bsp/environment/swb_$2_3sen
   fi
   if [ "$2" == "ADC" ]; then
     mkdir -p /bsp/environment/
@@ -50,8 +50,8 @@ if [ "$1" == "add" ]; then
   fi
   if [ "$2" == "UCD" ]; then
     mkdir -p /bsp/environment/
-    ln -s $3$4/in2_input /bsp/environment/$2_vin
-    ln -s $3$4/in3_input /bsp/environment/$2_vout
+    ln -s $3$4/in2_input /bsp/environment/$2_3vsen
+    ln -s $3$4/in3_input /bsp/environment/$2_1v
   fi
   if [ "$2" == "VcoreUCD" ]; then
     mkdir -p /bsp/environment/
@@ -66,6 +66,7 @@ if [ "$1" == "add" ]; then
     ln -s $3$4/phy_reset /bsp/reset/reset_phy
     ln -s $3$4/bmc_uart_en /bsp/reset/bmc_uart_en
     ln -s $3$4/uart_sel /bsp/reset/uart_sel
+    ln -s $3$4/bmc_upgrade /bsp/reset/bmc_upgrade
   fi
   if [ "$2" == "fan" ]; then
     mkdir -p /bsp/fan/
