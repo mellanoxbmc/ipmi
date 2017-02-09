@@ -663,7 +663,8 @@ handle_reset_phy(lmc_data_t    *mc,
 
 /**
  *
- *  ipmitool raw 0x06  0x61
+ *  ipmitool raw 0x06  0x61 (BMC - no value)
+ *  ipmitool raw 0x06  0x61 1 (CPU)
  *
  **/
 static void
@@ -676,6 +677,19 @@ handle_set_uart_to_bmc(lmc_data_t    *mc,
     printf("\n %d: %s, %s()", __LINE__, __FILE__, __FUNCTION__);
 
     FILE *fset;
+    unsigned int uart;
+
+    if (check_msg_length(msg, 1, rdata, rdata_len)) {
+        uart = 0;
+    }
+    else {
+        uart = msg->data[0];
+        if (uart != 1 ) {
+            rdata[0] = IPMI_INVALID_DATA_FIELD_CC;
+            *rdata_len = 1;
+            return;
+        }
+    }
 
     fset = fopen(MLX_UART_TO_BMC, "w");
 
@@ -685,7 +699,7 @@ handle_set_uart_to_bmc(lmc_data_t    *mc,
             *rdata_len = 1;
             return;
     } else {
-        fprintf(fset, "%u", 0);
+        fprintf(fset, "%u", uart);
     }
 
     fclose(fset);
