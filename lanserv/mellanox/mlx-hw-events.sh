@@ -63,10 +63,13 @@ if [ "$1" == "add" ]; then
     ln -sf $3$4/cpu_reset_hard /bsp/reset/cpu_reset_hard
     ln -sf $3$4/cpu_reset_soft /bsp/reset/cpu_reset_soft
     ln -sf $3$4/system_reset_hard /bsp/reset/system_reset_hard
-    ln -sf $3$4/phy_reset /bsp/reset/reset_phy
     ln -sf $3$4/bmc_uart_en /bsp/reset/bmc_uart_en
     ln -sf $3$4/uart_sel /bsp/reset/uart_sel
     ln -sf $3$4/bmc_upgrade /bsp/reset/bmc_upgrade
+  fi
+  if [ "$2" == "phy_reset" ]; then
+    mkdir -p /bsp/reset/
+    ln -sf $3$4/phy_reset /bsp/reset/reset_phy
   fi
   if [ "$2" == "fan" ]; then
     mkdir -p /bsp/fan/
@@ -174,7 +177,6 @@ elif [ "$1" == "change" ]; then
     unlink /bsp/reset/cpu_reset_hard
     unlink /bsp/reset/cpu_reset_soft
     unlink /bsp/reset/system_reset_hard
-    unlink /bsp/reset/reset_phy
     unlink /bsp/reset/bmc_uart_en
     unlink /bsp/reset/uart_sel
     unlink /bsp/reset/bmc_upgrade
@@ -182,10 +184,13 @@ elif [ "$1" == "change" ]; then
     ln -sf $3$4/cpu_reset_hard /bsp/reset/cpu_reset_hard
     ln -sf $3$4/cpu_reset_soft /bsp/reset/cpu_reset_soft
     ln -sf $3$4/system_reset_hard /bsp/reset/system_reset_hard
-    ln -sf $3$4/phy_reset /bsp/reset/reset_phy
     ln -sf $3$4/bmc_uart_en /bsp/reset/bmc_uart_en
     ln -sf $3$4/uart_sel /bsp/reset/uart_sel
     ln -sf $3$4/bmc_upgrade /bsp/reset/bmc_upgrade
+  fi
+  if [ "$2" == "phy_reset" ]; then
+    unlink /bsp/reset/reset_phy
+    ln -sf $3$4/phy_reset /bsp/reset/reset_phy
   fi
 else
   if [ "$2" == "amb_current" ] || [ "$2" == "amb_switch" ]; then
@@ -244,6 +249,9 @@ else
     unlink /bsp/reset/reset_phy
     unlink /bsp/reset/bmc_uart_en
     unlink /bsp/reset/uart_sel
+  fi
+  if [ "$2" == "phy_reset" ]; then
+    unlink /bsp/reset/reset_phy
   fi
   if [ "$2" == "fan" ]; then
     unlink /bsp/fan/tacho1_en

@@ -525,7 +525,7 @@ handle_bmc_cold_reset(lmc_data_t    *mc,
             *rdata_len = 1;
             return;
     } else {
-        fprintf(freset, "%u", 1);
+        fprintf(freset, "%u", 0);
     }
 
     fclose(freset);
@@ -557,7 +557,7 @@ handle_system_hard_reset(lmc_data_t    *mc,
             *rdata_len = 1;
             return;
     } else {
-        fprintf(freset, "%u", 1);
+        fprintf(freset, "%u", 0);
     }
 
     fclose(freset);
@@ -580,6 +580,19 @@ handle_cpu_hard_reset(lmc_data_t    *mc,
     printf("\n %d: %s, %s()", __LINE__, __FILE__, __FUNCTION__);
 
     FILE *freset;
+    unsigned int reset;
+
+    if (check_msg_length(msg, 1, rdata, rdata_len)) {
+        reset = 0;
+    }
+    else {
+        reset = msg->data[0];
+        if (reset != 1 ) {
+            rdata[0] = IPMI_INVALID_DATA_FIELD_CC;
+            *rdata_len = 1;
+            return;
+        }
+    }
 
     freset = fopen(MLX_CPU_HARD_RESET, "w");
 
@@ -589,7 +602,7 @@ handle_cpu_hard_reset(lmc_data_t    *mc,
             *rdata_len = 1;
             return;
     } else {
-        fprintf(freset, "%u", 1);
+        fprintf(freset, "%u", reset);
     }
 
     fclose(freset);
@@ -621,7 +634,7 @@ handle_cpu_soft_reset(lmc_data_t    *mc,
             *rdata_len = 1;
             return;
     } else {
-        fprintf(freset, "%u", 1);
+        fprintf(freset, "%u", 0);
     }
 
     fclose(freset);
@@ -653,7 +666,7 @@ handle_reset_phy(lmc_data_t    *mc,
             *rdata_len = 1;
             return;
     } else {
-        fprintf(freset, "%u", 1);
+        fprintf(freset, "%u", 0);
     }
 
     fclose(freset);
