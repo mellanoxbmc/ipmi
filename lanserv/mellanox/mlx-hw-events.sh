@@ -1,5 +1,18 @@
 #!/bin/bash
 
+########################################################################
+# Copyright (c) 2017 Mellanox Technologies.
+# Copyright (c) 2017 Nataliya Yakuts <nataliyay@mellanox.com>
+#
+# Licensed under the GNU General Public License Version 2
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+
+echo "$1 $2 $3$4" >> /nata_log
 if [ "$1" == "add" ]; then
   if [ "$2" == "amb_carrier" ] || [ "$2" == "amb_switch" ]; then
     mkdir -p /bsp/thermal/
