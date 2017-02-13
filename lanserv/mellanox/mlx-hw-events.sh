@@ -12,7 +12,6 @@
 # (at your option) any later version.
 #
 
-echo "$1 $2 $3$4" >> /nata_log
 if [ "$1" == "add" ]; then
   if [ "$2" == "amb_carrier" ] || [ "$2" == "amb_switch" ]; then
     mkdir -p /bsp/thermal/
