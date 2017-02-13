@@ -52,13 +52,13 @@ if [ "$1" == "add" ]; then
   if [ "$2" == "ADC" ]; then
     mkdir -p /bsp/environment/
     ln -sf $3$4/adc0_value /bsp/environment/$2_12v
-    ln -sf $3$4/adc3_value /bsp/environment/$2_5v
-    ln -sf $3$4/adc4_value /bsp/environment/$2_5vusb
-    ln -sf $3$4/adc10_value /bsp/environment/$2_3vaux
-    ln -sf $3$4/adc11_value /bsp/environment/$2_3vbmc
-    ln -sf $3$4/adc12_value /bsp/environment/$2_2vddr
-    ln -sf $3$4/adc13_value /bsp/environment/$2_1ddr
-    ln -sf $3$4/adc14_value /bsp/environment/$2_1vcore
+    ln -sf $3$4/adc2_value /bsp/environment/$2_5v
+    ln -sf $3$4/adc3_value /bsp/environment/$2_5vusb
+    ln -sf $3$4/adc4_value /bsp/environment/$2_3vaux
+    ln -sf $3$4/adc10_value /bsp/environment/$2_3vbmc
+    ln -sf $3$4/adc11_value /bsp/environment/$2_2vddr
+    ln -sf $3$4/adc12_value /bsp/environment/$2_1ddr
+    ln -sf $3$4/adc13_value /bsp/environment/$2_1vcore
   fi
   if [ "$2" == "UCD" ]; then
     mkdir -p /bsp/environment/
