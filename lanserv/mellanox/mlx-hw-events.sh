@@ -180,9 +180,14 @@ if [ "$1" == "add" ]; then
     ln -sf $3$4/trigger /bsp/leds/status/green/trigger
   fi
   if [ "$2" == "status_red" ]; then
-    mkdir -p /bsp/leds/fan/red/1/
+    mkdir -p /bsp/leds/status/red/
     ln -sf $3$4/brightness /bsp/leds/status/red/brightness
     ln -sf $3$4/trigger /bsp/leds/status/red/trigger
+  fi
+  if [ "$2" == "status_amber" ]; then
+    mkdir -p /bsp/leds/status/amber/
+    ln -sf $3$4/brightness /bsp/leds/status/amber/brightness
+    ln -sf $3$4/trigger /bsp/leds/status/amber/trigger
   fi
 elif [ "$1" == "change" ]; then
   if [ "$2" == "reset" ]; then
@@ -228,14 +233,15 @@ else
   if [ "$2" == "ADC" ]; then
     unlink 
   fi
+
   if [ "$2" == "A2D" ]; then
     unlink /bsp/environment/$2_voltage_scale
     unlink /bsp/environment/$2_18v
     unlink /bsp/environment/$2_12v
     unlink /bsp/environment/$2_vcore
-    unlink /bsp/environment/$2_12vswb
-    unlink /bsp/environment/$2_3auxswb
-    unlink /bsp/environment/$2_3senswb
+    unlink /bsp/environment/swb_$2_12v
+    unlink /bsp/environment/swb_$2_3aux
+    unlink /bsp/environment/swb_$2_3sen
   fi
   if [ "$2" == "ADC" ]; then
     unlink /bsp/environment/$2_12v
@@ -248,8 +254,8 @@ else
     unlink /bsp/environment/$2_1vcore
   fi
   if [ "$2" == "UCD" ]; then
-    unlink /bsp/environment/$2_vin
-    unlink /bsp/environment/$2_vout
+    unlink /bsp/environment/$2_3vsen
+    unlink /bsp/environment/$2_1v
   fi
   if [ "$2" == "VcoreUCD" ]; then
     unlink /bsp/environment/$2
@@ -344,5 +350,9 @@ else
   if [ "$2" == "status_red" ]; then
     unlink /bsp/leds/status/red/brightness
     unlink /bsp/leds/status/red/trigger
+  fi
+  if [ "$2" == "status_amber" ]; then
+    unlink /bsp/leds/status/amber/brightness
+    unlink /bsp/leds/status/amber/trigger
   fi
 fi

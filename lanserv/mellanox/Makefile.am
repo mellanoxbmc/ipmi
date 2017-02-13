@@ -12,7 +12,7 @@ install-data-local:
 	$(INSTALL) -m 644 $(srcdir)/mellanox.hw "$(DESTDIR)$(sysconfdir)/ipmi/"; \
 	$(INSTALL) -m 644 $(srcdir)/sdr.20.main "$(DESTDIR)$(localstatedir)/mlx_ipmid/mellanox/"; \
 	$(INSTALL) -m 775 $(srcdir)/sel_set_log_size.sh "$(DESTDIR)$(bindir)"; \
-	$(INSTALL) -m 775 $(srcdir)/99-mlx-events.rules "$(DESTDIR)$(localstatedir)/mlx_ipmid/mellanox/"; \
+	$(INSTALL) -m 775 $(srcdir)/50-mlx-events.rules "$(DESTDIR)$(localstatedir)/mlx_ipmid/mellanox/"; \
 	$(INSTALL) -m 775 $(srcdir)/mlx-hw-events.sh "$(DESTDIR)$(bindir)";
 
 uninstall-local:
