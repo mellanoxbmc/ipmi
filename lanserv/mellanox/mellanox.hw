@@ -164,15 +164,15 @@ sensor_add 0x20 0 166 1 1\
         poll 5000 \
         file "/bsp/environment/ADC_5vusb" div=18 mult=5
 
-#A2D 3.35V_AUX sensor (max scale 901(3.96V) -> 255 k=3.5338)
+#A2D 3.3V_AUX sensor (max scale 901(3.96V) -> 255 k=3.5338)
 sensor_add 0x20 0 167 1 1\
         poll 5000 \
         file "/bsp/environment/ADC_3vaux" div=32 mult=9
 
-#A2D 3.35V_BMC sensor (max scale 901(3.96V) -> 255 k=3.5338)
+#A2D 3.3V_BMC sensor (max scale 927(3.96V) -> 255 k=3.6356)
 sensor_add 0x20 0 168 1 1\
         poll 5000 \
-        file "/bsp/environment/ADC_3vbmc" div=32 mult=9
+        file "/bsp/environment/ADC_3vbmc" div=40 mult=11
 
 #A2D 2.5V_DDR sensor (max scale 853(3V) -> 255 k=3.3464)
 sensor_add 0x20 0 169 1 1\
