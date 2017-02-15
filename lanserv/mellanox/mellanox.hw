@@ -93,6 +93,16 @@ sensor_add 0x20 0 0x77 4 1\
         poll 5000 \
         file "/bsp/fan/tacho8_rpm" div=100
 
+#PSU1_fan (max scale 25.000(25.000rpm) -> 250 k=100)
+sensor_add 0x20 0 0x78 4 1\
+        poll 5000 \
+        file "/bsp/fan/psu1_fan_input" div=100
+
+#PSU2_fan (max scale 25.000(25.000rpm) -> 250 k=100)
+sensor_add 0x20 0 0x79 4 1\
+        poll 5000 \
+        file "/bsp/fan/psu2_fan_input" div=100
+
 ########## Voltage ############
 
 #PSU1 Vin (max scale 255.000(255V) -> 255 k=1000)

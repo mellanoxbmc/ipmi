@@ -22,6 +22,7 @@ if [ "$1" == "add" ]; then
   if [ "$2" == "psu1" ] || [ "$2" == "psu2" ]; then
     mkdir -p /bsp/thermal/
     mkdir -p /bsp/environment/
+    mkdir -p /bsp/fan/
     ln -sf $3$4/temp1_input /bsp/thermal/$2_temp
     ln -sf $3$4/temp1_max /bsp/thermal/$2_temp_max
     ln -sf $3$4/temp1_max_alarm /bsp/thermal/$2_temp_alarm
@@ -31,6 +32,7 @@ if [ "$1" == "add" ]; then
     ln -sf $3$4/power2_input /bsp/environment/$2_pout
     ln -sf $3$4/curr1_input /bsp/environment/$2_iin
     ln -sf $3$4/curr2_input /bsp/environment/$2_iout
+    ln -sf $3$4/fan1_input /bsp/fan/$2_fan_input
 
     #FAN spped set
     if [ "$2" == "psu1" ]; then
@@ -225,6 +227,7 @@ else
     unlink /bsp/environment/$2_pout
     unlink /bsp/environment/$2_iin
     unlink /bsp/environment/$2_iout
+    unlink /bsp/fan/$2_fan_input
   fi
   if [ "$2" == "A2D" ]; then
     unlink 
