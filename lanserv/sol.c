@@ -45,6 +45,7 @@
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 
+#include <config.h>
 #include <OpenIPMI/serv.h>
 #include <OpenIPMI/mcserv.h>
 #include <OpenIPMI/lanserv.h>
