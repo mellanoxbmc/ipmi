@@ -43,7 +43,7 @@ if [ "$1" == "add" ]; then
   fi
   if [ "$2" == "A2D" ]; then
     mkdir -p /bsp/environment/
-    ln -sf $3$4/in_voltage_voltage_scale /bsp/environment/$2_voltage_scale
+    ln -sf $3$4/in_voltage-voltage_scale /bsp/environment/$2_voltage_scale
     ln -sf $3$4/in_voltage6_raw /bsp/environment/$2_18v
     ln -sf $3$4/in_voltage5_raw /bsp/environment/$2_12v
     ln -sf $3$4/in_voltage4_raw /bsp/environment/$2_vcore
@@ -112,11 +112,11 @@ if [ "$1" == "add" ]; then
     echo 6 > /bsp/fan/pwm
   fi
   if [ "$2" == "eeprom_psu1" ]; then
-    mkdir -p /bsp/fan/
+    mkdir -p /bsp/fru/
     ln -sf $3$4/eeprom /bsp/fru/psu1_eeprom
   fi
   if [ "$2" == "eeprom_psu2" ]; then
-    mkdir -p /bsp/fan/
+    mkdir -p /bsp/fru/
     ln -sf $3$4/eeprom /bsp/fru/psu2_eeprom
   fi
   if [ "$2" == "eeprom_fan1" ]; then
