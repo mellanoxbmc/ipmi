@@ -1134,6 +1134,8 @@ bt_setup(serserv_data_t *si)
     si->channel.set_atn = handle_attn;
     si->codec_info = info;
     si->connected = 1;
+    si->channel.hw_capabilities |= (1 << HW_OP_POWERON);
+    si->channel.hw_capabilities |= (1 << HW_OP_RESET);
     return 0;
 }
 #endif
