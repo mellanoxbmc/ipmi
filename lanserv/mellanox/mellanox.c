@@ -35,6 +35,7 @@
 #define IPMI_OEM_MLX_GET_LED_STATE_CMD      0x31
 #define IPMI_OEM_MLX_SET_LED_STATE_CMD      0x32
 #define IPMI_OEM_MLX_SET_LED_BLINKING_CMD   0x33
+#define IPMI_OEM_MLX_GET_FAN_PWM_CMD        0x34
 
 /* IPMI_APP_NETFN (0x06) */
 #define IPMI_OEM_MLX_SEL_BUFFER_SET_CMD     0x5B
@@ -179,6 +180,50 @@ handle_set_fan_speed_cmd (lmc_data_t    *mc,
     fclose(f_pwm);
     rdata[0] = 0;
     *rdata_len = 1;
+}
+
+/**
+ *
+ * ipmitool raw 0x04  0x34
+ *
+**/
+static void
+handle_get_fan_pwm_cmd(lmc_data_t    *mc,
+                       msg_t         *msg,
+                       unsigned char *rdata,
+                       unsigned int  *rdata_len,
+                       void          *cb_data)
+{
+    unsigned char rv = 0;
+    char line_pwm[10];
+    int pwm;
+    FILE *fpwm;
+
+    fpwm = fopen(MLX_FAN_PWM_FILE, "r");
+
+    if (!fpwm) {
+        printf("\nUnable to open  PWM file");
+        rdata[0] = IPMI_COULD_NOT_PROVIDE_RESPONSE_CC;
+        *rdata_len = 1;
+	return;
+    }
+
+    if (0 >= fread(line_pwm, 1, sizeof(line_pwm),fpwm))
+    {
+        fclose(fpwm);
+        rdata[0] = IPMI_INVALID_DATA_FIELD_CC;
+        *rdata_len = 1;
+	return;
+    }
+
+    pwm = strtoul(line_pwm, NULL, 0);
+
+    fclose(fpwm);
+
+    rdata[0] = 0;
+    rdata[1] = pwm;
+    *rdata_len = 2;
+    return;
 }
 
 /**
@@ -798,6 +843,9 @@ ipmi_sim_module_init(sys_data_t *sys, const char *initstr_i)
 
     rv = ipmi_emu_register_cmd_handler(IPMI_SENSOR_EVENT_NETFN, IPMI_OEM_MLX_SET_FAN_SPEED_CMD,
                                        handle_set_fan_speed_cmd, sys);
+
+    rv = ipmi_emu_register_cmd_handler(IPMI_SENSOR_EVENT_NETFN, IPMI_OEM_MLX_GET_FAN_PWM_CMD,
+                                       handle_get_fan_pwm_cmd, sys);
 
     rv = ipmi_emu_register_cmd_handler(IPMI_SENSOR_EVENT_NETFN, IPMI_OEM_MLX_GET_LED_STATE_CMD,
                                        handle_get_led_state, sys);
