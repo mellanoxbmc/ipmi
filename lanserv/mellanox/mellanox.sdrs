@@ -139,7 +139,7 @@ sdr type 1
         linearization           linear
         sensor_direction        input
         nominal_specified       true
-        nominal_reading         40
+        nominal_reading         25
         sensor_maximum          255
         sensor_minimum          0
         m                       1
@@ -188,7 +188,7 @@ sdr type 1
         linearization           linear
         sensor_direction        input
         nominal_specified       true
-        nominal_reading         40
+        nominal_reading         25
         sensor_maximum          255
         sensor_minimum          0
         m                       1
@@ -1761,7 +1761,7 @@ sdr type 1
         lc_fthresh              500
         positive_hysteresis     2
         negative_hysteresis     2
-        id_string               "fan2_2"
+        id_string               "fan2_1"
 endsdr
 
 #fan2_2 sensor

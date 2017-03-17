@@ -122,58 +122,74 @@ if [ "$1" == "add" ]; then
   if [ "$2" == "eeprom_fan1" ]; then
     mkdir -p /bsp/fru/
     ln -sf $3$4/eeprom /bsp/fru/fan1_eeprom
+    echo 1 > /bsp/leds/fan/green/1/brightness
+    echo 0 > /bsp/leds/fan/red/1/brightness
   fi
   if [ "$2" == "eeprom_fan2" ]; then
     mkdir -p /bsp/fru/
     ln -sf $3$4/eeprom /bsp/fru/fan2_eeprom
+    echo 1 > /bsp/leds/fan/green/2/brightness
+    echo 0 > /bsp/leds/fan/red/2/brightness
   fi
   if [ "$2" == "eeprom_fan3" ]; then
     mkdir -p /bsp/fru/
     ln -sf $3$4/eeprom /bsp/fru/fan3_eeprom
+    echo 1 > /bsp/leds/fan/green/3/brightness
+    echo 0 > /bsp/leds/fan/red/3/brightness
   fi
   if [ "$2" == "eeprom_fan4" ]; then
     mkdir -p /bsp/fru/
     ln -sf $3$4/eeprom /bsp/fru/fan4_eeprom
+    echo 1 > /bsp/leds/fan/green/4/brightness
+    echo 0 > /bsp/leds/fan/red/4/brightness
   fi
   if [ "$2" == "fan1_green" ]; then
     mkdir -p /bsp/leds/fan/green/1/
     ln -sf $3$4/brightness /bsp/leds/fan/green/1/brightness
     ln -sf $3$4/trigger /bsp/leds/fan/green/1/trigger
+    echo 0 > /bsp/leds/fan/green/1/brightness
   fi
   if [ "$2" == "fan1_red" ]; then
     mkdir -p /bsp/leds/fan/red/1/
     ln -sf $3$4/brightness /bsp/leds/fan/red/1/brightness
     ln -sf $3$4/trigger /bsp/leds/fan/red/1/trigger
+    echo 1 > /bsp/leds/fan/red/1/brightness
   fi
   if [ "$2" == "fan2_green" ]; then
     mkdir -p /bsp/leds/fan/green/2/
     ln -sf $3$4/brightness /bsp/leds/fan/green/2/brightness
     ln -sf $3$4/trigger /bsp/leds/fan/green/2/trigger
+    echo 0 > /bsp/leds/fan/green/2/brightness
   fi
   if [ "$2" == "fan2_red" ]; then
     mkdir -p /bsp/leds/fan/red/2/
     ln -sf $3$4/brightness /bsp/leds/fan/red/2/brightness
     ln -sf $3$4/trigger /bsp/leds/fan/red/2/trigger
+    echo 1 > /bsp/leds/fan/red/2/brightness
   fi
   if [ "$2" == "fan3_green" ]; then
     mkdir -p /bsp/leds/fan/green/3/
     ln -sf $3$4/brightness /bsp/leds/fan/green/3/brightness
     ln -sf $3$4/trigger /bsp/leds/fan/green/3/trigger
+    echo 0 > /bsp/leds/fan/green/3/brightness
   fi
   if [ "$2" == "fan3_red" ]; then
     mkdir -p /bsp/leds/fan/red/3/
     ln -sf $3$4/brightness /bsp/leds/fan/red/3/brightness
     ln -sf $3$4/trigger /bsp/leds/fan/red/3/trigger
+    echo 1 > /bsp/leds/fan/red/3/brightness
   fi
   if [ "$2" == "fan4_green" ]; then
     mkdir -p /bsp/leds/fan/green/4/
     ln -sf $3$4/brightness /bsp/leds/fan/green/4/brightness
     ln -sf $3$4/trigger /bsp/leds/fan/green/4/trigger
+    echo 0 > /bsp/leds/fan/green/4/brightness
   fi
   if [ "$2" == "fan4_red" ]; then
     mkdir -p /bsp/leds/fan/red/4/
     ln -sf $3$4/brightness /bsp/leds/fan/red/4/brightness
     ln -sf $3$4/trigger /bsp/leds/fan/red/4/trigger
+    echo 1 > /bsp/leds/fan/red/4/brightness
   fi
   if [ "$2" == "status_green" ]; then
     mkdir -p /bsp/leds/status/green/
