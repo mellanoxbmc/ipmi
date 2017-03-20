@@ -800,6 +800,52 @@ handle_sel_buffer_set(lmc_data_t    *mc,
     *rdata_len = 1;
 }
 
+/**
+ *
+ *  ipmitool raw 0x04  0x15
+ *
+ **/
+static void handle_get_last_processed_event(lmc_data_t    *mc,
+              msg_t         *msg,
+              unsigned char *rdata,
+              unsigned int  *rdata_len,
+              void          *cb_data)
+{
+    sel_entry_t *entry;
+    sel_entry_t *p_entry = NULL;
+    int         offset;
+    int         count;
+
+    if (mc->sel.count == 0) {
+        rdata[0] = IPMI_NOT_PRESENT_CC;
+        *rdata_len = 1;
+        return;
+    }
+
+    entry = mc->sel.entries;
+    if (entry) {
+        while (entry->next) {
+            p_entry = entry;
+            entry = entry->next;
+            }
+    }
+
+    rdata[0] = 0;
+    rdata[1] = 0xff;
+    rdata[2] = 0xff;
+
+    ipmi_set_uint16(rdata+4, entry->record_id);
+    *rdata_len = 3;
+
+    offset = 0x00;
+    count = 0xff;
+
+    if ((offset+count) > 16)
+        count = 16 - offset;
+    memcpy(rdata+5, entry->data+offset, count);
+    *rdata_len = count + 5;
+}
+
 int
 ipmi_sim_module_print_version(sys_data_t *sys, char *initstr)
 {
@@ -876,6 +922,9 @@ ipmi_sim_module_init(sys_data_t *sys, const char *initstr_i)
 
     rv = ipmi_emu_register_cmd_handler(IPMI_APP_NETFN, IPMI_OEM_MLX_SEL_BUFFER_SET_CMD,
                                        handle_sel_buffer_set, sys);
+
+    rv = ipmi_emu_register_cmd_handler(IPMI_SENSOR_EVENT_NETFN, IPMI_GET_LAST_PROCESSED_EVENT_ID_CMD,
+                                       handle_get_last_processed_event, sys);
 
     if (rv) {
 	sys->log(sys, OS_ERROR, NULL,

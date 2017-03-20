@@ -58,6 +58,7 @@
 
 #include <OpenIPMI/msg.h>
 #include <OpenIPMI/os_handler.h>
+#include <config.h>
 
 typedef struct lmc_data_s lmc_data_t;
 
@@ -132,7 +133,11 @@ int ipmi_mc_add_to_sel(lmc_data_t    *emu,
 		       unsigned char record_type,
 		       unsigned char event[13],
 		       unsigned int  *recid);
-
+#ifdef MLX_IPMID
+void ipmi_mc_pef_apply(lmc_data_t    *mc,
+		       unsigned char record_type,
+		       unsigned char event[13]);
+#endif /* MLX_IPMID */
 int ipmi_mc_add_main_sdr(lmc_data_t    *mc,
 			 unsigned char *data,
 			 unsigned int  data_len);
