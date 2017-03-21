@@ -34,6 +34,9 @@ SUBSYSTEM=="hwmon", DEVPATH=="/devices/platform/ahb/ahb:apb/1e78a000.i2c/i2c-10/
 SUBSYSTEM=="platform", DEVPATH=="/devices/platform/ahb/ahb:apb/1e6e9000.adc", ACTION=="add", RUN+="/usr/bin/mlx-hw-events.sh add ADC %S %p"
 SUBSYSTEM=="platform", DEVPATH=="/devices/platform/ahb/ahb:apb/1e6e9000.adc", ACTION=="rm", RUN+="/usr/bin/mlx-hw-events.sh add ADC %S %p"
 
+SUBSYSTEM=="hwmon", DEVPATH=="/devices/platform/ahb/ahb:apb/1e78a000.i2c/i2c-12/i2c-12/12-0048/hwmon/hwmon*", ACTION=="add", RUN+="/usr/bin/mlx-hw-events.sh add asic %S %p"
+SUBSYSTEM=="hwmon", DEVPATH=="/devices/platform/ahb/ahb:apb/1e78a000.i2c/i2c-12/i2c-12/12-0048/hwmon/hwmon*", ACTION=="remove", RUN+="/usr/bin/mlx-hw-events.sh rm asic %S %p"
+
 SUBSYSTEM=="hwmon", DEVPATH=="/devices/platform/ahb/ahb:apb/1e78a000.i2c/i2c-4/i2c-4/4-0071/hwmon/hwmon?", ACTION=="add", RUN+="/usr/bin/mlx-hw-events.sh add reset %S %p"
 SUBSYSTEM=="hwmon", DEVPATH=="/devices/platform/ahb/ahb:apb/1e78a000.i2c/i2c-4/i2c-4/4-0071/hwmon/hwmon?", ACTION=="remove", RUN+="/usr/bin/mlx-hw-events.sh rm reset %S %p"
 SUBSYSTEM=="hwmon", DEVPATH=="/devices/platform/ahb/ahb:apb/1e78a000.i2c/i2c-4/i2c-4/4-0071/hwmon/hwmon?", ACTION=="change", RUN+="/usr/bin/mlx-hw-events.sh change reset %S %p"

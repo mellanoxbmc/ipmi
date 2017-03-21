@@ -51,6 +51,11 @@ sensor_add 0x20  0    4     1     1 \
         poll 5000 \
         file "/bsp/thermal/psu2_temp" div=1000
 
+# asic Temp
+sensor_add 0x20  0    5     1     1 \
+        poll 5000 \
+        file "/bsp/thermal/asic_temp" div=1000
+
 ########## FAN ############
 
 #Fan1_1 (max scale 25.000(25.000rpm) -> 250 k=100)

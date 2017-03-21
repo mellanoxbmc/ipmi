@@ -34,11 +34,11 @@ if [ "$1" == "add" ]; then
     ln -sf $3$4/curr2_input /bsp/environment/$2_iout
     ln -sf $3$4/fan1_input /bsp/fan/$2_fan_input
 
-    #FAN spped set
+    #FAN speed set
     if [ "$2" == "psu1" ]; then
-      i2cset -f -y 3 0x58 0x3b 0x3c wp
-    else
       i2cset -f -y 3 0x59 0x3b 0x3c wp
+    else
+      i2cset -f -y 3 0x58 0x3b 0x3c wp
     fi
   fi
   if [ "$2" == "A2D" ]; then
@@ -70,6 +70,11 @@ if [ "$1" == "add" ]; then
   if [ "$2" == "VcoreUCD" ]; then
     mkdir -p /bsp/environment/
     ln -sf $3$4/in2_input /bsp/environment/$2
+  fi
+  if [ "$2" == "asic" ]; then
+    mkdir -p /bsp/thermal/
+    ln -sf $3$4/temp1_input /bsp/thermal/$2_temp
+    ln -sf $3$4/temp1_highest /bsp/thermal/$2_temp_highest
   fi
   if [ "$2" == "reset" ]; then
     mkdir -p /bsp/reset/
@@ -152,6 +157,7 @@ if [ "$1" == "add" ]; then
     mkdir -p /bsp/leds/fan/red/1/
     ln -sf $3$4/brightness /bsp/leds/fan/red/1/brightness
     ln -sf $3$4/trigger /bsp/leds/fan/red/1/trigger
+    echo 1 > /bsp/leds/fan/red/1/brightness
   fi
   if [ "$2" == "fan2_green" ]; then
     mkdir -p /bsp/leds/fan/green/2/
@@ -162,6 +168,7 @@ if [ "$1" == "add" ]; then
     mkdir -p /bsp/leds/fan/red/2/
     ln -sf $3$4/brightness /bsp/leds/fan/red/2/brightness
     ln -sf $3$4/trigger /bsp/leds/fan/red/2/trigger
+    echo 1 > /bsp/leds/fan/red/2/brightness
   fi
   if [ "$2" == "fan3_green" ]; then
     mkdir -p /bsp/leds/fan/green/3/
@@ -172,6 +179,7 @@ if [ "$1" == "add" ]; then
     mkdir -p /bsp/leds/fan/red/3/
     ln -sf $3$4/brightness /bsp/leds/fan/red/3/brightness
     ln -sf $3$4/trigger /bsp/leds/fan/red/3/trigger
+    echo 1 > /bsp/leds/fan/red/3/brightness
   fi
   if [ "$2" == "fan4_green" ]; then
     mkdir -p /bsp/leds/fan/green/4/
@@ -182,6 +190,7 @@ if [ "$1" == "add" ]; then
     mkdir -p /bsp/leds/fan/red/4/
     ln -sf $3$4/brightness /bsp/leds/fan/red/4/brightness
     ln -sf $3$4/trigger /bsp/leds/fan/red/4/trigger
+    echo 1 > /bsp/leds/fan/red/4/brightness
   fi
   if [ "$2" == "status_green" ]; then
     mkdir -p /bsp/leds/status/green/
@@ -238,13 +247,6 @@ else
     unlink /bsp/fan/$2_fan_input
   fi
   if [ "$2" == "A2D" ]; then
-    unlink 
-  fi
-  if [ "$2" == "ADC" ]; then
-    unlink 
-  fi
-
-  if [ "$2" == "A2D" ]; then
     unlink /bsp/environment/$2_voltage_scale
     unlink /bsp/environment/$2_18v
     unlink /bsp/environment/$2_12v
@@ -269,6 +271,10 @@ else
   fi
   if [ "$2" == "VcoreUCD" ]; then
     unlink /bsp/environment/$2
+  fi
+  if [ "$2" == "asic" ]; then
+    unlink /bsp/thermal/$2_temp
+    unlink /bsp/thermal/$2_temp_highest
   fi
   if [ "$2" == "reset" ]; then
     unlink /bsp/reset/bmc_reset_soft
