@@ -307,6 +307,7 @@ do_event(lmc_data_t    *mc,
     lmc_data_t    *dest_mc;
     unsigned char data[13];
     int           rv;
+    unsigned char status_led_run_str[32];
 
     if ((mc->event_receiver == 0)
 	|| (!sensor->enabled)
@@ -333,6 +334,11 @@ do_event(lmc_data_t    *mc,
     data[10] = byte1;
     data[11] = byte2;
     data[12] = byte3;
+
+#ifdef MLX_IPMID
+    if (sprintf(status_led_run_str,"status_led.py 0x%02x %d 0x%02x\n",sensor->num, direction, sensor->sensor_type))
+	    system(status_led_run_str);
+#endif
 
     mc_new_event(dest_mc, 0x02, data);
 }

@@ -14,11 +14,15 @@ install-data-local:
 	$(INSTALL) -m 644 $(srcdir)/sdr.20.main "$(DESTDIR)$(localstatedir)/mlx_ipmid/mellanox/"; \
 	$(INSTALL) -m 775 $(srcdir)/sel_set_log_size.sh "$(DESTDIR)$(bindir)"; \
 	$(INSTALL) -m 775 $(srcdir)/50-mlx-events.rules "$(DESTDIR)$(localstatedir)/mlx_ipmid/mellanox/"; \
-	$(INSTALL) -m 775 $(srcdir)/mlx-hw-events.sh "$(DESTDIR)$(bindir)";
+	$(INSTALL) -m 775 $(srcdir)/mlx-hw-events.sh "$(DESTDIR)$(bindir)"; \
+	$(INSTALL) -m 775 $(srcdir)/status_led.py "$(DESTDIR)$(bindir)"; \
+	$(INSTALL) -m 644 $(srcdir)/status_led.json "$(DESTDIR)$(sysconfdir)";
 
 uninstall-local:
 	-rm -f "$(DESTDIR)$(sysconfdir)/ipmi/mellanox.lan.conf"
 	-rm -f "$(DESTDIR)$(sysconfdir)/ipmi/mellanox.hw"
 	-rm -f "$(DESTDIR)$(sysconfdir)/ipmi/sdr.20.main"
-	-rm -f "$(DESTDIR)$(bindir)/sel_set_log_size.sh
-	-rmdir "$(DESTDIR)$(sysconfdir)/ipmi" 2>/dev/null
+	-rm -f "$(DESTDIR)$(bindir)/sel_set_log_size.sh"
+	-rm -f "$(DESTDIR)$(bindir)/status_led.py"
+	-rm -f "$(DESTDIR)$(sysconfdir)/status_led.json"
+	-rmdir "$(DESTDIR)$(sysconfdir)/ipmi" 2>/dev/null"
