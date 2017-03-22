@@ -36,9 +36,9 @@ if [ "$1" == "add" ]; then
 
     #FAN speed set
     if [ "$2" == "psu1" ]; then
-      i2cset -f -y 3 0x59 0x3b 0x3c wp
-    else
       i2cset -f -y 3 0x58 0x3b 0x3c wp
+    else
+      i2cset -f -y 3 0x59 0x3b 0x3c wp
     fi
   fi
   if [ "$2" == "A2D" ]; then
