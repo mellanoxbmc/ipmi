@@ -41,6 +41,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <config.h>
 
 #include <OpenIPMI/ipmi_err.h>
 #include <OpenIPMI/ipmi_msgbits.h>
@@ -1506,10 +1507,15 @@ sensor_poll(void *cb_data)
 
 	err = sensor->poll(sensor->cb_data, &val, &errstr);
 	if (err) {
+#ifdef MLX_IPMID
+	    val = 0;
+	    set_sensor_value(mc, sensor, val, 1);
+#else
 	    mc->sysinfo->log(mc->sysinfo, OS_ERROR, NULL,
 			     "Error getting sensor value (%2.2x,%d,%d): %s, %s",
 			     ipmi_mc_get_ipmb(mc), sensor->lun, sensor->num,
 			     strerror(err), errstr);
+#endif /* MLX_IPMID */
 	    goto out_restart;
 	}
 	
