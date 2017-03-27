@@ -303,8 +303,17 @@ do_watchdog_reset(lmc_data_t *mc)
 	    tv.tv_usec = 0;
 	}
     }
+#ifdef MLX_IPMID
+    mc->sysinfo->stop_timer(mc->watchdog_timer);
+#endif
     mc->watchdog_running = 1;
+#ifndef MLX_IPMID
     mc->sysinfo->start_timer(mc->watchdog_timer, &tv);
+#else
+    if (mc->sysinfo->start_timer(mc->watchdog_timer, &tv))
+        mc->sysinfo->log(mc->sysinfo, OS_ERROR, NULL,
+                         "Failed to reset watchdog timer");
+#endif
 }
 
 static void
