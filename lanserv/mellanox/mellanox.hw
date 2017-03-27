@@ -34,27 +34,27 @@ sel_enable 0x20 1000 0x0a
 # Ambient board Temp
 sensor_add 0x20  0    1     1     1 \
 	poll 5000 \
-	file "/bsp/thermal/amb_carrier_temp" div=1000
+	file "/bsp/thermal/amb_carrier_temp" sub=-128000 div=1000
 
 # Ambient switch Temp
 sensor_add 0x20  0    2     1     1 \
 	poll 5000 \
-	file "/bsp/thermal/amb_switch_temp" div=1000
+	file "/bsp/thermal/amb_switch_temp" sub=-128000  div=1000
 
 # PSU1 Temp
 sensor_add 0x20  0    3     1     1 \
         poll 5000 \
-        file "/bsp/thermal/psu1_temp" div=1000
+        file "/bsp/thermal/psu1_temp" sub=-128000 div=1000
 
 # PSU2 Temp
 sensor_add 0x20  0    4     1     1 \
         poll 5000 \
-        file "/bsp/thermal/psu2_temp" div=1000
+        file "/bsp/thermal/psu2_temp" sub=-128000 div=1000
 
 # asic Temp
 sensor_add 0x20  0    5     1     1 \
         poll 5000 \
-        file "/bsp/thermal/asic_temp" div=1000
+        file "/bsp/thermal/asic_temp" sub=-128000 div=1000
 
 ########## FAN ############
 
