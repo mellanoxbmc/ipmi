@@ -1,0 +1,300 @@
+########################################################################
+# Copyright (c) 2017 Mellanox Technologies.
+# Copyright (c) 2017 Nataliya Yakuts <nataliyay@mellanox.com>
+#
+# Licensed under the GNU General Public License Version 2
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+
+#
+# HW configuration file for the Mellanox BMC
+#
+
+# The BMC is the MC at address 20
+mc_setbmc 0x20
+
+# Now add the BMC
+#      IPMB DevID DevSDRs?       Rev   Maj   Min   Dev   MFG      Prod
+#                                      FW    FW    Sup   ID       Id
+#                                      Rev   Rev
+mc_add 0x20 0 no-device-sdrs  0x00  0x00  0x00  0x9f  0x00500f 0x0001 persist_sdr
+
+#Enable SEL device
+sel_enable 0x20 1000 0x0a
+
+
+#          MC LUN Sens# type reading
+
+########## Temperature ############
+
+# Ambient board Temp
+sensor_add 0x20  0    1     1     1 \
+	poll 5000 \
+	file "/bsp/thermal/amb_carrier_temp" sub=-128000 div=1000
+
+# Ambient switch Temp
+sensor_add 0x20  0    2     1     1 \
+	poll 5000 \
+	file "/bsp/thermal/amb_switch_temp" sub=-128000  div=1000
+
+# PSU1 Temp
+sensor_add 0x20  0    3     1     1 \
+        poll 5000 \
+        file "/bsp/thermal/psu1_temp" sub=-128000 div=1000
+
+# PSU2 Temp
+sensor_add 0x20  0    4     1     1 \
+        poll 5000 \
+        file "/bsp/thermal/psu2_temp" sub=-128000 div=1000
+
+# asic Temp
+sensor_add 0x20  0    5     1     1 \
+        poll 5000 \
+        file "/bsp/thermal/asic_temp" sub=-128000 div=1000
+
+########## FAN ############
+
+#Fan1_1 (max scale 25.000(25.000rpm) -> 250 k=100)
+sensor_add 0x20 0 0x70 4 1\
+        poll 5000 \
+        file "/bsp/fan/tacho1_rpm" div=100
+
+#Fan1_2 (max scale 25.000(25.000rpm) -> 250 k=100)
+sensor_add 0x20 0 0x71 4 1\
+        poll 5000 \
+        file "/bsp/fan/tacho2_rpm" div=100
+
+#Fan2_1 (max scale 25.000(25.000rpm) -> 250 k=100)
+sensor_add 0x20 0 0x72 4 1\
+        poll 5000 \
+        file "/bsp/fan/tacho3_rpm" div=100
+
+#Fan2_2 (max scale 25.000(25.000rpm) -> 250 k=100)
+sensor_add 0x20 0 0x73 4 1\
+        poll 5000 \
+        file "/bsp/fan/tacho4_rpm" div=100
+
+#Fan3_1 (max scale 25.000(25.000rpm) -> 250 k=100)
+sensor_add 0x20 0 0x74 4 1\
+        poll 5000 \
+        file "/bsp/fan/tacho5_rpm" div=100
+
+#Fan3_2 (max scale 25.000(25.000rpm) -> 250 k=100)
+sensor_add 0x20 0 0x75 4 1\
+        poll 5000 \
+        file "/bsp/fan/tacho6_rpm" div=100
+
+#Fan4_1 (max scale 25.000(25.000rpm) -> 250 k=100)
+sensor_add 0x20 0 0x76 4 1\
+        poll 5000 \
+        file "/bsp/fan/tacho7_rpm" div=100
+
+#Fan4_2 (max scale 25.000(25.000rpm) -> 250 k=100)
+sensor_add 0x20 0 0x77 4 1\
+        poll 5000 \
+        file "/bsp/fan/tacho8_rpm" div=100
+
+#PSU1_fan (max scale 25.000(25.000rpm) -> 250 k=100)
+sensor_add 0x20 0 0x78 4 1\
+        poll 5000 \
+        file "/bsp/fan/psu1_fan_input" div=100
+
+#PSU2_fan (max scale 25.000(25.000rpm) -> 250 k=100)
+sensor_add 0x20 0 0x79 4 1\
+        poll 5000 \
+        file "/bsp/fan/psu2_fan_input" div=100
+
+########## Voltage ############
+
+#PSU1 Vin (max scale 255.000(255V) -> 255 k=1000)
+sensor_add 0x20 0 154 1 1\
+        poll 5000 \
+        file "/bsp/environment/psu1_vin" div=1000
+
+#PSU1 Vout (max scale 14.000(14V) -> 255 k=54.9)
+sensor_add 0x20 0 155 1 1\
+        poll 5000 \
+        file "/bsp/environment/psu1_vout" div=165 mult=3
+
+#PSU2 Vin (max 255000(255V) -> 255 k=1000)
+sensor_add 0x20 0 156 1 1\
+        poll 5000 \
+        file "/bsp/environment/psu2_vin" div=1000
+
+#PSU2 Vout max scale 14.000(14V) -> 255 k=54.9)
+sensor_add 0x20 0 157 1 1\
+        poll 5000 \
+        file "/bsp/environment/psu2_vout" div=165 mult=3
+
+#A2D Voltage 
+
+#A2D 1.8V sensor (max scale 270(2.16V) -> 255 k=1.0588)
+sensor_add 0x20 0 158 1 1\
+        poll 5000 \
+        file "/bsp/environment/A2D_18v" div=18 mult=17
+
+#A2D 1.2V sensor (max scale 180(1.44V) -> 255 k=0.70588)
+sensor_add 0x20 0 159 1 1\
+        poll 5000 \
+        file "/bsp/environment/A2D_12v" div=12 mult=17
+
+#A2D Vcore 0.95v sensor (max scale 143(1.14V) -> 255 k=0.5588)
+sensor_add 0x20 0 160 1 1\
+        poll 5000 \
+        file "/bsp/environment/A2D_vcore" div=9 mult=16
+
+#A2D 12V SWB sensor (max scale 245(14.4V) -> 255 k=0.9617)
+sensor_add 0x20 0 161 1 1\
+        poll 5000 \
+        file "/bsp/environment/swb_A2D_12v" div=26 mult=27
+
+#A2D 3.3V AUX SWB sensor (max scale 247(3.96V) -> 255 k=0.9706)
+sensor_add 0x20 0 162 1 1\
+        poll 5000 \
+        file "/bsp/environment/swb_A2D_3aux" div=33 mult=34
+
+#A2D 3.3V SEN SWB sensor (max scale 247(3.96V) -> 255 k=0.9706)
+sensor_add 0x20 0 163 1 1\
+        poll 5000 \
+        file "/bsp/environment/swb_A2D_3sen" div=17 mult=20
+
+
+#ADC Voltage
+#A2D 12V sensor (max scale 904(14.4V) -> 255 k=3.5459)
+sensor_add 0x20 0 164 1 1\
+        poll 5000 \
+        file "/bsp/environment/ADC_12v" div=32 mult=9
+
+#A2D 5V sensor (max scale 913(6V) -> 255 k=3.579)
+sensor_add 0x20 0 165 1 1\
+        poll 5000 \
+        file "/bsp/environment/ADC_5v" div=18 mult=5
+
+#A2D 5V_USB sensor (max scale 913(6V) -> 255 k=3.579)
+sensor_add 0x20 0 166 1 1\
+        poll 5000 \
+        file "/bsp/environment/ADC_5vusb" div=18 mult=5
+
+#A2D 3.3V_AUX sensor (max scale 901(3.96V) -> 255 k=3.5338)
+sensor_add 0x20 0 167 1 1\
+        poll 5000 \
+        file "/bsp/environment/ADC_3vaux" div=32 mult=9
+
+#A2D 3.3V_BMC sensor (max scale 927(3.96V) -> 255 k=3.6356)
+sensor_add 0x20 0 168 1 1\
+        poll 5000 \
+        file "/bsp/environment/ADC_3vbmc" div=40 mult=11
+
+#A2D 2.5V_DDR sensor (max scale 853(3V) -> 255 k=3.3464)
+sensor_add 0x20 0 169 1 1\
+        poll 5000 \
+        file "/bsp/environment/ADC_2vddr" div=37 mult=11
+
+#A2D 1.2V_DDR sensor (max scale 819(1.44V) -> 255 k=3.2125)
+sensor_add 0x20 0 170 1 1\
+        poll 5000 \
+        file "/bsp/environment/ADC_1ddr" div=29 mult=9
+
+#A2D 1.15_VCORE sensor (max scale 785(1.38V) -> 255 k=3.0787)
+sensor_add 0x20 0 171 1 1\
+        poll 5000 \
+        file "/bsp/environment/ADC_1vcore" div=34 mult=11
+
+
+#UCD Voltage
+
+#3.3V_SEN sensor (max scale 4000(4V) -> 254 k=15.75)
+sensor_add 0x20 0 172 1 1\
+        poll 5000 \
+        file "/bsp/environment/UCD_3vsen"  div=63 mult=4
+
+#1.2V_SEN sensor (max scale 1800(4V) -> 180 k=10)
+sensor_add 0x20 0 173 1 1\
+        poll 5000 \
+        file "/bsp/environment/UCD_1v" div=10
+
+#0.9Vcore sensor (max scale 1200(1.2V) -> 240 k=5)
+sensor_add 0x20 0 174 1 1\
+        poll 5000 \
+        file "/bsp/environment/VcoreUCD" div=5
+
+########## Power ############
+#PSU1 power sensor (max scale 880.000.000(880W) -> 220 k=4000000)
+sensor_add 0x20 0 20 1 1\
+        poll 5000 \
+        file "/bsp/environment/psu1_pin" div=4000000
+
+#PSU1 power sensor (max scale 408.000.000(408W) -> 204 k=2000000)
+sensor_add 0x20 0 21 1 1\
+        poll 5000 \
+        file "/bsp/environment/psu1_pout" div=2000000
+
+#PSU1 power sensor (max scale 880.000.000(880W) -> 220 k=4000000)
+sensor_add 0x20 0 22 1 1\
+        poll 5000 \
+        file "/bsp/environment/psu2_pin" div=4000000
+
+#PSU2 power sensor (max scale 408.000.000(408W) -> 204 k=2000000)
+sensor_add 0x20 0 23 1 1\
+        poll 5000 \
+        file "/bsp/environment/psu2_pout" div=2000000
+
+
+########### Current #########
+#PSU1 Current (max scale 4000(4A) -> 254 k=15.75)
+sensor_add 0x20 0 30 1 1\
+        poll 5000 \
+        file "/bsp/environment/psu1_iin"  div=63 mult=4
+
+#PSU1 Current (max scale 34000(34A) -> 254 k=133.8582)
+sensor_add 0x20 0 31 1 1\
+        poll 5000 \
+        file "/bsp/environment/psu1_iout" div=134
+
+#PSU2 Current (max scale 4000(4A) -> 254 k=15.75)
+sensor_add 0x20 0 32 1 1\
+        poll 5000 \
+        file "/bsp/environment/psu2_iin" div=63 mult=4
+
+#PSU2 Current (max scale 34000(34A) -> 254 k=133.8582)
+sensor_add 0x20 0 33 1 1\
+        poll 5000 \
+        file "/bsp/environment/psu2_iout" div=134
+
+#############EEPROM############
+mc_add_fru_data 0x20 0 1024 \
+  file 0 "/bsp/fru/sys_fru_eeprom"
+
+mc_add_fru_data 0x20 1 1024 \
+  file 0 "/bsp/fru/swboard_eeprom"
+
+mc_add_fru_data 0x20 2 1024 \
+  file 0 "/bsp/fru/carier_board_eeprom"
+
+mc_add_fru_data 0x20 3 1024 \
+  file 0 "/bsp/fru/bmc_eeprom"
+
+mc_add_fru_data 0x20 4 1024 \
+  file 0 "/bsp/fru/psu1_eeprom"
+
+mc_add_fru_data 0x20 5 1024 \
+  file 0 "/bsp/fru/psu2_eeprom"
+
+mc_add_fru_data 0x20 6 1024 \
+  file 0 "/bsp/fru/fan1_eeprom"
+
+mc_add_fru_data 0x20 7 1024 \
+  file 0 "/bsp/fru/fan2_eeprom"
+
+mc_add_fru_data 0x20 8 1024 \
+  file 0 "/bsp/fru/fan3_eeprom"
+
+mc_add_fru_data 0x20 9 1024 \
+  file 0 "/bsp/fru/fan4_eeprom"
+
+# Turn on the BMC
+mc_enable 0x20

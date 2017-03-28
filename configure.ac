@@ -277,6 +277,15 @@ AC_ARG_WITH(marvell-bmc,
 )
 AC_SUBST([MARVELL_BMC_DIR])
 
+MELLANOX_DIR=
+AC_ARG_WITH(mellanox,
+[  --with-mellanox            Enable the Mellanox BMC.],
+    AC_DEFINE(MLX_IPMID, 1, [define to 1])
+    AM_CONDITIONAL([MLX_IPMID],[true])
+    MELLANOX_DIR=mellanox
+)
+AC_SUBST([MELLANOX_DIR])
+
 AM_PROG_CC_C_O
 AC_PROG_LIBTOOL
 AC_STDC_HEADERS
@@ -926,6 +935,7 @@ AC_OUTPUT(Makefile
 	  lanserv/OpenIPMI/Makefile
 	  lanserv/sdrcomp/Makefile
 	  lanserv/marvell-bmc/Makefile
+	  lanserv/mellanox/Makefile
 	  sample/Makefile
 	  doc/Makefile
 	  man/Makefile

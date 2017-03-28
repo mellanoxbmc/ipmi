@@ -40,6 +40,37 @@
 #include <OpenIPMI/ipmi_msgbits.h>
 #include <OpenIPMI/ipmi_picmg.h>
 
+#define LED_STATE_FILE "/sys/class/leds/mlxcpld_i2c:fan"
+
+static const char* red_led[FAN_LED_MAX] =
+{
+    LED_STATE_FILE"1:red/brightness",
+    LED_STATE_FILE"2:red/brightness",
+    LED_STATE_FILE"3:red/brightness",
+    LED_STATE_FILE"4:red/brightness",
+    LED_STATE_FILE"5:red/brightness",
+    LED_STATE_FILE"6:red/brightness",
+    LED_STATE_FILE"7:red/brightness",
+    LED_STATE_FILE"8:red/brightness",
+    LED_STATE_FILE"9:red/brightness",
+    LED_STATE_FILE"10:red/brightness"
+};
+
+static const char* green_led[10] =
+{
+    LED_STATE_FILE"1:green/brightness",
+    LED_STATE_FILE"2:green/brightness",
+    LED_STATE_FILE"3:green/brightness",
+    LED_STATE_FILE"4:green/brightness",
+    LED_STATE_FILE"5:green/brightness",
+    LED_STATE_FILE"6:green/brightness",
+    LED_STATE_FILE"7:green/brightness",
+    LED_STATE_FILE"8:green/brightness",
+    LED_STATE_FILE"9:green/brightness",
+    LED_STATE_FILE"10:green/brightness"
+};
+
+
 int
 ipmi_mc_set_power(lmc_data_t *mc, unsigned char power, int gen_event)
 {
@@ -295,7 +326,7 @@ handle_picmg_cmd_get_fru_led_properties(lmc_data_t    *mc,
 	rdata[3] = 0x00;
     } else {
 	rdata[2] = 0xf; /* We support the first 4 LEDs. */
-	rdata[3] = mc->num_leds = 4; /* How many more do we support? */
+	rdata[3] = mc->num_leds = FAN_LED_MAX; /* How many more do we support? */
     }
     *rdata_len = 4;
 }
@@ -392,6 +423,8 @@ handle_picmg_cmd_set_fru_led_state(lmc_data_t    *mc,
 				   void          *cb_data)
 {
     unsigned int led;
+    FILE *f_green;
+    FILE *f_red;
 
     if (check_msg_length(msg, 3, rdata, rdata_len))
 	return;
@@ -424,12 +457,38 @@ handle_picmg_cmd_set_fru_led_state(lmc_data_t    *mc,
 	mc->leds[led].color = mc->leds[led].def_loc_cnt_color;
 	break;
 
-    case 0xfb:
     case 0xfd:
     case 0xfe:
 	rdata[0] = IPMI_INVALID_DATA_FIELD_CC;
 	*rdata_len = 1;
-	return;
+    return;
+
+    case 0xfb: // temporary added handler to set LED state into 'lamp test' cmnd
+        f_green = fopen(green_led[led], "w");
+        f_red = fopen(red_led[led], "w");
+        if (!f_red || !f_green) {
+            printf("\nUnable to open LED status file");
+            rdata[0] = IPMI_INVALID_DATA_FIELD_CC;
+            *rdata_len = 1;
+            return;
+        } else {
+            if (msg->data[5] == 0x2) { //RED
+                fprintf(f_green, "%u", 0);
+                fprintf(f_red, "%u", 1);
+            }
+            else if (msg->data[5] == 0x3) { //GREEN
+                fprintf(f_red, "%u", 0);
+                fprintf(f_green, "%u", 1);
+            }
+            else {
+                rdata[0] = IPMI_INVALID_DATA_FIELD_CC;
+                *rdata_len = 1;
+                return;
+            }
+            fclose(f_green);
+        fclose(f_red);
+        }
+        break;
 
     default: /* Override mode */
 	mc->leds[led].loc_cnt = 0;
@@ -453,6 +512,40 @@ handle_picmg_cmd_set_fru_led_state(lmc_data_t    *mc,
     *rdata_len = 2;
 }
 
+static unsigned char get_led_color(unsigned int led, unsigned char *color)
+{
+    FILE *f_green = fopen(green_led[led], "r");
+    FILE *f_red = fopen(red_led[led], "r");
+    char line_green[10];
+    char line_red[10];
+    int red, green;
+
+    if (!f_green || !f_red) {
+        printf("\nUnable to open LED status file");
+        return IPMI_INVALID_DATA_FIELD_CC;
+    }
+
+    if ((0 >= fread(line_green, 1, sizeof(line_green),f_green))||
+         (0 >= fread(line_red, 1, sizeof(line_red),f_red)))
+    {
+                fclose(f_green);
+                fclose(f_red);
+                return IPMI_INVALID_DATA_FIELD_CC;
+    }
+
+    red = strtoul(line_red, NULL, 0);
+    green = strtoul(line_green, NULL, 0);
+    fclose(f_green);
+    fclose(f_red);
+
+    if (red && !green)
+        *color = 2;
+    else
+        *color = 3;
+
+    return 0;
+}
+
 static void
 handle_picmg_cmd_get_fru_led_state(lmc_data_t    *mc,
 				   msg_t         *msg,
@@ -461,6 +554,7 @@ handle_picmg_cmd_get_fru_led_state(lmc_data_t    *mc,
 				   void          *cb_data)
 {
     unsigned int led;
+    unsigned char rv = 0;
 
     if (check_msg_length(msg, 3, rdata, rdata_len))
 	return;
@@ -487,6 +581,13 @@ handle_picmg_cmd_get_fru_led_state(lmc_data_t    *mc,
     if (mc->leds[led].loc_cnt) {
 	rdata[3] = mc->leds[led].off_dur;
 	rdata[4] = mc->leds[led].on_dur;
+
+    rv = get_led_color(led, &mc->leds[led].color);
+    if (!rv) {
+        rdata[0] = rv;
+        *rdata_len = 1;
+    }
+
 	rdata[5] = mc->leds[led].color;
 	*rdata_len = 6;
     } else {
@@ -496,6 +597,14 @@ handle_picmg_cmd_get_fru_led_state(lmc_data_t    *mc,
 	rdata[5] = mc->leds[led].def_loc_cnt_color;
 	rdata[6] = mc->leds[led].off_dur;
 	rdata[7] = mc->leds[led].on_dur;
+
+    rv = get_led_color(led, &mc->leds[led].color);
+    if (!rv) {
+        rdata[0] = rv;
+        *rdata_len = 1;
+    }
+
+
 	rdata[8] = mc->leds[led].color;
 	*rdata_len = 9;
     }

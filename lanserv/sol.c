@@ -45,6 +45,7 @@
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 
+#include <config.h>
 #include <OpenIPMI/serv.h>
 #include <OpenIPMI/mcserv.h>
 #include <OpenIPMI/lanserv.h>
@@ -900,6 +901,12 @@ ipmi_sol_activate(lmc_data_t    *mc,
     ipmi_set_uint16(rdata + 9, port);
     ipmi_set_uint16(rdata + 11, 0xffff);
     *rdata_len = 13;
+
+#ifdef MLX_IPMID
+/*Uart to BMC*/
+	if (instance == 1)
+		system("echo 0 > /bsp/reset/uart_sel");
+#endif
 }
 
 void
@@ -940,6 +947,12 @@ ipmi_sol_deactivate(lmc_data_t    *mc,
 
     rdata[0] = 0;
     *rdata_len = 1;
+
+#ifdef MLX_IPMID
+/*Uart to CPU*/
+	if (instance == 1)
+		system("echo 1 > /bsp/reset/uart_sel");
+#endif
 }
 
 static void

@@ -41,6 +41,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <config.h>
 
 #include <OpenIPMI/ipmi_err.h>
 #include <OpenIPMI/ipmi_msgbits.h>
@@ -306,6 +307,7 @@ do_event(lmc_data_t    *mc,
     lmc_data_t    *dest_mc;
     unsigned char data[13];
     int           rv;
+    unsigned char status_led_run_str[32];
 
     if ((mc->event_receiver == 0)
 	|| (!sensor->enabled)
@@ -332,6 +334,11 @@ do_event(lmc_data_t    *mc,
     data[10] = byte1;
     data[11] = byte2;
     data[12] = byte3;
+
+#ifdef MLX_IPMID
+    if (sprintf(status_led_run_str,"status_led.py 0x%02x %d 0x%02x\n",sensor->num, direction, sensor->sensor_type))
+	    system(status_led_run_str);
+#endif
 
     mc_new_event(dest_mc, 0x02, data);
 }
@@ -1506,10 +1513,15 @@ sensor_poll(void *cb_data)
 
 	err = sensor->poll(sensor->cb_data, &val, &errstr);
 	if (err) {
+#ifdef MLX_IPMID
+	    val = 0;
+	    set_sensor_value(mc, sensor, val, 1);
+#else
 	    mc->sysinfo->log(mc->sysinfo, OS_ERROR, NULL,
 			     "Error getting sensor value (%2.2x,%d,%d): %s, %s",
 			     ipmi_mc_get_ipmb(mc), sensor->lun, sensor->num,
 			     strerror(err), errstr);
+#endif /* MLX_IPMID */
 	    goto out_restart;
 	}
 	
@@ -1585,7 +1597,7 @@ handle_ipmi_get_pef_capabilities(lmc_data_t    *mc,
     rdata[0] = 0;
     rdata[1] = 0x51; /* version */
     rdata[2] = 0x3f; /* support everything but OEM */
-    rdata[3] = MAX_EVENT_FILTERS;
+    rdata[3] = MAX_EVENT_FILTERS - 1;
     *rdata_len = 4;
 }
 
@@ -1638,10 +1650,14 @@ handle_ipmi_set_pef_config_parms(lmc_data_t    *mc,
 	    break;
 
 	case 2:
-	    if (mc->pef.commit)
-		mc->pef.commit(sys);
-	    memset(&mc->pef.changed, 0, sizeof(mc->pef.changed));
-	    mc->pef.set_in_progress = 0;
+	    if (mc->pef.set_in_progress) {
+		if (mc->pef.commit)
+		    mc->pef.commit(sys);
+		memset(&mc->pef.changed, 0, sizeof(mc->pef.changed));
+		mc->pef.set_in_progress = 0;
+	    }
+	    else
+		err = IPMI_NOT_SUPPORTED_IN_PRESENT_STATE_CC;
 	    break;
 
 	case 3:
@@ -1656,105 +1672,145 @@ handle_ipmi_set_pef_config_parms(lmc_data_t    *mc,
 	break;
 
     case 1:
-	mc->pef.pef_control = msg->data[1];
-	mc->pef.changed.pef_control = 1;
+        if (mc->pef.set_in_progress) {
+	    mc->pef.pef_control = msg->data[1];
+	    mc->pef.changed.pef_control = 1;
+        }
+        else
+            err = IPMI_NOT_SUPPORTED_IN_PRESENT_STATE_CC;
 	break;
 
     case 2:
-	mc->pef.pef_action_global_control = msg->data[1];
-	mc->pef.changed.pef_action_global_control = 1;
+        if (mc->pef.set_in_progress) {
+	    mc->pef.pef_action_global_control = msg->data[1];
+	    mc->pef.changed.pef_action_global_control = 1;
+        }
+        else
+            err = IPMI_NOT_SUPPORTED_IN_PRESENT_STATE_CC;
 	break;
 
     case 3:
-	mc->pef.pef_startup_delay = msg->data[1];
-	mc->pef.changed.pef_startup_delay = 1;
+        if (mc->pef.set_in_progress) {
+	    mc->pef.pef_startup_delay = msg->data[1];
+	    mc->pef.changed.pef_startup_delay = 1;
+        }
+        else
+            err = IPMI_NOT_SUPPORTED_IN_PRESENT_STATE_CC;
 	break;
 
     case 4:
-	mc->pef.pef_alert_startup_delay = msg->data[1];
-	mc->pef.changed.pef_alert_startup_delay = 1;
+        if (mc->pef.set_in_progress) {
+	    mc->pef.pef_alert_startup_delay = msg->data[1];
+	    mc->pef.changed.pef_alert_startup_delay = 1;
+        }
+        else
+            err = IPMI_NOT_SUPPORTED_IN_PRESENT_STATE_CC;
 	break;
 
     case 6:
-	set = msg->data[1] & 0x7f;
-	if (msg->len < 22)
-	    err =  IPMI_REQUEST_DATA_LENGTH_INVALID_CC;
-	else if ((set <= 0) || (set >= mc->pef.num_event_filters))
-	    err = IPMI_INVALID_DATA_FIELD_CC;
-	else {
+        if (mc->pef.set_in_progress) {
 	    set = msg->data[1] & 0x7f;
-	    memcpy(mc->pef.event_filter_table[set], msg->data+1, 21);
-	    mc->pef.changed.event_filter_table[set] = 1;
-	}
+	    if (msg->len < 22)
+		err =  IPMI_REQUEST_DATA_LENGTH_INVALID_CC;
+	    else if ((set <= 0) || (set >= mc->pef.num_event_filters))
+		err = IPMI_INVALID_DATA_FIELD_CC;
+	    else {
+		set = msg->data[1] & 0x7f ;
+		memcpy(mc->pef.event_filter_table[set], msg->data+1, 21);
+		mc->pef.changed.event_filter_table[set] = 1;
+	    }
+        }
+        else
+            err = IPMI_NOT_SUPPORTED_IN_PRESENT_STATE_CC;
 	break;
 
     case 7:
-	set = msg->data[1] & 0x7f;
-	if (msg->len < 3)
-	    err =  IPMI_REQUEST_DATA_LENGTH_INVALID_CC;
-	else if ((set <= 0) || (set >= mc->pef.num_event_filters))
-	    err = IPMI_INVALID_DATA_FIELD_CC;
-	else {
+        if (mc->pef.set_in_progress) {
 	    set = msg->data[1] & 0x7f;
-	    memcpy(mc->pef.event_filter_data1[set], msg->data+1, 2);
-	    mc->pef.changed.event_filter_data1[set] = 1;
-	}
+	    if (msg->len < 3)
+		err =  IPMI_REQUEST_DATA_LENGTH_INVALID_CC;
+	    else if ((set <= 0) || (set >= mc->pef.num_event_filters))
+		err = IPMI_INVALID_DATA_FIELD_CC;
+	    else {
+		set = msg->data[1] & 0x7f;
+		memcpy(mc->pef.event_filter_data1[set], msg->data+1, 2);
+		mc->pef.changed.event_filter_data1[set] = 1;
+	    }
+        }
+        else
+            err = IPMI_NOT_SUPPORTED_IN_PRESENT_STATE_CC;
 	break;
 
     case 9:
-	set = msg->data[1] & 0x7f;
-	if (msg->len < 5)
-	    err =  IPMI_REQUEST_DATA_LENGTH_INVALID_CC;
-	else if ((set <= 0) || (set >= mc->pef.num_alert_policies))
-	    err = IPMI_INVALID_DATA_FIELD_CC;
-	else {
+        if (mc->pef.set_in_progress) {
 	    set = msg->data[1] & 0x7f;
-	    memcpy(mc->pef.alert_policy_table[set], msg->data+1, 4);
-	    mc->pef.changed.alert_policy_table[set] = 1;
-	}
+	    if (msg->len < 5)
+		err =  IPMI_REQUEST_DATA_LENGTH_INVALID_CC;
+	    else if ((set <= 0) || (set >= mc->pef.num_alert_policies))
+		err = IPMI_INVALID_DATA_FIELD_CC;
+	    else {
+		set = msg->data[1] & 0x7f;
+		memcpy(mc->pef.alert_policy_table[set], msg->data+1, 4);
+		mc->pef.changed.alert_policy_table[set] = 1;
+	    }
+        }
+        else
+            err = IPMI_NOT_SUPPORTED_IN_PRESENT_STATE_CC;
 	break;
 
     case 10:
-	if (msg->len < 18)
-	    err =  IPMI_REQUEST_DATA_LENGTH_INVALID_CC;
-	else {
-	    memcpy(mc->pef.system_guid, msg->data+1, 17);
-	    mc->pef.changed.system_guid = 1;
-	}
+        if (mc->pef.set_in_progress) {
+	    if (msg->len < 18)
+		err =  IPMI_REQUEST_DATA_LENGTH_INVALID_CC;
+	    else {
+		memcpy(mc->pef.system_guid, msg->data+1, 17);
+		mc->pef.changed.system_guid = 1;
+	    }
+        }
+        else
+            err = IPMI_NOT_SUPPORTED_IN_PRESENT_STATE_CC;
 	break;
 
     case 12:
-	set = msg->data[1] & 0x7f;
-	if (msg->len < 4)
-	    err =  IPMI_REQUEST_DATA_LENGTH_INVALID_CC;
-	else if (set >= mc->pef.num_alert_strings)
-	    err = IPMI_INVALID_DATA_FIELD_CC;
-	else {
+        if (mc->pef.set_in_progress) {
 	    set = msg->data[1] & 0x7f;
-	    memcpy(mc->pef.alert_string_keys[set], msg->data+1, 3);
-	    mc->pef.changed.alert_string_keys[set] = 1;
-	}
+	    if (msg->len < 4)
+		err =  IPMI_REQUEST_DATA_LENGTH_INVALID_CC;
+	    else if (set >= mc->pef.num_alert_strings)
+		err = IPMI_INVALID_DATA_FIELD_CC;
+	    else {
+		set = msg->data[1] & 0x7f;
+		memcpy(mc->pef.alert_string_keys[set], msg->data+1, 3);
+		mc->pef.changed.alert_string_keys[set] = 1;
+	    }
+        }
+        else
+            err = IPMI_NOT_SUPPORTED_IN_PRESENT_STATE_CC;
 	break;
 
     case 13:
-	set = msg->data[1] & 0x7f;
-	if (msg->len < 4)
-	    err =  IPMI_REQUEST_DATA_LENGTH_INVALID_CC;
-	else if (set >= mc->pef.num_alert_strings)
-	    err = IPMI_INVALID_DATA_FIELD_CC;
-	else if (msg->data[2] == 0)
-	    err = IPMI_INVALID_DATA_FIELD_CC;
-	else {
-	    int dlen = msg->len - 3;
+        if (mc->pef.set_in_progress) {
 	    set = msg->data[1] & 0x7f;
-	    block = msg->data[2] - 1;
-	    if (((block*16) + dlen) > MAX_ALERT_STRING_LEN) {
-		err = IPMI_PARAMETER_OUT_OF_RANGE_CC;
-		break;
+	    if (msg->len < 4)
+		err =  IPMI_REQUEST_DATA_LENGTH_INVALID_CC;
+	    else if (set >= mc->pef.num_alert_strings)
+		err = IPMI_INVALID_DATA_FIELD_CC;
+	    else if (msg->data[2] == 0)
+		err = IPMI_INVALID_DATA_FIELD_CC;
+	    else {
+		int dlen = msg->len - 3;
+		set = msg->data[1] & 0x7f;
+		block = msg->data[2] - 1;
+		if (((block*16) + dlen) > MAX_ALERT_STRING_LEN) {
+		    err = IPMI_PARAMETER_OUT_OF_RANGE_CC;
+		    break;
+		}
+		memcpy(mc->pef.alert_strings[set]+(block*16), msg->data+3, dlen);
+		mc->pef.changed.alert_strings[set] = 1;
 	    }
-	    memcpy(mc->pef.alert_strings[set]+(block*16), msg->data+3, dlen);
-	    mc->pef.changed.alert_strings[set] = 1;
-	}
+        }
+        else
+            err = IPMI_NOT_SUPPORTED_IN_PRESENT_STATE_CC;
 	break;
 
     default:

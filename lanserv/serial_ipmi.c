@@ -63,6 +63,7 @@
 #include <OpenIPMI/ipmi_mc.h>
 #include <OpenIPMI/ipmi_msgbits.h>
 #include <OpenIPMI/serserv.h>
+#include <config.h>
 
 #define EVENT_BUFFER_GLOBAL_ENABLE	(1 << 2)
 #define EVENT_LOG_GLOBAL_ENABLE		(1 << 3)
@@ -1030,6 +1031,115 @@ vm_setup(serserv_data_t *si)
     return 0;
 }
 
+#ifdef MLX_IPMID
+/***********************************************************************
+ *
+ * BT Mode codec.
+ *
+ ***********************************************************************/
+
+/*
+ * Messages are normal IPMI messages with the following header:
+ *
+ *   len
+ *   netfn << 2 | lun
+ *   seq
+ *   cmd
+ *   data....
+ *
+ */
+
+struct bt_data {
+    unsigned char recv_msg[IPMI_SIM_MAX_MSG_LENGTH + 4];
+    unsigned int  recv_msg_len;
+    int           recv_msg_too_many;
+};
+
+static void
+bt_handle_msg(unsigned char *imsg, unsigned int len, serserv_data_t *si)
+{
+    msg_t msg;
+
+    if (si->sysinfo->debug & DEBUG_RAW_MSG)
+	debug_log_raw_msg(si->sysinfo, imsg, len, "Raw serial receive:");
+
+    if (len < 4) {
+	fprintf(stderr, "Message too short\n");
+	return;
+    }
+    len--;
+    imsg++;
+
+    memset(&msg, 0, sizeof(msg));
+
+    msg.netfn = imsg[0] >> 2;
+    msg.rs_lun = imsg[0] & 0x3;
+    msg.rq_seq = imsg[1];
+    msg.cmd = imsg[2];
+    msg.len = len - 3;
+    msg.data = imsg + 3;
+    msg.src_addr = NULL;
+	msg.src_len = 0;
+
+    channel_smi_send(&si->channel, &msg);
+}
+
+static void
+bt_handle_char(unsigned char ch, serserv_data_t *si)
+{
+    struct bt_data *info = si->codec_info;
+    unsigned int len = info->recv_msg_len;
+
+    if (si->bind_fd == 0) {
+        if (info->recv_msg_len != 0){
+            bt_handle_msg(info->recv_msg, info->recv_msg_len, si);
+            info->recv_msg_len = 0;
+        }
+        return;
+    }
+
+	if(len >= sizeof(info->recv_msg))
+        return;
+
+    info->recv_msg[len] = ch;
+    info->recv_msg_len++;
+}
+
+static void
+bt_send(msg_t *imsg, serserv_data_t *si)
+{
+    unsigned int i;
+    unsigned char buf[IPMI_SIM_MAX_MSG_LENGTH + 4];
+
+	buf[0] = imsg->len+3;
+	buf[1] = (imsg->netfn << 2) | imsg->rs_lun;
+	buf[2] = imsg->rq_seq;
+	buf[3] = imsg->cmd;
+
+    for (i = 0; i < imsg->len; i++)
+		buf[i+4] = imsg->data[i];
+
+    raw_send(si, buf, imsg->len+4);
+}
+
+static int
+bt_setup(serserv_data_t *si)
+{
+    struct bt_data *info;
+
+    info = malloc(sizeof(*info));
+    if (!info)
+	return -1;
+    memset(info, 0, sizeof(*info));
+    si->channel.set_atn = handle_attn;
+    si->codec_info = info;
+    si->connected = 1;
+    si->channel.hw_capabilities |= (1 << HW_OP_POWERON);
+    si->channel.hw_capabilities |= (1 << HW_OP_RESET);
+    return 0;
+}
+#endif
+
 
 /***********************************************************************
  *
@@ -1045,6 +1155,10 @@ static ser_codec_t codecs[] = {
       ra_handle_char, ra_send, ra_setup },
     { "VM",
       vm_handle_char, vm_send, vm_setup, vm_connected, vm_disconnected },
+#ifdef MLX_IPMID
+    { "BT_Mode",
+      bt_handle_char, bt_send, bt_setup },
+#endif
     { NULL }
 };
 

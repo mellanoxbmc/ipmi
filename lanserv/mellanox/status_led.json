@@ -1,0 +1,35 @@
+{
+    "ids": {
+      "0x01": "2",
+      "0x02": "1",
+      "0x03": "1",
+      "0x04": "1",
+      "0x05": "1",
+      "0x06": "1",
+      "0x07": "1"
+    },
+    "type": {
+              "0x04": {
+                  "status": "2",
+                  "max_count": "1"
+              },
+              "0x02": {
+                  "status": "1",
+                  "max_count": "1"
+              }
+    },
+    "status": [
+      {
+        "color": "green",
+        "cmd": "echo 0 > /bsp/leds/status/red/brightness;echo 0 > /bsp/leds/status/amber/brightness;echo 1 > /bsp/leds/status/green/brightness"
+      },
+      {
+        "color": "amber",
+        "cmd": "echo 0 > /bsp/leds/status/green/brightness;echo 0 > /bsp/leds/status/red/brightness;echo 1 > /bsp/leds/status/amber/brightness"
+      },
+      {
+        "color": "red",
+        "cmd": "echo 0 > /bsp/leds/status/amber/brightness;echo 0 > /bsp/leds/status/green/brightness;echo 1 > /bsp/leds/status/red/brightness"
+      }
+    ]
+}

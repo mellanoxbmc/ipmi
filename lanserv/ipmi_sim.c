@@ -90,14 +90,21 @@
 #include <OpenIPMI/serv.h>
 #include <OpenIPMI/lanserv.h>
 #include <OpenIPMI/serserv.h>
-
+#ifdef MLX_IPMID
+#include <OpenIPMI/ipmi_types.h>
+#endif
 #include "emu.h"
 #include <OpenIPMI/persist.h>
 
 #define MAX_ADDR 4
 
 #define BASE_CONF_STR SYSCONFDIR "/ipmi"
+#ifdef MLX_IPMID
+#define MLNX_CONF_FILE_EXT       ".hw"
+static char *config_file = BASE_CONF_STR "/mellanox.lan.conf";
+#else
 static char *config_file = BASE_CONF_STR "/lan.conf";
+#endif
 static const char *statedir = STATEDIR;
 static char *command_string = NULL;
 static char *command_file = NULL;
@@ -310,6 +317,31 @@ lan_data_ready(int lan_fd, void *cb_data, os_hnd_fd_id_t *id)
     return;
 }
 
+#ifdef MLX_IPMID
+static int
+ipmi_open(char *ipmi_dev)
+{
+    int ipmi_fd;
+
+    if (ipmi_dev) {
+	ipmi_fd = open(ipmi_dev, O_RDWR);
+    } else {
+	ipmi_fd = open("/dev/ipmidev/0", O_RDWR);
+	if (ipmi_fd == -1) {
+	    ipmi_fd = open("/dev/ipmi0", O_RDWR);
+	}
+	if (ipmi_fd == -1) {
+	    ipmi_fd = open("/dev/ipmi-bt-host", O_RDWR);
+	}
+    }
+
+    if (ipmi_fd == -1) {
+	perror("Could not open ipmi device /dev/ipmidev/0, /dev/ipmi0 or /dev/ipmi-bt-host");
+    }
+    return ipmi_fd;
+}
+#endif
+
 static int
 open_lan_fd(struct sockaddr *addr, socklen_t addr_len)
 {
@@ -474,8 +506,75 @@ ser_bind_ready(int fd, void *cb_data, os_hnd_fd_id_t *id)
     }
 }
 
+#ifdef MLX_IPMID
+static void
+ser_bt_data_ready(int fd, void *cb_data, os_hnd_fd_id_t *id)
+{
+    serserv_data_t *ser = cb_data;
+    unsigned int  len;
+    unsigned char msgd[256];
+
+    len = read(fd, msgd, sizeof(msgd));
+
+    if (ser->sysinfo->debug & DEBUG_MSG)
+        printf(">ser_bt_data_ready size %d\n", len);
+    if (len <= 0) {
+
+        if ((len < 0) && (errno == EINTR))
+            return;
+
+        if (ser->codec->disconnected)
+            ser->codec->disconnected(ser);
+        ser->os_hnd->remove_fd_to_wait_for(ser->os_hnd, id);
+        close(fd);
+        ser->con_fd = -1;
+        return;
+    }
+
+    ser->bind_fd = -1;
+    serserv_handle_data(ser, msgd, len);
+    ser->bind_fd = 0;
+    serserv_handle_data(ser, msgd, 1);
+}
+
 static int
-ser_channel_init(void *info, channel_t *chan)
+ser_channel_bt_proto_init(void *info, channel_t *chan)
+{
+    misc_data_t *data = info;
+    serserv_data_t *ser = chan->chan_info;
+    int err;
+    int fd;
+    os_hnd_fd_id_t *fd_id;
+
+    ser->os_hnd = data->os_hnd;
+    ser->user_info = data;
+    ser->send_out = ser_send;
+    err = serserv_init(ser);
+    if (err) {
+	fprintf(stderr, "Unable to init serial: 0x%x\n", err);
+	exit(1);
+    }
+
+    fd = ipmi_open(NULL);
+    if (fd == -1){
+        exit(1);
+        fprintf(stderr, "Unable to init serial: 0x%x\n", err);
+    }
+
+    ser->con_fd = fd;
+
+    err = data->os_hnd->add_fd_to_wait_for(data->os_hnd, ser->con_fd,
+					       ser_bt_data_ready, ser,
+					       NULL, &fd_id);
+    if (!err)
+        isim_add_fd(fd);
+
+    return 0;
+}
+#endif
+
+static int
+ser_channel_tmode_proto_init(void *info, channel_t *chan)
 {
     misc_data_t *data = info;
     serserv_data_t *ser = chan->chan_info;
@@ -567,6 +666,25 @@ ser_channel_init(void *info, channel_t *chan)
 	isim_add_fd(fd);
 
     return err;
+}
+
+static int
+ser_channel_init(void *info, channel_t *chan)
+{
+    serserv_data_t *ser = chan->chan_info;
+    switch(ser->channel.protocol_type) {
+#ifdef MLX_IPMID
+        case IPMI_CHANNEL_PROTOCOL_BT_v15:
+            return ser_channel_bt_proto_init(info, chan);
+            break;
+#endif
+        case IPMI_CHANNEL_PROTOCOL_TMODE:
+            return ser_channel_tmode_proto_init(info, chan);
+            break;
+        default:
+            return -1;
+            break;
+    }
 }
 
 static void
@@ -1496,7 +1614,11 @@ main(int argc, const char *argv[])
 	exit(1);
     }
 
+#ifdef MLX_IPMID
+    err = persist_init("mlx_ipmid", sysinfo.name, statedir);
+#else
     err = persist_init("ipmi_sim", sysinfo.name, statedir);
+#endif
     if (err) {
 	fprintf(stderr, "Unable to initialize persistence: %s\n",
 		strerror(err));
@@ -1533,7 +1655,11 @@ main(int argc, const char *argv[])
 	strcpy(command_file, BASE_CONF_STR);
 	strcat(command_file, "/");
 	strcat(command_file, sysinfo.name);
-	strcat(command_file, ".emu");
+#ifdef MLX_IPMID
+        strcat(command_file, MLNX_CONF_FILE_EXT);
+#else
+        strcat(command_file, ".emu");
+#endif
 	tf = fopen(command_file, "r");
 	if (!tf) {
 	    free(command_file);
@@ -1629,6 +1755,14 @@ main(int argc, const char *argv[])
 	fprintf(stderr, "Unable to start timer: 0x%x\n", err);
 	goto out;
     }
+
+#ifdef MLX_IPMID
+/*Uart to CPU*/
+    system("echo 1 > /bsp/reset/uart_sel");
+
+/*CPU go*/
+    system("echo 1 > /bsp/reset/cpu_reset_hard");
+#endif
 
     data.os_hnd->operation_loop(data.os_hnd);
     rv = 0;

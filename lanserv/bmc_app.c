@@ -41,6 +41,9 @@
 #include <OpenIPMI/ipmi_mc.h>
 #include <OpenIPMI/ipmi_lan.h>
 
+#include <config.h>
+#include <stdlib.h>
+
 static void
 handle_get_device_id(lmc_data_t    *mc,
 		     msg_t         *msg,
@@ -158,7 +161,7 @@ handle_get_watchdog_timer(lmc_data_t    *mc,
     ipmi_set_uint16(rdata + 7, v);
     v = diff_timeval_dc(&mc->watchdog_time, &zero_tv);
     ipmi_set_uint16(rdata + 5, v);
-    *rdata_len = 7;
+    *rdata_len = 9;
 }
 
 void
@@ -171,11 +174,13 @@ watchdog_timeout(void *cb_data)
     if (!mc->watchdog_running)
 	goto out;
 
+#ifndef MLX_IPMID
     if( !sens ) {
 	// NOTE(noelbk): The watchdog sensor should have been defined
 	// earlier, but don't SEGFAULT if it isn't
 	goto out;
     }
+#endif
 
     if (! mc->watchdog_preaction_ran) {
 	struct timeval tv, now;
@@ -214,29 +219,58 @@ watchdog_timeout(void *cb_data)
  do_full_expiry:
     mc->watchdog_running = 0; /* Stop the watchdog on a timeout */
     mc->watchdog_expired |= (1 << IPMI_MC_WATCHDOG_GET_USE(mc));
+
+#ifdef MLX_IPMID
+    system("echo 1 > /bsp/leds/status/red/brightness");
+    system("echo 0 > /bsp/leds/status/green/brightness");
+    system("echo 0 > /bsp/leds/status/amber/brightness");
+#endif
+
     switch (IPMI_MC_WATCHDOG_GET_ACTION(mc)) {
     case IPMI_MC_WATCHDOG_ACTION_NONE:
+#ifdef MLX_IPMID
+        /*Uart to BMC*/
+        system("echo 0 > /bsp/reset/uart_sel");
+#else
 	set_sensor_bit(mc, sens, 0, 1, 0xc0, mc->watchdog_use & 0xf, 0xff, 1);
+#endif
 	break;
 
     case IPMI_MC_WATCHDOG_ACTION_RESET:
+#ifdef MLX_IPMID
+        /*CPU Reset*/
+        system("echo 0 > /bsp/reset/cpu_reset_soft");
+#else
 	set_sensor_bit(mc, sens, 1, 1, 0xc1, mc->watchdog_use & 0xf, 0xff, 1);
 	bchan->hw_op(bchan, HW_OP_RESET);
+#endif
 	break;
 
     case IPMI_MC_WATCHDOG_ACTION_POWER_DOWN:
+#ifdef MLX_IPMID
+        /*CPU Power-off*/
+        system("echo 0 > /bsp/reset/cpu_reset_hard");
+#else
 	set_sensor_bit(mc, sens, 2, 1, 0xc2, mc->watchdog_use & 0xf, 0xff, 1);
 	bchan->hw_op(bchan, HW_OP_POWEROFF);
 	if (bchan->stop_cmd)
 	    bchan->stop_cmd(bchan, 0);
+#endif
 	break;
 
     case IPMI_MC_WATCHDOG_ACTION_POWER_CYCLE:
+#ifdef MLX_IPMID
+        /*CPU power cycle*/
+        system("echo 0 > /bsp/reset/cpu_reset_hard");
+        sleep(3);
+        system("echo 1 > /bsp/reset/cpu_reset_hard");
+#else
 	set_sensor_bit(mc, sens, 3, 1, 0xc3, mc->watchdog_use & 0xf, 0xff, 1);
 	bchan->hw_op(bchan, HW_OP_POWEROFF);
 	if (bchan->stop_cmd)
 	    bchan->stop_cmd(bchan, 0);
 	start_poweron_timer(mc);
+#endif
 	break;
     }
 
@@ -248,12 +282,13 @@ static void
 do_watchdog_reset(lmc_data_t *mc)
 {
     struct timeval tv;
-
+#ifndef MLX_IPMID
     if (IPMI_MC_WATCHDOG_GET_ACTION(mc) ==
 	IPMI_MC_WATCHDOG_ACTION_NONE) {
 	mc->watchdog_running = 0;
 	return;
     }
+#endif
     mc->watchdog_preaction_ran = 0;
 
     /* Timeout is in tenths of a second, offset is in seconds */
@@ -268,8 +303,17 @@ do_watchdog_reset(lmc_data_t *mc)
 	    tv.tv_usec = 0;
 	}
     }
+#ifdef MLX_IPMID
+    mc->sysinfo->stop_timer(mc->watchdog_timer);
+#endif
     mc->watchdog_running = 1;
+#ifndef MLX_IPMID
     mc->sysinfo->start_timer(mc->watchdog_timer, &tv);
+#else
+    if (mc->sysinfo->start_timer(mc->watchdog_timer, &tv))
+        mc->sysinfo->log(mc->sysinfo, OS_ERROR, NULL,
+                         "Failed to reset watchdog timer");
+#endif
 }
 
 static void
