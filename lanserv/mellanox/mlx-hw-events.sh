@@ -114,6 +114,7 @@ if [ "$1" == "add" ]; then
     ln -sf $3$4/pwm0_falling /bsp/fan/pwm
 
     for i in /bsp/fan/tacho[1-8]_en; do echo 1 > $i; done
+    echo 1 > /bsp/fan/pwm_en
     echo 6 > /bsp/fan/pwm
   fi
   if [ "$2" == "eeprom_psu1" ]; then
