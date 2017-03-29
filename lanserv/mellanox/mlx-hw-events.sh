@@ -66,10 +66,13 @@ if [ "$1" == "add" ]; then
     mkdir -p /bsp/environment/
     ln -sf $3$4/in2_input /bsp/environment/$2_3vsen
     ln -sf $3$4/in3_input /bsp/environment/$2_1v
+    ln -sf $3$4/curr2_input /bsp/environment/$2_3_3v_sen_curr
+    ln -sf $3$4/curr3_input /bsp/environment/$2_1_2v_curr
   fi
   if [ "$2" == "VcoreUCD" ]; then
     mkdir -p /bsp/environment/
     ln -sf $3$4/in2_input /bsp/environment/$2
+    ln -sf $3$4/curr2_input /bsp/environment/$2_curr
   fi
   if [ "$2" == "asic" ]; then
     mkdir -p /bsp/thermal/

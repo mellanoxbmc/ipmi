@@ -265,6 +265,21 @@ sensor_add 0x20 0 33 1 1\
         poll 5000 \
         file "/bsp/environment/psu2_iout" div=134
 
+#VcoreUCD_curr(max scale 89000(89A) -> 178 k=2)
+sensor_add 0x20 0 34 1 1\
+        poll 5000 \
+        file "/bsp/environment/VcoreUCD_curr" div=500
+
+#UCD_3_3v_sen_curr(max scale 33000(33A) -> 231 k=129.9212)
+sensor_add 0x20 0 35 1 1\
+        poll 5000 \
+        file "/bsp/environment/UCD_3_3v_sen_curr" div=143
+
+#UCD_1_2v_curr(max scale 27000(27A) -> 216 k=106.2992)
+sensor_add 0x20 0 36 1 1\
+        poll 5000 \
+        file "/bsp/environment/UCD_1_2v_curr" div=125
+
 #############EEPROM############
 mc_add_fru_data 0x20 0 1024 \
   file 0 "/bsp/fru/sys_fru_eeprom"
