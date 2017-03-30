@@ -44,28 +44,28 @@ if [ "$1" == "add" ]; then
   if [ "$2" == "A2D" ]; then
     mkdir -p /bsp/environment/
     ln -sf $3$4/in_voltage-voltage_scale /bsp/environment/$2_voltage_scale
-    ln -sf $3$4/in_voltage6_raw /bsp/environment/$2_18v
-    ln -sf $3$4/in_voltage5_raw /bsp/environment/$2_12v
+    ln -sf $3$4/in_voltage6_raw /bsp/environment/$2_1_8v
+    ln -sf $3$4/in_voltage5_raw /bsp/environment/$2_1_2v
     ln -sf $3$4/in_voltage4_raw /bsp/environment/$2_vcore
-    ln -sf $3$4/in_voltage3_raw /bsp/environment/swb_$2_12v
-    ln -sf $3$4/in_voltage2_raw /bsp/environment/swb_$2_3aux
-    ln -sf $3$4/in_voltage1_raw /bsp/environment/swb_$2_3sen
+    ln -sf $3$4/in_voltage3_raw /bsp/environment/$2_swb_12v
+    ln -sf $3$4/in_voltage2_raw /bsp/environment/$2_swb_3_3v_aux
+    ln -sf $3$4/in_voltage1_raw /bsp/environment/$2_swb_3_3v_sen
   fi
   if [ "$2" == "ADC" ]; then
     mkdir -p /bsp/environment/
     ln -sf $3$4/adc0_value /bsp/environment/$2_12v
     ln -sf $3$4/adc2_value /bsp/environment/$2_5v
-    ln -sf $3$4/adc3_value /bsp/environment/$2_5vusb
-    ln -sf $3$4/adc4_value /bsp/environment/$2_3vaux
-    ln -sf $3$4/adc10_value /bsp/environment/$2_3vbmc
-    ln -sf $3$4/adc11_value /bsp/environment/$2_2vddr
-    ln -sf $3$4/adc12_value /bsp/environment/$2_1ddr
-    ln -sf $3$4/adc13_value /bsp/environment/$2_1vcore
+    ln -sf $3$4/adc3_value /bsp/environment/$2_5v_usb
+    ln -sf $3$4/adc4_value /bsp/environment/$2_3_3v_aux
+    ln -sf $3$4/adc10_value /bsp/environment/$2_3_3v_bmc
+    ln -sf $3$4/adc11_value /bsp/environment/$2_2_5v_ddr
+    ln -sf $3$4/adc12_value /bsp/environment/$2_1_2v_ddr
+    ln -sf $3$4/adc13_value /bsp/environment/$2_1_15v_Vcore
   fi
   if [ "$2" == "UCD" ]; then
     mkdir -p /bsp/environment/
-    ln -sf $3$4/in2_input /bsp/environment/$2_3vsen
-    ln -sf $3$4/in3_input /bsp/environment/$2_1v
+    ln -sf $3$4/in2_input /bsp/environment/$2_3_3v_sen
+    ln -sf $3$4/in3_input /bsp/environment/$2_1_2v
     ln -sf $3$4/curr2_input /bsp/environment/$2_3_3v_sen_curr
     ln -sf $3$4/curr3_input /bsp/environment/$2_1_2v_curr
   fi
@@ -252,29 +252,32 @@ else
   fi
   if [ "$2" == "A2D" ]; then
     unlink /bsp/environment/$2_voltage_scale
-    unlink /bsp/environment/$2_18v
-    unlink /bsp/environment/$2_12v
+    unlink /bsp/environment/$2_1_8v
+    unlink /bsp/environment/$2_1_2v
     unlink /bsp/environment/$2_vcore
-    unlink /bsp/environment/swb_$2_12v
-    unlink /bsp/environment/swb_$2_3aux
-    unlink /bsp/environment/swb_$2_3sen
+    unlink /bsp/environment/$2_swb_12v
+    unlink /bsp/environment/$2_swb_3_3v_aux
+    unlink /bsp/environment/$2_swb_3_3v_sen
   fi
   if [ "$2" == "ADC" ]; then
     unlink /bsp/environment/$2_12v
     unlink /bsp/environment/$2_5v
-    unlink /bsp/environment/$2_5vusb
-    unlink /bsp/environment/$2_3vaux
-    unlink /bsp/environment/$2_3vbmc
-    unlink /bsp/environment/$2_2vddr
-    unlink /bsp/environment/$2_1ddr
-    unlink /bsp/environment/$2_1vcore
+    unlink /bsp/environment/$2_5v_usb
+    unlink /bsp/environment/$2_3_3v_aux
+    unlink /bsp/environment/$2_3_3v_bmc
+    unlink /bsp/environment/$2_2_5v_ddr
+    unlink /bsp/environment/$2_1_2v_ddr
+    unlink /bsp/environment/$2_1_15v_Vcore
   fi
   if [ "$2" == "UCD" ]; then
-    unlink /bsp/environment/$2_3vsen
-    unlink /bsp/environment/$2_1v
+    unlink /bsp/environment/$2_3_3v_sen
+    unlink /bsp/environment/$2_1_2v
+    unlink /bsp/environment/$2_3_3v_sen_curr
+    unlink /bsp/environment/$2_1_2v_curr
   fi
   if [ "$2" == "VcoreUCD" ]; then
     unlink /bsp/environment/$2
+    unlink /bsp/environment/$2_curr
   fi
   if [ "$2" == "asic" ]; then
     unlink /bsp/thermal/$2_temp
