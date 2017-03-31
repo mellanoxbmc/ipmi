@@ -1977,7 +1977,7 @@ sdr type 1
         sensor_owner_id         0x20
         sensor_owner_lun        0
         channel_number          0
-        sensor_number           0x73
+        sensor_number           0x72
         entity_id               fan_cooling_device
         entity_instance         1
         init_events             true
