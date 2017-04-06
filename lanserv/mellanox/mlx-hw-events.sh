@@ -123,34 +123,40 @@ if [ "$1" == "add" ]; then
   if [ "$2" == "eeprom_psu1" ]; then
     mkdir -p /bsp/fru/
     ln -sf $3$4/eeprom /bsp/fru/psu1_eeprom
+    status_led.py 0xb5 1 0x2d
   fi
   if [ "$2" == "eeprom_psu2" ]; then
     mkdir -p /bsp/fru/
     ln -sf $3$4/eeprom /bsp/fru/psu2_eeprom
+    status_led.py 0xb6 1 0x2d
   fi
   if [ "$2" == "eeprom_fan1" ]; then
     mkdir -p /bsp/fru/
     ln -sf $3$4/eeprom /bsp/fru/fan1_eeprom
     echo 0 > /bsp/leds/fan/red/1/brightness
     echo 1 > /bsp/leds/fan/green/1/brightness
+    status_led.py 0xb7 1 0x2e
   fi
   if [ "$2" == "eeprom_fan2" ]; then
     mkdir -p /bsp/fru/
     ln -sf $3$4/eeprom /bsp/fru/fan2_eeprom
     echo 0 > /bsp/leds/fan/red/2/brightness
     echo 1 > /bsp/leds/fan/green/2/brightness
+    status_led.py 0xb8 1 0x2e
   fi
   if [ "$2" == "eeprom_fan3" ]; then
     mkdir -p /bsp/fru/
     ln -sf $3$4/eeprom /bsp/fru/fan3_eeprom
     echo 0 > /bsp/leds/fan/red/3/brightness
     echo 1 > /bsp/leds/fan/green/3/brightness
+    status_led.py 0xb9 1 0x2e
   fi
   if [ "$2" == "eeprom_fan4" ]; then
     mkdir -p /bsp/fru/
     ln -sf $3$4/eeprom /bsp/fru/fan4_eeprom
     echo 0 > /bsp/leds/fan/red/4/brightness
     echo 1 > /bsp/leds/fan/green/4/brightness
+    status_led.py 0xba 1 0x2e
   fi
   if [ "$2" == "fan1_green" ]; then
     mkdir -p /bsp/leds/fan/green/1/
@@ -318,29 +324,35 @@ else
   fi
   if [ "$2" == "eeprom_psu1" ]; then
     unlink /bsp/fru/psu1_eeprom
+    status_led.py 0xb5 0 0x2d
   fi
   if [ "$2" == "eeprom_psu2" ]; then
     unlink /bsp/fru/psu2_eeprom
+    status_led.py 0xb6 0 0x2d
   fi
   if [ "$2" == "eeprom_fan1" ]; then
     unlink /bsp/fru/fan1_eeprom
     echo 0 > /bsp/leds/fan/green/1/brightness
     echo 1 > /bsp/leds/fan/red/1/brightness
+    status_led.py 0xb7 0 0x2e
   fi
   if [ "$2" == "eeprom_fan2" ]; then
     unlink /bsp/fru/fan2_eeprom
     echo 0 > /bsp/leds/fan/green/2/brightness
     echo 1 > /bsp/leds/fan/red/2/brightness
+    status_led.py 0xb8 0 0x2e
   fi
   if [ "$2" == "eeprom_fan3" ]; then
     unlink /bsp/fru/fan3_eeprom
     echo 0 > /bsp/leds/fan/green/3/brightness
     echo 1 > /bsp/leds/fan/red/3/brightness
+    status_led.py 0xb9 0 0x2e
   fi
   if [ "$2" == "eeprom_fan4" ]; then
     unlink /bsp/fru/fan4_eeprom
     echo 0 > /bsp/leds/fan/green/4/brightness
     echo 1 > /bsp/leds/fan/red/4/brightness
+    status_led.py 0xba 0 0x2e
   fi
   if [ "$2" == "fan1_green" ]; then
     unlink /bsp/leds/fan/green/1/brightness

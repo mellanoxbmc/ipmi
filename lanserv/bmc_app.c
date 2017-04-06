@@ -221,9 +221,13 @@ watchdog_timeout(void *cb_data)
     mc->watchdog_expired |= (1 << IPMI_MC_WATCHDOG_GET_USE(mc));
 
 #ifdef MLX_IPMID
+    unsigned char status_led_run_str[32];
     system("echo 1 > /bsp/leds/status/red/brightness");
     system("echo 0 > /bsp/leds/status/green/brightness");
     system("echo 0 > /bsp/leds/status/amber/brightness");
+
+    if (sprintf(status_led_run_str,"status_led.py 0x%02x %d 0x%02x\n", 180, 0, 0))
+           system(status_led_run_str);
 #endif
 
     switch (IPMI_MC_WATCHDOG_GET_ACTION(mc)) {
@@ -304,6 +308,12 @@ do_watchdog_reset(lmc_data_t *mc)
 	}
     }
 #ifdef MLX_IPMID
+    unsigned char status_led_run_str[32]; 
+
+    if (mc->watchdog_running != 1) {
+        if (sprintf(status_led_run_str,"status_led.py 0x%02x %d 0x%02x\n", 180, 1, 0))
+            system(status_led_run_str);
+    }
     mc->sysinfo->stop_timer(mc->watchdog_timer);
 #endif
     mc->watchdog_running = 1;
