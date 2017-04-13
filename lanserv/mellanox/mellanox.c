@@ -252,7 +252,6 @@ handle_set_led_state(lmc_data_t    *mc,
     FILE *f_green;
     FILE *f_red;
     FILE *f_amber;
-    FILE *f_trigger;
     char fname[100];
 
     if (check_msg_length(msg, 2, rdata, rdata_len))
@@ -304,16 +303,16 @@ handle_set_led_state(lmc_data_t    *mc,
             fprintf(f_amber, "%u", 1);
         }
         else if (msg->data[1] == LED_COLOR_RED) { //RED
+            if (led < MLX_STATUS_LED_MAX)
+                fprintf(f_amber, "%u", 0);
             fprintf(f_green, "%u", 0);
             fprintf(f_red, "%u", 1);
-            if (led < MLX_STATUS_LED_MAX)
-                fprintf(f_amber, "%u", 0);
         }
         else if (msg->data[1] == LED_COLOR_GREEN) { //GREEN
-            fprintf(f_red, "%u", 0);
-            fprintf(f_green, "%u", 1);
             if (led < MLX_STATUS_LED_MAX)
                 fprintf(f_amber, "%u", 0);
+            fprintf(f_red, "%u", 0);
+            fprintf(f_green, "%u", 1);
         }
         else {
             rdata[0] = IPMI_INVALID_DATA_FIELD_CC;
