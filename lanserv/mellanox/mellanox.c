@@ -27,6 +27,8 @@
 #include <OpenIPMI/serv.h>
 #include "../bmc.h"
 
+static lmc_data_t *bmc_mc;
+
 /**************************************************************************
  *                  Mellanox custom commands codes                        *
  *************************************************************************/
@@ -39,7 +41,6 @@
 
 /* IPMI_APP_NETFN (0x06) */
 #define IPMI_OEM_MLX_SEL_BUFFER_SET_CMD     0x5B
-#define IPMI_OEM_MLX_SYSTEM_HARD_RESET_CMD  0x5d
 #define IPMI_OEM_MLX_CPU_HARD_RESET_CMD     0x5e
 #define IPMI_OEM_MLX_CPU_SOFT_RESET_CMD     0x5f
 #define IPMI_OEM_MLX_RESET_PHY_CMD          0x60
@@ -579,38 +580,6 @@ handle_bmc_cold_reset(lmc_data_t    *mc,
 
 /**
  *
- *  ipmitool raw 0x06  0x5d
- *
- **/
-static void
-handle_system_hard_reset(lmc_data_t    *mc,
-			  msg_t         *msg,
-			  unsigned char *rdata,
-			  unsigned int  *rdata_len,
-			  void          *cb_data)
-{
-    printf("\n %d: %s, %s()", __LINE__, __FILE__, __FUNCTION__);
-
-    FILE *freset;
-
-    freset = fopen(MLX_SYS_HARD_RESET, "w");
-
-    if (!freset) {
-            printf("\nUnable to open reset file");
-            rdata[0] = IPMI_COULD_NOT_PROVIDE_RESPONSE_CC;
-            *rdata_len = 1;
-            return;
-    } else {
-        fprintf(freset, "%u", 0);
-    }
-
-    fclose(freset);
-    rdata[0] = 0;
-    *rdata_len = 1;
-}
-
-/**
- *
  *  ipmitool raw 0x06  0x5e
  *
  **/
@@ -845,6 +814,50 @@ static void handle_get_last_processed_event(lmc_data_t    *mc,
     *rdata_len = count + 5;
 }
 
+/*
+ * Chassis control for the chassis
+ */
+static int
+bmc_set_chassis_control(lmc_data_t *mc, int op, unsigned char *val,
+			void *cb_data)
+{
+    FILE *freset;
+
+    switch (op) {
+    case CHASSIS_CONTROL_POWER:
+    case CHASSIS_CONTROL_BOOT_INFO_ACK:
+    case CHASSIS_CONTROL_BOOT:
+    case CHASSIS_CONTROL_GRACEFUL_SHUTDOWN:
+        break;
+    case CHASSIS_CONTROL_RESET:
+        freset = fopen(MLX_SYS_HARD_RESET, "w");
+
+        if (!freset) {
+                return ETXTBSY;
+        } else {
+            fprintf(freset, "%u", 0);
+        }
+
+        fclose(freset);
+        break;
+    default:
+	return EINVAL;
+    }
+
+    return 0;
+}
+
+/*
+ * Chassis control get for the chassis.
+ */
+static int
+bmc_get_chassis_control(lmc_data_t *mc, int op, unsigned char *val,
+			void *cb_data)
+{
+    *val = 1;
+    return 0;
+}
+
 int
 ipmi_sim_module_print_version(sys_data_t *sys, char *initstr)
 {
@@ -869,6 +882,13 @@ ipmi_sim_module_init(sys_data_t *sys, const char *initstr_i)
     unsigned int i;
 
     printf("IPMI Mellanox module");
+
+    rv = ipmi_mc_alloc_unconfigured(sys, 0x20, &bmc_mc);
+    if (rv) {
+	sys->log(sys, OS_ERROR, NULL,
+		 "Unable to allocate an mc: %s", strerror(rv));
+	return rv;
+    }
 
     rv = set_fan_enable(MLX_FAN_PWM_ENABLE_FILE);
 
@@ -910,9 +930,6 @@ ipmi_sim_module_init(sys_data_t *sys, const char *initstr_i)
     rv = ipmi_emu_register_cmd_handler(IPMI_APP_NETFN, IPMI_OEM_MLX_CPU_SOFT_RESET_CMD,
                                        handle_cpu_soft_reset, sys);
 
-    rv = ipmi_emu_register_cmd_handler(IPMI_APP_NETFN, IPMI_OEM_MLX_SYSTEM_HARD_RESET_CMD,
-                                       handle_system_hard_reset, sys);
-
     rv = ipmi_emu_register_cmd_handler(IPMI_APP_NETFN, IPMI_OEM_MLX_RESET_PHY_CMD,
                                        handle_reset_phy, sys);
 
@@ -924,6 +941,9 @@ ipmi_sim_module_init(sys_data_t *sys, const char *initstr_i)
 
     rv = ipmi_emu_register_cmd_handler(IPMI_SENSOR_EVENT_NETFN, IPMI_GET_LAST_PROCESSED_EVENT_ID_CMD,
                                        handle_get_last_processed_event, sys);
+
+    ipmi_mc_set_chassis_control_func(bmc_mc, bmc_set_chassis_control,
+                                     bmc_get_chassis_control, sys);
 
     if (rv) {
 	sys->log(sys, OS_ERROR, NULL,
