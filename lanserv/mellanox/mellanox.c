@@ -45,6 +45,7 @@ static lmc_data_t *bmc_mc;
 #define IPMI_OEM_MLX_CPU_SOFT_RESET_CMD     0x5f
 #define IPMI_OEM_MLX_RESET_PHY_CMD          0x60
 #define IPMI_OEM_MLX_SET_UART_TO_BMC_CMD    0x61
+#define IPMI_OEM_MLX_THERMAL_ALGORITHM_CMD  0x62
 
 #define IPMI_OEM_MLX_SEL_LOG_SIZE_MIN       0x40
 #define IPMI_OEM_MLX_SEL_LOG_SIZE_MAX       0x0fff
@@ -121,6 +122,10 @@ static const char* amber_led[MLX_STATUS_LED_MAX] =
 #define MLX_RESET_PHY        "/bsp/reset/reset_phy"
 
 #define MLX_UART_TO_BMC      "/bsp/reset/uart_sel"
+
+/* number of thermal zones */
+#define MLX_MAX_THERMAL_ZONE 1
+#define MLX_THERMAL_ZONE     "/bsp/thermal/thermal_zone%u/mode"
 
 
 static unsigned char set_fan_enable(const char* fname)
@@ -770,6 +775,60 @@ handle_sel_buffer_set(lmc_data_t    *mc,
 
 /**
  *
+ *  ipmitool raw 0x06  0x62 [zone] [enable/disable]
+ *
+ **/
+static void
+handle_thermal_algorithm_set(lmc_data_t    *mc,
+                     msg_t         *msg,
+                     unsigned char *rdata,
+                     unsigned int  *rdata_len,
+                     void          *cb_data)
+{
+    unsigned int zone, state;
+    FILE *file;
+    char fname[100];
+
+    if (check_msg_length(msg, 2, rdata, rdata_len))
+        return;
+
+    zone = msg->data[0];
+    if (zone >= MLX_MAX_THERMAL_ZONE) {
+        rdata[0] = IPMI_INVALID_DATA_FIELD_CC;
+        *rdata_len = 1;
+        return;
+    }
+
+    state = msg->data[1];
+    if (state > 1) {
+        rdata[0] = IPMI_INVALID_DATA_FIELD_CC;
+        *rdata_len = 1;
+        return;
+    }
+
+    memset(fname, 0, sizeof(fname));
+    sprintf(fname, MLX_THERMAL_ZONE, zone);
+    file = fopen(fname, "w");
+
+    if (!file) {
+        rdata[0] = IPMI_COULD_NOT_PROVIDE_RESPONSE_CC;
+        *rdata_len = 1;
+     return;
+    } else {
+        if (state) 
+            fprintf(file, "enabled");
+        else
+            fprintf(file, "disabled");
+
+        fclose(file);
+    }
+
+    rdata[0] = 0;
+    *rdata_len = 1;
+}
+
+/**
+ *
  *  ipmitool raw 0x04  0x15
  *
  **/
@@ -938,6 +997,9 @@ ipmi_sim_module_init(sys_data_t *sys, const char *initstr_i)
 
     rv = ipmi_emu_register_cmd_handler(IPMI_APP_NETFN, IPMI_OEM_MLX_SEL_BUFFER_SET_CMD,
                                        handle_sel_buffer_set, sys);
+
+    rv = ipmi_emu_register_cmd_handler(IPMI_APP_NETFN, IPMI_OEM_MLX_THERMAL_ALGORITHM_CMD,
+                                       handle_thermal_algorithm_set, sys);
 
     rv = ipmi_emu_register_cmd_handler(IPMI_SENSOR_EVENT_NETFN, IPMI_GET_LAST_PROCESSED_EVENT_ID_CMD,
                                        handle_get_last_processed_event, sys);

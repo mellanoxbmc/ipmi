@@ -217,6 +217,11 @@ if [ "$1" == "add" ]; then
     ln -sf $3$4/brightness /bsp/leds/status/amber/brightness
     ln -sf $3$4/trigger /bsp/leds/status/amber/trigger
   fi
+  if [ "$2" == "thermal_zone0" ]; then
+    mkdir -p /bsp/thermal/
+    mkdir -p /bsp/thermal/$2/
+    ln -sf $3$4/mode /bsp/thermal/$2/mode
+  fi
 elif [ "$1" == "change" ]; then
   if [ "$2" == "reset" ]; then
     unlink /bsp/reset/bmc_reset_soft
@@ -397,5 +402,8 @@ else
   if [ "$2" == "status_amber" ]; then
     unlink /bsp/leds/status/amber/brightness
     unlink /bsp/leds/status/amber/trigger
+  fi
+  if [ "$2" == "thermal_zone0" ]; then
+    unlink $3$4/mode /bsp/thermal/$2/mode
   fi
 fi
