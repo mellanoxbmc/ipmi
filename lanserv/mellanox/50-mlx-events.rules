@@ -98,3 +98,6 @@ SUBSYSTEM=="leds", DEVPATH=="/devices/platform/ahb/ahb:apb/1e78a000.i2c/i2c-4/i2
 
 SUBSYSTEM=="leds", DEVPATH=="/devices/platform/ahb/ahb:apb/1e78a000.i2c/i2c-4/i2c-4/4-0071/leds/mlnxcpld_ctrl:status:amber", ACTION=="add", RUN+="/usr/bin/mlx-hw-events.sh add status_amber %S %p"
 SUBSYSTEM=="leds", DEVPATH=="/devices/platform/ahb/ahb:apb/1e78a000.i2c/i2c-4/i2c-4/4-0071/leds/mlnxcpld_ctrl:status:amber", ACTION=="remove", RUN+="/usr/bin/mlx-hw-events.sh rm status_amber %S %p"
+
+SUBSYSTEM=="thermal", DEVPATH=="/devices/virtual/thermal/thermal_zone0", ACTION=="add", RUN+="/usr/bin/mlx-hw-events.sh add thermal_zone0 %S %p"
+SUBSYSTEM=="thermal", DEVPATH=="/devices/virtual/thermal/thermal_zone0", ACTION=="remove", RUN+="/usr/bin/mlx-hw-events.sh rm thermal_zone0 %S %p"
