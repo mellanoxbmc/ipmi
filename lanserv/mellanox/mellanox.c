@@ -232,6 +232,28 @@ handle_get_fan_pwm_cmd(lmc_data_t    *mc,
     return;
 }
 
+static void set_led_command(unsigned char led,
+                            unsigned char color,
+                            unsigned char cmd)
+{
+    char command[100];
+
+    if (color == LED_COLOR_RED) {
+        memset(command, 0, sizeof(command));
+        sprintf(command, "echo %i > %s%s", cmd, red_led[led],LED_BRIGHTNESS);
+        system(command);
+    }
+    else if (color == LED_COLOR_GREEN) { 
+        memset(command, 0, sizeof(command));
+        sprintf(command, "echo %i > %s%s", cmd, green_led[led],LED_BRIGHTNESS);
+        system(command);
+    } else if (color == LED_COLOR_AMBER) {
+        memset(command, 0, sizeof(command));
+        sprintf(command, "echo %i > %s%s", cmd, amber_led[led],LED_BRIGHTNESS);
+        system(command);
+    }
+}
+
 /**
  *
  * ipmitool raw 0x04  0x032  LedNum  Color
@@ -249,91 +271,52 @@ handle_get_fan_pwm_cmd(lmc_data_t    *mc,
 **/
 static void
 handle_set_led_state(lmc_data_t    *mc,
-				   msg_t         *msg,
-				   unsigned char *rdata,
-				   unsigned int  *rdata_len,
-				   void          *cb_data)
+                     msg_t         *msg,
+                     unsigned char *rdata,
+                     unsigned int  *rdata_len,
+                     void          *cb_data)
 {
-    unsigned int led;
-    FILE *f_green;
-    FILE *f_red;
-    FILE *f_amber;
-    char fname[100];
+    unsigned char led, color;
 
     if (check_msg_length(msg, 2, rdata, rdata_len))
-	return;
+        return;
 
     led = msg->data[0];
     if (led >= MLX_MAX_LEDS) {
-	rdata[0] = IPMI_INVALID_DATA_FIELD_CC;
-	*rdata_len = 1;
-	return;
-    }
-
-    if (led < MLX_STATUS_LED_MAX ) {
-        memset(fname, 0, sizeof(fname));
-        sprintf(fname, "%s%s", amber_led[led],LED_BRIGHTNESS);
-        f_amber = fopen(fname, "w");
-        if (!f_amber) {
-            printf("\nUnable to open LED status file");
-            rdata[0] = IPMI_COULD_NOT_PROVIDE_RESPONSE_CC;
-            *rdata_len = 1;
-            return;
-        }
-    }
-
-    memset(fname, 0, sizeof(fname));
-    sprintf(fname, "%s%s", green_led[led],LED_BRIGHTNESS);
-    f_green = fopen(fname, "w");
-
-    memset(fname, 0, sizeof(fname));
-    sprintf(fname, "%s%s", red_led[led],LED_BRIGHTNESS);
-    f_red = fopen(fname, "w");
-
-    if (!f_red || !f_green) {
-        printf("\nUnable to open LED status file");
-        rdata[0] = IPMI_COULD_NOT_PROVIDE_RESPONSE_CC;
+        rdata[0] = IPMI_INVALID_DATA_FIELD_CC;
         *rdata_len = 1;
-        if (led < MLX_STATUS_LED_MAX)
-            fclose(f_amber);
-        if (f_red)
-            fclose(f_red);
-        if (f_green)
-            fclose(f_green);
         return;
-    } else {
-        if (msg->data[1] == LED_COLOR_AMBER &&
-            led < MLX_STATUS_LED_MAX) { // only status led support AMBER
-            fprintf(f_red, "%u", 0);
-            fprintf(f_green, "%u", 0);
-            fprintf(f_amber, "%u", 1);
-        }
-        else if (msg->data[1] == LED_COLOR_RED) { //RED
-            if (led < MLX_STATUS_LED_MAX)
-                fprintf(f_amber, "%u", 0);
-            fprintf(f_green, "%u", 0);
-            fprintf(f_red, "%u", 1);
-        }
-        else if (msg->data[1] == LED_COLOR_GREEN) { //GREEN
-            if (led < MLX_STATUS_LED_MAX)
-                fprintf(f_amber, "%u", 0);
-            fprintf(f_red, "%u", 0);
-            fprintf(f_green, "%u", 1);
-        }
-        else {
-            rdata[0] = IPMI_INVALID_DATA_FIELD_CC;
-            *rdata_len = 1;
-            if (led < MLX_STATUS_LED_MAX)
-                fclose(f_amber);
-            fclose(f_green);
-            fclose(f_red);
-            return;
-        }
+    }
 
-        fclose(f_green);
-        fclose(f_red);
+    color = msg->data[1];
+    if (color <  LED_COLOR_RED || color > LED_COLOR_AMBER) {
+        rdata[0] = IPMI_INVALID_DATA_FIELD_CC;
+        *rdata_len = 1;
+        return;
+    }
+
+    if (msg->data[1] == LED_COLOR_AMBER &&
+        led < MLX_STATUS_LED_MAX) { // only status led support AMBER
+        set_led_command(led, LED_COLOR_RED, 0);
+        set_led_command(led, LED_COLOR_GREEN, 0);
+        set_led_command(led, LED_COLOR_AMBER, 1);
+    }
+    else if (color == LED_COLOR_RED) {
         if (led < MLX_STATUS_LED_MAX)
-            fclose(f_amber);
+            set_led_command(led, LED_COLOR_AMBER, 0);
+        set_led_command(led, LED_COLOR_GREEN, 0);
+        set_led_command(led, LED_COLOR_RED, 1);
+    }
+    else if (color == LED_COLOR_GREEN) {
+        if (led < MLX_STATUS_LED_MAX)
+            set_led_command(led, LED_COLOR_AMBER, 0);
+        set_led_command(led, LED_COLOR_RED, 0);
+        set_led_command(led, LED_COLOR_GREEN, 1);
+    }
+    else {
+        rdata[0] = IPMI_INVALID_DATA_FIELD_CC;
+        *rdata_len = 1;
+        return;
     }
 
     rdata[0] = 0;
