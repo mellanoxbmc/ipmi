@@ -1610,8 +1610,8 @@ sensor_poll(void *cb_data)
 	err = sensor->poll(sensor->cb_data, &val, &errstr);
 	if (err) {
 #ifdef MLX_IPMID
-	    val = 0;
-	    set_sensor_value(mc, sensor, val, 1);
+            sensor->enabled = 0;
+            goto out_restart;
 #else
 	    mc->sysinfo->log(mc->sysinfo, OS_ERROR, NULL,
 			     "Error getting sensor value (%2.2x,%d,%d): %s, %s",
@@ -1620,6 +1620,10 @@ sensor_poll(void *cb_data)
 #endif /* MLX_IPMID */
 	    goto out_restart;
 	}
+#ifdef MLX_IPMID
+        else
+            sensor->enabled = 1;
+#endif
 	
 	if (sensor->event_reading_code == IPMI_EVENT_READING_TYPE_THRESHOLD) {
 	    if (val < 0)
