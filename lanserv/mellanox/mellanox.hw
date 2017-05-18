@@ -293,22 +293,22 @@ mc_add_fru_data 0x20 2 1024 \
 mc_add_fru_data 0x20 3 1024 \
   file 0 "/bsp/fru/bmc_eeprom"
 
-mc_add_fru_data 0x20 4 1024 \
+mc_add_fru_data 0x20 4 256 \
   file 0 "/bsp/fru/psu1_eeprom"
 
-mc_add_fru_data 0x20 5 1024 \
+mc_add_fru_data 0x20 5 256 \
   file 0 "/bsp/fru/psu2_eeprom"
 
-mc_add_fru_data 0x20 6 1024 \
+mc_add_fru_data 0x20 6 4096 \
   file 0 "/bsp/fru/fan1_eeprom"
 
-mc_add_fru_data 0x20 7 1024 \
+mc_add_fru_data 0x20 7 4096 \
   file 0 "/bsp/fru/fan2_eeprom"
 
-mc_add_fru_data 0x20 8 1024 \
+mc_add_fru_data 0x20 8 4096 \
   file 0 "/bsp/fru/fan3_eeprom"
 
-mc_add_fru_data 0x20 9 1024 \
+mc_add_fru_data 0x20 9 4096 \
   file 0 "/bsp/fru/fan4_eeprom"
 
 # Turn on the BMC

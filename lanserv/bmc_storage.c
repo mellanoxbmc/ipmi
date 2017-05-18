@@ -1800,6 +1800,109 @@ handle_read_fru_data(lmc_data_t    *mc,
 	    *rdata_len = 1;
 	    goto out_unlock;
 	}
+#ifdef MLX_IPMID
+#define MLX_FRU_HEADER_VERSION               0x1
+#define MLX_FRU_HEADER_PRODUCT               0x1
+#define MLX_FRU_PRODUCT_MANUFACTURER_LEN     0xc4 // &3f = 4
+#define MLX_FRU_PRODUCT_NAME_LEN             0xcb // &3f = 11
+#define MLX_FRU_PRODUCT_PART_NUMBER_LEN      0xcb // &3f = 11
+#define MLX_FRU_PRODUCT_VERSION_LEN          0xc2 // &3f = 2
+#define MLX_FRU_PRODUCT_SERIAL_LEN           0xcc // &3f = 12
+#define MLX_FRU_PRODUCT_INFO_LEN_MASK        0x3f
+#define MLX_FRU_NO_PRODUCT_EXTRA_INFO        0xc1
+
+#define MLX_FRU_PRODUCT_MANUFACTURER_OFFSET  8
+#define MLX_FRU_PRODUCT_NAME_OFFSET          92
+#define MLX_FRU_PRODUCT_PART_NUMBER_OFFSET   64
+#define MLX_FRU_PRODUCT_VERSION_OFFSET       84
+#define MLX_FRU_PRODUCT_SERIAL_OFFSET        40
+#define MLX_FRU_FAN_DEV_ID_MIN               6
+#define MLX_FRU_FAN_DEV_ID_MAX               9
+#define MLX_FRU_CTRL_FIELD_MASK(o,c)         (o == 0 && c == 8)
+#define MLX_FRU_CTRL_LEN_MASK(o,c)           (o == 8 && c == 2)
+#define MLX_FRU_PROD_INFO_1(o,c)             (o == 8 && (c == 33 || c == 32))
+#define MLX_FRU_PROD_INFO_2(o,c)             ((o == 41 && c == 31) || (o == 40 && c == 32))
+
+        unsigned char buf[30];
+
+    if (devid >= MLX_FRU_FAN_DEV_ID_MIN && devid <= MLX_FRU_FAN_DEV_ID_MAX) {
+        if (MLX_FRU_CTRL_FIELD_MASK(offset, count)) {
+            memset(buf, 0 , sizeof(buf));
+            buf[0] = MLX_FRU_HEADER_VERSION;
+            buf[4] = MLX_FRU_HEADER_PRODUCT;
+            memcpy(rdata + 2, buf, count);
+        }
+        if (MLX_FRU_CTRL_LEN_MASK(offset, count)) {
+            rdata[2] = 0x0;
+            rdata[3] = 0x8;
+        }
+        if (MLX_FRU_PROD_INFO_1(offset, count)) {
+            // ipmitool skip first three bytes which specify
+            // fru area version, fru area length
+            // and fru board language
+            rdata[2] = 0x0;
+            rdata[3] = 0x0;
+            rdata[4] = 0x0;
+            rdata[5] = MLX_FRU_PRODUCT_MANUFACTURER_LEN;
+
+            // Product Manufacturer
+            memset(buf, 0 , sizeof(buf));
+            rv = fru->fru_io_cb(fru->data, FRU_IO_READ, buf, MLX_FRU_PRODUCT_MANUFACTURER_OFFSET, MLX_FRU_PRODUCT_MANUFACTURER_LEN & MLX_FRU_PRODUCT_INFO_LEN_MASK);
+            if (rv) {
+                rdata[0] = IPMI_UNKNOWN_ERR_CC;
+                *rdata_len = 1;
+                goto out_unlock;
+            }
+            memcpy(rdata + 6, buf, MLX_FRU_PRODUCT_MANUFACTURER_LEN & MLX_FRU_PRODUCT_INFO_LEN_MASK);
+            rdata[10] = MLX_FRU_PRODUCT_NAME_LEN;
+
+            // Product Name
+            memset(buf, 0, sizeof(buf));
+            rv = fru->fru_io_cb(fru->data, FRU_IO_READ, buf, MLX_FRU_PRODUCT_NAME_OFFSET, MLX_FRU_PRODUCT_NAME_LEN & MLX_FRU_PRODUCT_INFO_LEN_MASK);
+            if (rv) {
+                rdata[0] = IPMI_UNKNOWN_ERR_CC;
+                *rdata_len = 1;
+                goto out_unlock;
+            }
+            memcpy(rdata + 11, buf, MLX_FRU_PRODUCT_NAME_LEN & MLX_FRU_PRODUCT_INFO_LEN_MASK);
+            rdata[22] = MLX_FRU_PRODUCT_PART_NUMBER_LEN;
+
+            // Product Part Number
+            memset(buf, 0, sizeof(buf));
+            rv = fru->fru_io_cb(fru->data, FRU_IO_READ, buf, MLX_FRU_PRODUCT_PART_NUMBER_OFFSET, MLX_FRU_PRODUCT_PART_NUMBER_LEN & MLX_FRU_PRODUCT_INFO_LEN_MASK);
+            if (rv) {
+                rdata[0] = IPMI_UNKNOWN_ERR_CC;
+                *rdata_len = 1;
+                goto out_unlock;
+            }
+            memcpy(rdata + 23, buf, MLX_FRU_PRODUCT_PART_NUMBER_LEN & MLX_FRU_PRODUCT_INFO_LEN_MASK);
+            rdata[34] = MLX_FRU_PRODUCT_VERSION_LEN;
+        }
+        if (MLX_FRU_PROD_INFO_2(offset, count)) {
+            // Product Version
+            memset(buf, 0 , sizeof(buf));
+            rv = fru->fru_io_cb(fru->data, FRU_IO_READ, buf, MLX_FRU_PRODUCT_VERSION_OFFSET, MLX_FRU_PRODUCT_VERSION_LEN & MLX_FRU_PRODUCT_INFO_LEN_MASK);
+            if (rv) {
+                rdata[0] = IPMI_UNKNOWN_ERR_CC;
+                *rdata_len = 1;
+                goto out_unlock;
+            }
+            memcpy(rdata + 2, buf, MLX_FRU_PRODUCT_VERSION_LEN & MLX_FRU_PRODUCT_INFO_LEN_MASK);
+            rdata[4] = MLX_FRU_PRODUCT_SERIAL_LEN;
+
+            // Product Serial
+            memset(buf, 0, sizeof(buf));
+            rv = fru->fru_io_cb(fru->data, FRU_IO_READ, buf, MLX_FRU_PRODUCT_SERIAL_OFFSET, MLX_FRU_PRODUCT_SERIAL_LEN & MLX_FRU_PRODUCT_INFO_LEN_MASK);
+            if (rv) {
+                rdata[0] = IPMI_UNKNOWN_ERR_CC;
+                *rdata_len = 1;
+                goto out_unlock;
+            }
+            memcpy(rdata + 5, buf, MLX_FRU_PRODUCT_SERIAL_LEN & MLX_FRU_PRODUCT_INFO_LEN_MASK);
+            rdata[19] = MLX_FRU_NO_PRODUCT_EXTRA_INFO;
+        }
+    }
+#endif
     } else {
 	memcpy(rdata + 2, data + offset, count);
     }
