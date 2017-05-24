@@ -41,6 +41,7 @@ static lmc_data_t *bmc_mc;
 
 /* IPMI_APP_NETFN (0x06) */
 #define IPMI_OEM_MLX_SEL_BUFFER_SET_CMD     0x5B
+#define IPMI_OEM_MLX_CPU_READY_EVENT_CMD    0x5c
 #define IPMI_OEM_MLX_CPU_HARD_RESET_CMD     0x5e
 #define IPMI_OEM_MLX_CPU_SOFT_RESET_CMD     0x5f
 #define IPMI_OEM_MLX_RESET_PHY_CMD          0x60
@@ -598,6 +599,41 @@ handle_bmc_cold_reset(lmc_data_t    *mc,
 
 /**
  *
+ *  ipmitool raw 0x06 0x5c [0x0]
+ *
+ **/
+static void
+handle_cpu_ready_event(lmc_data_t    *mc,
+			  msg_t         *msg,
+			  unsigned char *rdata,
+			  unsigned int  *rdata_len,
+			  void          *cb_data)
+{
+    unsigned char status_led_run_str[32];
+    unsigned int ready;
+
+    if (check_msg_length(msg, 1, rdata, rdata_len)) {
+        ready = 1;
+    }
+    else {
+        ready = msg->data[0];
+        if (ready != 0 ) {
+            rdata[0] = IPMI_INVALID_DATA_FIELD_CC;
+            *rdata_len = 1;
+            return;
+        }
+    }
+
+
+   if (sprintf(status_led_run_str,"status_led.py 0x%02x %d 0x%02x\n",0xbb, ready, IPMI_SENSOR_TYPE_PROCESSOR))
+       system(status_led_run_str);
+
+    rdata[0] = 0;
+    *rdata_len = 1;
+}
+
+/**
+ *
  *  ipmitool raw 0x06  0x5e
  *
  **/
@@ -1002,6 +1038,9 @@ ipmi_sim_module_init(sys_data_t *sys, const char *initstr_i)
 
     rv = ipmi_emu_register_cmd_handler(IPMI_APP_NETFN, IPMI_COLD_RESET_CMD,
                                        handle_bmc_cold_reset, sys);
+
+    rv = ipmi_emu_register_cmd_handler(IPMI_APP_NETFN, IPMI_OEM_MLX_CPU_READY_EVENT_CMD,
+                                       handle_cpu_ready_event, sys);
 
     rv = ipmi_emu_register_cmd_handler(IPMI_APP_NETFN, IPMI_OEM_MLX_CPU_HARD_RESET_CMD,
                                        handle_cpu_hard_reset, sys);

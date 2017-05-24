@@ -28,12 +28,14 @@ Sensor number (1-st param):
     FAN2 drw              0xb8
     FAN3 drw              0xb9
     FAN4 drw              0xba
+    CPU ready             0xbb
 
 Sensor Types (3-rd param):
     Temperature           0x01
     Voltage               0x02
     Current               0x03
     Fan                   0x04
+    Processor             0x07
     PSU drw               0x2d
     FAN drw               0x2e
 '''
