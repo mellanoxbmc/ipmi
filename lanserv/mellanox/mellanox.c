@@ -127,6 +127,37 @@ static const char* amber_led[MLX_STATUS_LED_MAX] =
 #define MLX_MAX_THERMAL_ZONE 1
 #define MLX_THERMAL_ZONE     "/bsp/thermal/thermal_zone%u/mode"
 
+#define MLX_EVENT_TO_SEL_BUF_SIZE 13
+#define MLX_EVENT_DIRECTION_SHIFT 7
+
+static void
+add_event_to_sel(lmc_data_t    *mc,
+           unsigned char sensor_type,
+           unsigned char sensor_num,
+           unsigned char direction,
+           unsigned char event_type,
+           unsigned char offset)
+{
+    lmc_data_t    *dest_mc;
+    unsigned char data[MLX_EVENT_TO_SEL_BUF_SIZE];
+    int           rv;
+
+    rv = ipmi_emu_get_mc_by_addr(mc->emu, mc->event_receiver, &dest_mc);
+    if (rv)
+        return;
+
+    memset(data, 0, MLX_EVENT_TO_SEL_BUF_SIZE);
+
+    data[4] = mc->ipmb;
+    data[6] = 0x04; /* Event message revision for IPMI 1.5. */
+    data[7] = sensor_type;
+    data[8] = sensor_num;
+    data[9] = (direction << MLX_EVENT_DIRECTION_SHIFT) | event_type;
+    data[10] = offset;
+
+    mc_new_event(dest_mc, 0x02, data);
+}
+
 
 static unsigned char set_fan_enable(const char* fname)
 {
@@ -546,8 +577,6 @@ handle_bmc_cold_reset(lmc_data_t    *mc,
 			  unsigned int  *rdata_len,
 			  void          *cb_data)
 {
-    printf("\n %d: %s, %s(); %x %X", __LINE__, __FILE__, __FUNCTION__, msg->data[0], msg->data[1]);
-
     FILE *freset;
 
     freset = fopen(MLX_BMC_SOFT_RESET, "w");
@@ -558,6 +587,7 @@ handle_bmc_cold_reset(lmc_data_t    *mc,
             *rdata_len = 1;
             return;
     } else {
+        add_event_to_sel(mc, IPMI_SENSOR_TYPE_SYSTEM_BOOT_INITIATED, mc->ipmb, 0, IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, 0x6);
         fprintf(freset, "%u", 0);
     }
 
@@ -607,6 +637,11 @@ handle_cpu_hard_reset(lmc_data_t    *mc,
     }
 
     fclose(freset);
+
+    if (!reset) {
+        add_event_to_sel(mc, IPMI_SENSOR_TYPE_OS_CRITICAL_STOP , 0, 0, IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, 0x3);
+    }
+
     rdata[0] = 0;
     *rdata_len = 1;
 }
@@ -623,8 +658,6 @@ handle_cpu_soft_reset(lmc_data_t    *mc,
 			  unsigned int  *rdata_len,
 			  void          *cb_data)
 {
-    printf("\n %d: %s, %s()", __LINE__, __FILE__, __FUNCTION__);
-
     FILE *freset;
 
     freset = fopen(MLX_CPU_SOFT_RESET, "w");
@@ -639,6 +672,9 @@ handle_cpu_soft_reset(lmc_data_t    *mc,
     }
 
     fclose(freset);
+
+    add_event_to_sel(mc, IPMI_SENSOR_TYPE_SYSTEM_BOOT_INITIATED, 0, 0, IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, 0x7); 
+
     rdata[0] = 0;
     *rdata_len = 1;
 }
@@ -861,7 +897,7 @@ static void handle_get_last_processed_event(lmc_data_t    *mc,
  */
 static int
 bmc_set_chassis_control(lmc_data_t *mc, int op, unsigned char *val,
-			void *cb_data)
+                        void *cb_data)
 {
     FILE *freset;
 
@@ -877,13 +913,14 @@ bmc_set_chassis_control(lmc_data_t *mc, int op, unsigned char *val,
         if (!freset) {
                 return ETXTBSY;
         } else {
+            add_event_to_sel(mc, IPMI_SENSOR_TYPE_SYSTEM_EVENT, 0 , 0, IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, 0x1);
             fprintf(freset, "%u", 0);
         }
 
         fclose(freset);
         break;
     default:
-	return EINVAL;
+        return EINVAL;
     }
 
     return 0;
