@@ -128,8 +128,6 @@ static const char* amber_led[MLX_STATUS_LED_MAX] =
 #define MLX_MAX_THERMAL_ZONE 1
 #define MLX_THERMAL_ZONE     "/bsp/thermal/thermal_zone%u/mode"
 
-#define MLX_EVENT_TO_SEL_BUF_SIZE 13
-#define MLX_EVENT_DIRECTION_SHIFT 7
 static const char* reset_cause[8] =
 {
     "/bsp/reset/ac_power_cycle",
@@ -160,33 +158,7 @@ enum reset_cause_e {
 static ipmi_timer_t *reset_monitor_timer = NULL;
 #define MLX_RESET_MONITOR_TIMEOUT         10
 
-static void
-add_event_to_sel(lmc_data_t    *mc,
-           unsigned char sensor_type,
-           unsigned char sensor_num,
-           unsigned char direction,
-           unsigned char event_type,
-           unsigned char offset)
-{
-    lmc_data_t    *dest_mc;
-    unsigned char data[MLX_EVENT_TO_SEL_BUF_SIZE];
-    int           rv;
 
-    rv = ipmi_emu_get_mc_by_addr(mc->emu, mc->event_receiver, &dest_mc);
-    if (rv)
-        return;
-
-    memset(data, 0, MLX_EVENT_TO_SEL_BUF_SIZE);
-
-    data[4] = mc->ipmb;
-    data[6] = 0x04; /* Event message revision for IPMI 1.5. */
-    data[7] = sensor_type;
-    data[8] = sensor_num;
-    data[9] = (direction << MLX_EVENT_DIRECTION_SHIFT) | event_type;
-    data[10] = offset;
-
-    mc_new_event(dest_mc, 0x02, data);
-}
 
 
 static unsigned char set_fan_enable(const char* fname)
@@ -618,7 +590,7 @@ handle_bmc_cold_reset(lmc_data_t    *mc,
             *rdata_len = 1;
             return;
     } else {
-        add_event_to_sel(mc, IPMI_SENSOR_TYPE_SYSTEM_BOOT_INITIATED, mc->ipmb, 0, IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, 0x6);
+        mlx_add_event_to_sel(mc, IPMI_SENSOR_TYPE_SYSTEM_BOOT_INITIATED, mc->ipmb, 0, IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, 0x6);
 
         if (reset_monitor_timer)
             sys->free_timer(reset_monitor_timer);
@@ -709,7 +681,7 @@ handle_cpu_hard_reset(lmc_data_t    *mc,
     fclose(freset);
 
     if (!reset) {
-        add_event_to_sel(mc, IPMI_SENSOR_TYPE_OS_CRITICAL_STOP , 0, 0, IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, 0x3);
+        mlx_add_event_to_sel(mc, IPMI_SENSOR_TYPE_OS_CRITICAL_STOP , 0, 0, IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, 0x3);
     }
 
     rdata[0] = 0;
@@ -743,7 +715,7 @@ handle_cpu_soft_reset(lmc_data_t    *mc,
 
     fclose(freset);
 
-    add_event_to_sel(mc, IPMI_SENSOR_TYPE_SYSTEM_BOOT_INITIATED, 0, 0, IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, 0x7); 
+    mlx_add_event_to_sel(mc, IPMI_SENSOR_TYPE_SYSTEM_BOOT_INITIATED, 0, 0, IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, 0x7); 
 
     rdata[0] = 0;
     *rdata_len = 1;
@@ -983,7 +955,7 @@ bmc_set_chassis_control(lmc_data_t *mc, int op, unsigned char *val,
         if (!freset) {
                 return ETXTBSY;
         } else {
-            add_event_to_sel(mc, IPMI_SENSOR_TYPE_SYSTEM_EVENT, 0 , 0, IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, 0x1);
+            mlx_add_event_to_sel(mc, IPMI_SENSOR_TYPE_SYSTEM_EVENT, 0 , 0, IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, 0x1);
             fprintf(freset, "%u", 0);
         }
 
@@ -1021,39 +993,39 @@ reset_monitor_timeout(void *cb_data)
             switch (i) {
             case MLX_RESET_CAUSE_AC_POWER_CYCLE:
                 //"Power Unit", "Power cycle"
-                add_event_to_sel(sys->mc, IPMI_SENSOR_TYPE_POWER_UNIT, 0 , 0, IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, 0x1);
+                mlx_add_event_to_sel(sys->mc, IPMI_SENSOR_TYPE_POWER_UNIT, 0 , 0, IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, 0x1);
                 break;
             case MLX_RESET_CAUSE_DC_POWER_CYCLE:
                 //"System Event", "OEM System boot event"
-                add_event_to_sel(sys->mc, IPMI_SENSOR_TYPE_SYSTEM_EVENT, 0 , 0, IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, 0x1);
+                mlx_add_event_to_sel(sys->mc, IPMI_SENSOR_TYPE_SYSTEM_EVENT, 0 , 0, IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, 0x1);
                 break;
             case MLX_RESET_CAUSE_BMC_UPGRADE:
                 //"Version Change", "Firmware or software change success"
-                add_event_to_sel(sys->mc, IPMI_SENSOR_TYPE_VERSION_CHANGE, 0 , 0, IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, 0x7);
+                mlx_add_event_to_sel(sys->mc, IPMI_SENSOR_TYPE_VERSION_CHANGE, 0 , 0, IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, 0x7);
                 break;
             case MLX_RESET_CAUSE_CPU_KERNEL_PANIC:
                 //"System Firmware Error", "Unknown Error"
-                add_event_to_sel(sys->mc, IPMI_SENSOR_TYPE_SYSTEM_FIRMWARE_PROGRESS, 0 , 0, IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, 0x0);
+                mlx_add_event_to_sel(sys->mc, IPMI_SENSOR_TYPE_SYSTEM_FIRMWARE_PROGRESS, 0 , 0, IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, 0x0);
                 break;
             case MLX_RESET_CAUSE_CPU_POWER_DOWN:
                 //"Power Unit", "Power off/down"
-                add_event_to_sel(sys->mc, IPMI_SENSOR_TYPE_POWER_UNIT, 0 , 0, IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, 0x0);
+                mlx_add_event_to_sel(sys->mc, IPMI_SENSOR_TYPE_POWER_UNIT, 0 , 0, IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, 0x0);
                 break;
             case MLX_RESET_CAUSE_CPU_REBOOT:
                 //"System Boot Initiated", "System Restart" 
-                add_event_to_sel(sys->mc, IPMI_SENSOR_TYPE_SYSTEM_BOOT_INITIATED, 0 , 0, IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, 0x7);
+                mlx_add_event_to_sel(sys->mc, IPMI_SENSOR_TYPE_SYSTEM_BOOT_INITIATED, 0 , 0, IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, 0x7);
                 break;
             case MLX_RESET_CAUSE_CPU_SHUTDOWN:
                 //"OS Stop/Shutdown", "OS graceful shutdown"
-                add_event_to_sel(sys->mc, IPMI_SENSOR_TYPE_OS_CRITICAL_STOP, 0 , 0, IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, 0x3);
+                mlx_add_event_to_sel(sys->mc, IPMI_SENSOR_TYPE_OS_CRITICAL_STOP, 0 , 0, IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, 0x3);
                 break;
             case MLX_RESET_CAUSE_CPU_WATCHDOG:
                 //"Watchdog 2", "Power cycle"
-                add_event_to_sel(sys->mc, IPMI_SENSOR_TYPE_WATCHDOG_2, 0 , 0, IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, 0x3);
+                mlx_add_event_to_sel(sys->mc, IPMI_SENSOR_TYPE_WATCHDOG_2, 0 , 0, IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, 0x3);
                 break;
             case MLX_RESET_CAUSE_BUTTON:
                 //"Button", "Reset Button pressed"
-                add_event_to_sel(sys->mc, IPMI_SENSOR_TYPE_BUTTON, 0 , 0, IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, 0x2);
+                mlx_add_event_to_sel(sys->mc, IPMI_SENSOR_TYPE_BUTTON, 0 , 0, IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, 0x2);
                 break;
             }
         }

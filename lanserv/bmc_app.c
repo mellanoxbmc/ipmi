@@ -164,6 +164,36 @@ handle_get_watchdog_timer(lmc_data_t    *mc,
     *rdata_len = 9;
 }
 
+#ifdef MLX_IPMID
+void
+mlx_add_event_to_sel(lmc_data_t    *mc,
+           unsigned char sensor_type,
+           unsigned char sensor_num,
+           unsigned char direction,
+           unsigned char event_type,
+           unsigned char offset)
+{
+    lmc_data_t    *dest_mc;
+    unsigned char data[MLX_EVENT_TO_SEL_BUF_SIZE];
+    int           rv;
+
+    rv = ipmi_emu_get_mc_by_addr(mc->emu, mc->event_receiver, &dest_mc);
+    if (rv)
+        return;
+
+    memset(data, 0, MLX_EVENT_TO_SEL_BUF_SIZE);
+
+    data[4] = mc->ipmb;
+    data[6] = 0x04; /* Event message revision for IPMI 1.5. */
+    data[7] = sensor_type;
+    data[8] = sensor_num;
+    data[9] = (direction << MLX_EVENT_DIRECTION_SHIFT) | event_type;
+    data[10] = offset;
+
+    mc_new_event(dest_mc, 0x02, data);
+}
+#endif
+
 void
 watchdog_timeout(void *cb_data)
 {
@@ -235,6 +265,7 @@ watchdog_timeout(void *cb_data)
 #ifdef MLX_IPMID
         /*Uart to BMC*/
         system("echo 0 > /bsp/reset/uart_sel");
+        mlx_add_event_to_sel(mc, IPMI_SENSOR_TYPE_WATCHDOG_1, 0 , 0, IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, 0x6);
 #else
 	set_sensor_bit(mc, sens, 0, 1, 0xc0, mc->watchdog_use & 0xf, 0xff, 1);
 #endif
@@ -244,6 +275,7 @@ watchdog_timeout(void *cb_data)
 #ifdef MLX_IPMID
         /*CPU Reset*/
         system("echo 0 > /bsp/reset/cpu_reset_soft");
+        mlx_add_event_to_sel(mc, IPMI_SENSOR_TYPE_WATCHDOG_1, 0 , 0, IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, 0x1);
 #else
 	set_sensor_bit(mc, sens, 1, 1, 0xc1, mc->watchdog_use & 0xf, 0xff, 1);
 	bchan->hw_op(bchan, HW_OP_RESET);
@@ -254,6 +286,7 @@ watchdog_timeout(void *cb_data)
 #ifdef MLX_IPMID
         /*CPU Power-off*/
         system("echo 0 > /bsp/reset/cpu_reset_hard");
+        mlx_add_event_to_sel(mc, IPMI_SENSOR_TYPE_WATCHDOG_1, 0 , 0, IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, 0x3);
 #else
 	set_sensor_bit(mc, sens, 2, 1, 0xc2, mc->watchdog_use & 0xf, 0xff, 1);
 	bchan->hw_op(bchan, HW_OP_POWEROFF);
@@ -268,6 +301,7 @@ watchdog_timeout(void *cb_data)
         system("echo 0 > /bsp/reset/cpu_reset_hard");
         sleep(3);
         system("echo 1 > /bsp/reset/cpu_reset_hard");
+        mlx_add_event_to_sel(mc, IPMI_SENSOR_TYPE_WATCHDOG_1, 0 , 0, IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, 0x4);
 #else
 	set_sensor_bit(mc, sens, 3, 1, 0xc3, mc->watchdog_use & 0xf, 0xff, 1);
 	bchan->hw_op(bchan, HW_OP_POWEROFF);
