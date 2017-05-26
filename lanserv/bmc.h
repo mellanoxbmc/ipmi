@@ -438,4 +438,16 @@ void handle_picmg_msg(lmc_data_t    *mc,
 #define set_bit(m, b, v) (m) = (v) ? ((m) | (1 << (b))) : ((m) & ~(1 << (b)))
 #define bit_set(m, b) (!!((m) & (1 << (b))))
 
+#ifdef MLX_IPMID
+#define MLX_EVENT_TO_SEL_BUF_SIZE 13
+#define MLX_EVENT_DIRECTION_SHIFT 7
+
+void mlx_add_event_to_sel(lmc_data_t    *mc,
+           unsigned char sensor_type,
+           unsigned char sensor_num,
+           unsigned char direction,
+           unsigned char event_type,
+           unsigned char offset);
+#endif
+
 #endif /* __BMC_H_ */
