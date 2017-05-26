@@ -130,6 +130,35 @@ static const char* amber_led[MLX_STATUS_LED_MAX] =
 
 #define MLX_EVENT_TO_SEL_BUF_SIZE 13
 #define MLX_EVENT_DIRECTION_SHIFT 7
+static const char* reset_cause[8] =
+{
+    "/bsp/reset/ac_power_cycle",
+    "/bsp/reset/dc_power_cycle",
+    "/bsp/reset/bmc_upgrade",
+    "/bsp/reset/cpu_kernel_panic",
+    "/bsp/reset/cpu_power_down",
+    "/bsp/reset/cpu_reboot",
+    "/bsp/reset/cpu_shutdown",
+    "/bsp/reset/cpu_watchdog"
+};
+
+enum reset_cause_e {
+    MLX_RESET_CAUSE_AC_POWER_CYCLE = 0,
+    MLX_RESET_CAUSE_DC_POWER_CYCLE,
+    MLX_RESET_CAUSE_BMC_UPGRADE,
+    MLX_RESET_CAUSE_CPU_KERNEL_PANIC,
+    MLX_RESET_CAUSE_CPU_POWER_DOWN,
+    MLX_RESET_CAUSE_CPU_REBOOT,
+    MLX_RESET_CAUSE_CPU_SHUTDOWN,
+    MLX_RESET_CAUSE_CPU_WATCHDOG,
+    MLX_RESET_CAUSE_BUTTON
+};
+
+/*
+ * This timer is called periodically to monitor the system reset cause.
+ */
+static ipmi_timer_t *reset_monitor_timer = NULL;
+#define MLX_RESET_MONITOR_TIMEOUT         10
 
 static void
 add_event_to_sel(lmc_data_t    *mc,
@@ -578,6 +607,7 @@ handle_bmc_cold_reset(lmc_data_t    *mc,
 			  unsigned int  *rdata_len,
 			  void          *cb_data)
 {
+    sys_data_t *sys = cb_data;
     FILE *freset;
 
     freset = fopen(MLX_BMC_SOFT_RESET, "w");
@@ -589,6 +619,10 @@ handle_bmc_cold_reset(lmc_data_t    *mc,
             return;
     } else {
         add_event_to_sel(mc, IPMI_SENSOR_TYPE_SYSTEM_BOOT_INITIATED, mc->ipmb, 0, IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, 0x6);
+
+        if (reset_monitor_timer)
+            sys->free_timer(reset_monitor_timer);
+
         fprintf(freset, "%u", 0);
     }
 
@@ -962,6 +996,74 @@ bmc_set_chassis_control(lmc_data_t *mc, int op, unsigned char *val,
     return 0;
 }
 
+static void
+reset_monitor_timeout(void *cb_data)
+{
+    sys_data_t *sys = cb_data;
+    int i;
+    struct timeval tv;
+    int fd;
+    int rv;
+
+    for (i = 0; i < 8; ++i) {
+        unsigned char c = 0;
+        int active = 0;
+
+        fd = open(reset_cause[i], O_RDONLY);
+
+        rv = read(fd, &c, 1);
+        if (rv != 1) {
+            sys->log(sys, OS_ERROR, NULL, "Warning: filed to read '%s' file", reset_cause[i]);
+            continue;
+        }
+        active = atoi(&c);
+        if (active) {
+            switch (i) {
+            case MLX_RESET_CAUSE_AC_POWER_CYCLE:
+                //"Power Unit", "Power cycle"
+                add_event_to_sel(sys->mc, IPMI_SENSOR_TYPE_POWER_UNIT, 0 , 0, IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, 0x1);
+                break;
+            case MLX_RESET_CAUSE_DC_POWER_CYCLE:
+                //"System Event", "OEM System boot event"
+                add_event_to_sel(sys->mc, IPMI_SENSOR_TYPE_SYSTEM_EVENT, 0 , 0, IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, 0x1);
+                break;
+            case MLX_RESET_CAUSE_BMC_UPGRADE:
+                //"Version Change", "Firmware or software change success"
+                add_event_to_sel(sys->mc, IPMI_SENSOR_TYPE_VERSION_CHANGE, 0 , 0, IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, 0x7);
+                break;
+            case MLX_RESET_CAUSE_CPU_KERNEL_PANIC:
+                //"System Firmware Error", "Unknown Error"
+                add_event_to_sel(sys->mc, IPMI_SENSOR_TYPE_SYSTEM_FIRMWARE_PROGRESS, 0 , 0, IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, 0x0);
+                break;
+            case MLX_RESET_CAUSE_CPU_POWER_DOWN:
+                //"Power Unit", "Power off/down"
+                add_event_to_sel(sys->mc, IPMI_SENSOR_TYPE_POWER_UNIT, 0 , 0, IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, 0x0);
+                break;
+            case MLX_RESET_CAUSE_CPU_REBOOT:
+                //"System Boot Initiated", "System Restart" 
+                add_event_to_sel(sys->mc, IPMI_SENSOR_TYPE_SYSTEM_BOOT_INITIATED, 0 , 0, IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, 0x7);
+                break;
+            case MLX_RESET_CAUSE_CPU_SHUTDOWN:
+                //"OS Stop/Shutdown", "OS graceful shutdown"
+                add_event_to_sel(sys->mc, IPMI_SENSOR_TYPE_OS_CRITICAL_STOP, 0 , 0, IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, 0x3);
+                break;
+            case MLX_RESET_CAUSE_CPU_WATCHDOG:
+                //"Watchdog 2", "Power cycle"
+                add_event_to_sel(sys->mc, IPMI_SENSOR_TYPE_WATCHDOG_2, 0 , 0, IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, 0x3);
+                break;
+            case MLX_RESET_CAUSE_BUTTON:
+                //"Button", "Reset Button pressed"
+                add_event_to_sel(sys->mc, IPMI_SENSOR_TYPE_BUTTON, 0 , 0, IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, 0x2);
+                break;
+            }
+        }
+    }
+
+    tv.tv_sec = MLX_RESET_MONITOR_TIMEOUT;
+    tv.tv_usec = 0;
+    sys->start_timer(reset_monitor_timer, &tv);
+}
+
 /*
  * Chassis control get for the chassis.
  */
@@ -995,6 +1097,7 @@ ipmi_sim_module_init(sys_data_t *sys, const char *initstr_i)
 {
     int rv;
     unsigned int i;
+    struct timeval tv;
 
     printf("IPMI Mellanox module");
 
@@ -1069,6 +1172,17 @@ ipmi_sim_module_init(sys_data_t *sys, const char *initstr_i)
     if (rv) {
 	sys->log(sys, OS_ERROR, NULL,
 		 "Unable to register NEW handler: %s", strerror(rv));
+    }
+
+    rv = sys->alloc_timer(sys, reset_monitor_timeout, sys, &reset_monitor_timer);
+    if (rv) {
+        int errval = errno;
+        sys->log(sys, SETUP_ERROR, NULL, "Unable to create reset monitoring timer");
+        return errval;
+    } else {
+        tv.tv_sec = MLX_RESET_MONITOR_TIMEOUT;
+        tv.tv_usec = 0;
+        sys->start_timer(reset_monitor_timer, &tv);
     }
 
     return 0;
