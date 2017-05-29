@@ -1029,6 +1029,7 @@ reset_monitor_timeout(void *cb_data)
                 break;
             }
         }
+        close(fd);
     }
 
     tv.tv_sec = MLX_RESET_MONITOR_TIMEOUT;
