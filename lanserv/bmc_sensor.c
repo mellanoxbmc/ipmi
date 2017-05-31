@@ -1610,7 +1610,10 @@ sensor_poll(void *cb_data)
 	err = sensor->poll(sensor->cb_data, &val, &errstr);
 	if (err) {
 #ifdef MLX_IPMID
-            sensor->enabled = 0;
+            if (sensor->enabled) {
+                status_led_control(sensor->num, 0, sensor->sensor_type);
+                sensor->enabled = 0;
+            }
             goto out_restart;
 #else
 	    mc->sysinfo->log(mc->sysinfo, OS_ERROR, NULL,
@@ -1621,8 +1624,12 @@ sensor_poll(void *cb_data)
 	    goto out_restart;
 	}
 #ifdef MLX_IPMID
-        else
-            sensor->enabled = 1;
+        else{
+            if (!sensor->enabled) {
+                status_led_control(sensor->num, 1, sensor->sensor_type);
+                sensor->enabled = 1;
+            }
+        }
 #endif
 	
 	if (sensor->event_reading_code == IPMI_EVENT_READING_TYPE_THRESHOLD) {
