@@ -16,9 +16,6 @@
 #  mac_addr
 #  subnet_mask
 #  default_gw_ip_addr
-#  default_gw_mac_addr
-#  backup_gw_ip_addr
-#  backup_gw_mac_addr
 # These are config values out of the IPMI LAN config table that are
 # not IPMI-exclusive, they require setting external things.
 #
@@ -35,17 +32,10 @@
 # committing it.
 #
 
-need_ip_addr=0
-need_ip_addr_src=0
-need_mac_addr=0
-need_subnet_mask=0
-need_default_gw_ip_addr=0
-
-ip_addr="0.0.0.0"
-ip_addr_src="dhcp"
-mac_addr="00:00:00:00:00:00"
-subnet_mask="255.255.255.255"
-default_gw_ip_addr="0.0.0.0"
+tmp_ip_addr="0.0.0.0"
+tmp_netmask="0"
+tmp_gateway="0.0.0.0"
+tmp_ip_addr_src="dhcp"
 
 prog=$0
 
@@ -74,16 +64,11 @@ do_get() {
 		;;
 
 	    ip_addr_src)
-		val=`grep "iface $device inet" /etc/network/interfaces | tr ' ' '\t' | tr -s '\t' '\t' | cut -f 4`
-		case "x$val" in
-		    xstatic)
-			;;
-		    xdhcp)
-			;;
-		    *)
-			val="unknown"
-			;;
-		esac
+		if [ ! -f /etc/systemd/network/50-static.network ];  then
+			val="dhcp"
+		else
+			val="static"
+		fi
 		;;
 
 	    mac_addr)
@@ -178,158 +163,24 @@ do_check() {
 	esac
 }
 
-do_create_stanza() {
-	if [ $need_ip_addr_src != 1 ]
-	then
-		echo "ip_addr_src required for new interface stanza - fail"
-		exit 1
-	fi
-
-	case $ip_addr_src in
-		dhcp)
-		echo "iface $device inet dhcp" >/tmp/ipmi_ifaces_stanza
-		if [ $need_mac_addr = 1 ]
-		then
-			echo "	hwaddress $mac_addr" >>/tmp/ipmi_ifaces_stanza
-		fi
-		echo "	" >>/tmp/ipmi_ifaces_stanza
-		;;
-
-		static)
-		echo "iface $device inet static" >/tmp/ipmi_ifaces_stanza
-		if [ $need_ip_addr = 1 ]
-		then
-			echo "	address $ip_addr" >>/tmp/ipmi_ifaces_stanza
-		else
-			echo "static configuration requires ip_addr - fail"
-			exit 1
-		fi
-
-		if [ $need_subnet_mask = 1 ]
-		then
-			echo "	netmask $subnet_mask" >>/tmp/ipmi_ifaces_stanza
-		else
-			echo "static configuration requires subnet_mask - fail"
-			exit 1
-		fi
-
-		if [ $need_default_gw_ip_addr = 1 ]
-		then
-			echo "	gateway $default_gw_ip_addr" >>/tmp/ipmi_ifaces_stanza
-		fi
-
-		if [ $need_mac_addr = 1 ]
-		then
-			echo "	hwaddress ether $mac_addr" >>/tmp/ipmi_ifaces_stanza
-		fi
-
-		echo "  " >>/tmp/ipmi_ifaces_stanza
-		;;
-
-	esac
-}
-
-do_split_interfaces() {
-#  separate the stanza for our device from the other stanzas
-
-	sed "/^[ \t]*iface[ \t][ \t]*$device[ \t]/,/^\t$/d" /etc/network/interfaces >/tmp/ipmi_interfaces_unchanged
-
-	sed -n "/^[ \t]*iface[ \t][ \t]*$device[ \t]/,/^\t$/p" /etc/network/interfaces >/tmp/ipmi_old_stanza
-}
-
-do_modify_stanza() {
-#  fixup the previous stanza for our device, keeping parts that are unmodified
-
-	if [ -s /tmp/ipmi_old_stanza ]
-	then
-# 	now we need to modify the file that is there to update any new settings
-#	For every new parameter, remove the old corresponding line
-		cp /tmp/ipmi_old_stanza /tmp/ipmi_old_stanza_src
-
-		if [ $need_ip_addr_src = 1 ]
-		then
-			sed '/^[ \t]*iface/d' /tmp/ipmi_old_stanza_src >/tmp/ipmi_old_stanza_dst.1
-			echo "iface $device inet $ip_addr_src" >/tmp/ipmi_ifaces_stanza
-			cp /tmp/ipmi_old_stanza_dst.1 /tmp/ipmi_old_stanza_src
-		else
-			sed -n "1p" /tmp/ipmi_old_stanza_src >/tmp/ipmi_ifaces_stanza
-			sed '/^[ \t]*iface/d' /tmp/ipmi_old_stanza_src >/tmp/ipmi_old_stanza_dst.1
-			cp /tmp/ipmi_old_stanza_dst.1 /tmp/ipmi_old_stanza_src
-		fi
-
-		if [ $need_ip_addr = 1 ]
-		then
-			sed '/^[ \t]*address/d' /tmp/ipmi_old_stanza_src >/tmp/ipmi_old_stanza_dst.2
-			echo "	address $ip_addr" >>/tmp/ipmi_ifaces_stanza
-			cp /tmp/ipmi_old_stanza_dst.2 /tmp/ipmi_old_stanza_src
-		fi
-
-		if [ $need_subnet_mask = 1 ]
-		then
-			sed '/^[ \t]*netmask/d' /tmp/ipmi_old_stanza_src >/tmp/ipmi_old_stanza_dst.3
-			echo "	netmask $subnet_mask" >>/tmp/ipmi_ifaces_stanza
-			cp /tmp/ipmi_old_stanza_dst.3 /tmp/ipmi_old_stanza_src
-		fi
-
-		if [ $need_default_gw_ip_addr = 1 ]
-		then
-			sed '/^[ \t]*gateway/d' /tmp/ipmi_old_stanza_src >/tmp/ipmi_old_stanza_dst.4
-			echo "	gateway $default_gw_ip_addr" >>/tmp/ipmi_ifaces_stanza
-			cp /tmp/ipmi_old_stanza_dst.4 /tmp/ipmi_old_stanza_src
-		fi
-
-		if [ $need_mac_addr = 1 ]
-		then
-			sed '/^[ \t]*hwaddress/d' /tmp/ipmi_old_stanza_src >/tmp/ipmi_old_stanza_dst.5
-			echo "	hwaddress ether $mac_addr" >>/tmp/ipmi_ifaces_stanza
-			cp /tmp/ipmi_old_stanza_dst.5 /tmp/ipmi_old_stanza_src
-		fi
-
-		cat /tmp/ipmi_old_stanza_src >>/tmp/ipmi_ifaces_stanza
-	else
-#		if /tmp/ipmi_old_stanza is empty, then we just need to create a new stanza
-#		as this is adding an interface to the configuration
-
-		do_create_stanza
-	fi
-}
-
-#	Parse existing interfaces file -
-#		if there is an existing iface stanza for $device
-#		then extract it for update with new parameters
-#		We keep any parameters that are not set on the
-#		command line for this script.
-#
-#	Be careful - you may render your connection to the management
-#   system unusable.  Upon successful creation of a new interfaces
-#	file, the interface is taken down and restarted to
-
-do_interfaces() {
-
-	if [ -d /etc/network ]
-	then
-		if [ -f /etc/network/interfaces ]
-		then
-			if [ -w /etc/network/interfaces ]
-			then
-				do_split_interfaces
-				do_modify_stanza
-				cat /tmp/ipmi_interfaces_unchanged /tmp/ipmi_ifaces_stanza >/tmp/impi_new_interfaces
-				mv  /etc/network/interfaces /etc/network/interfaces.old
-				cp /tmp/impi_new_interfaces /etc/network/interfaces
-			else
-				echo "/etc/network/interfaces exists and is not writable -fail"
-				exit 1
-			fi
-		else
-			do_create_stanza
-			cp /tmp/ipmi_ifaces_stanza /etc/network/interfaces
-		fi
-	else
-		echo "No /etc/network directory found - failing"
-		exit 1
-	fi
-
+mask2cidr() {
+	nbits=0
+	IFS=.
+	for dec in $1 ; do
+		case $dec in
+			255) let nbits+=8;;
+			254) let nbits+=7;;
+			252) let nbits+=6;;
+			248) let nbits+=5;;
+			240) let nbits+=4;;
+			224) let nbits+=3;;
+			192) let nbits+=2;;
+			128) let nbits+=1;;
+			0);;
+			*) echo "Error: $dec is not recognized"; exit 1
+		esac
+	done
+	echo "$nbits"
 }
 
 do_set() {
@@ -351,42 +202,79 @@ do_set() {
 		do_check $parm $val
 
 		case $parm in
-		    ip_addr)
-			need_ip_addr=1
-			ip_addr=$val
-			;;
+			ip_addr)
+				echo $val > /tmp/ip_addr
+				;;
 
-		    ip_addr_src)
-			need_ip_addr_src=1
-			ip_addr_src=$val
-			;;
+			ip_addr_src)
+				if [ $val == "dhcp" ]; then
+					rm -rf /etc/systemd/network/50-static.network
+					systemctl stop systemd-networkd
+					systemctl start systemd-networkd
+				else
+					if [ ! -f /etc/systemd/network/50-static.network ]; then
+						echo [Match] >> /etc/systemd/network/50-static.network
+						echo Name=eth0 >> /etc/systemd/network/50-static.network
+					fi
+				fi
+				;;
 
-		    mac_addr)
-			need_mac_addr=1
-			mac_addr=$val
-			;;
+			subnet_mask)
+				echo $(mask2cidr $val) > /tmp/subnet_mask
+				;;
 
-		    subnet_mask)
-			need_subnet_mask=1
-			subnet_mask=$val
-			;;
+			default_gw_ip_addr)
+				echo $val > /tmp/default_gw_ip_addr
+				;;
 
-		    default_gw_ip_addr)
-			need_default_gw_ip_addr=1
-			default_gw_ip_addr=$val
-			;;
+			mac_addr)
+				if [ -f /etc/systemd/network/50-static.network ]; then
+					sed -i '/\b\(Link\|MACAddress\)\b/d' /etc/systemd/network/50-static.network
+					echo [Link] >> /etc/systemd/network/50-static.network
+					echo MACAddress="$val" >> /etc/systemd/network/50-static.network
+					if [ -f /tmp/ip_addr ] && [ -f /tmp/subnet_mask ] && [ -f /tmp/default_gw_ip_addr ]
+					then
+						ifconfig eth0 down
+						systemctl stop systemd-networkd
+						systemctl start systemd-networkd
+						ifconfig eth0 down
+					fi
+				else
+					sed -i '/\b\(Link\|MACAddress\)\b/d' /usr/lib/systemd/network/default.network
+					echo [Link] >> /usr/lib/systemd/network/default.network
+					echo MACAddress="$val" >> /usr/lib/systemd/network/default.network
+					ifconfig eth0 down
+					systemctl stop systemd-networkd
+					systemctl start systemd-networkd
+					ifconfig eth0 up
+				fi
+				;;
 
-		    *)
-			echo "Invalid parameter: $1"
-			exit 1
-			;;
+			*)
+				echo "Invalid parameter: $1"
+				exit 1
+				;;
 		esac
 	done
 
-	do_interfaces
+	if [ ! -f /tmp/ip_addr ] || [ ! -f /tmp/subnet_mask ] || [ ! -f /tmp/default_gw_ip_addr ]
+	then
+		echo "no enaugh parameters given - fail"
+	else
+		tmp_ip_addr="$(</tmp/ip_addr)"
+		tmp_netmask="$(</tmp/subnet_mask)"
+		tmp_gateway="$(</tmp/default_gw_ip_addr)"
+		rm /tmp/ip_addr
+		rm /tmp/subnet_mask
+		rm /tmp/default_gw_ip_addr
+		sed -i '/\b\(Network\|Address\|Gateway\)\b/d' /etc/systemd/network/50-static.network
 
-	ifdown $device
-	ifup $device
+		echo [Network] >> /etc/systemd/network/50-static.network
+		echo Address="$tmp_ip_addr"/"$tmp_netmask" >> /etc/systemd/network/50-static.network
+		echo Gateway="$tmp_gateway" >> /etc/systemd/network/50-static.network
+		systemctl stop systemd-networkd
+		systemctl start systemd-networkd
+	fi
 }
 
 case $op in
