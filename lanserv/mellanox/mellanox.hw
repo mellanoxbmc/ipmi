@@ -280,6 +280,11 @@ sensor_add 0x20 0 36 1 1\
         poll 5000 \
         file "/bsp/environment/UCD_1_2v_curr" div=125
 
+# CPU status
+sensor_add 0x20 0 40 7 0x6f\
+        poll 1000 \
+        file "/bsp/environment/cpu_status"
+
 #############EEPROM############
 mc_add_fru_data 0x20 0 1024 \
   file 0 "/bsp/fru/sys_fru_eeprom"

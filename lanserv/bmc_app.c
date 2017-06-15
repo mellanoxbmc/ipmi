@@ -258,6 +258,9 @@ watchdog_timeout(void *cb_data)
 
     if (sprintf(status_led_run_str,"status_led.py 0x%02x %d 0x%02x\n", 180, 0, 0))
            system(status_led_run_str);
+
+    /* set "IERR" if IPMI watchdog timeout expired */
+    system("echo 1 > /bsp/environment/cpu_status");
 #endif
 
     switch (IPMI_MC_WATCHDOG_GET_ACTION(mc)) {
@@ -357,6 +360,9 @@ do_watchdog_reset(lmc_data_t *mc)
     if (mc->sysinfo->start_timer(mc->watchdog_timer, &tv))
         mc->sysinfo->log(mc->sysinfo, OS_ERROR, NULL,
                          "Failed to reset watchdog timer");
+
+    /* set "Presence detected" on IPMI watchdog start */
+    system("echo 128 > /bsp/environment/cpu_status");
 #endif
 }
 

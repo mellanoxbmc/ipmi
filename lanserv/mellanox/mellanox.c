@@ -634,6 +634,14 @@ handle_cpu_ready_event(lmc_data_t    *mc,
    if (sprintf(status_led_run_str,"status_led.py 0x%02x %d 0x%02x\n",0xbb, ready, IPMI_SENSOR_TYPE_PROCESSOR))
        system(status_led_run_str);
 
+   if (ready) {
+        /* set "Presence detected" if CPU started successfully */
+        system("echo 128 > /bsp/environment/cpu_status");
+   }
+   else {
+        /* set "IERR" in case something goes wrong on CPU sturtup */
+        system("echo 1 > /bsp/environment/cpu_status");
+   }
     rdata[0] = 0;
     *rdata_len = 1;
 }
@@ -1157,6 +1165,9 @@ ipmi_sim_module_init(sys_data_t *sys, const char *initstr_i)
         tv.tv_usec = 0;
         sys->start_timer(reset_monitor_timer, &tv);
     }
+
+    /* set "Disabled" state at startup */
+    system("echo 256 > /bsp/environment/cpu_status");
 
     return 0;
 }

@@ -2299,3 +2299,26 @@ sdr type 1
         negative_hysteresis     2
         id_string               "PSU2_fan"
 endsdr
+
+#############PROCESSOR############
+# Board CPU status sensor
+sdr type 2
+	sensor_owner_id		0x20
+	sensor_owner_lun	0
+	channel_number		1
+	sensor_number		40
+	entity_id		processor
+	entity_instance		0x20
+	init_scanning		true
+	init_events		true
+	init_sensor_type	true
+	default_event_gen_on	true
+	default_sensor_scan_on	true
+	sensor_auto_rearm	false
+	sensor_type		Processor
+	event_reading_type_code 0x6f
+	assert_event0		true
+	deassert_event0		true
+	event0_state_ret	true
+	id_string		"CPU Status"
+endsdr
