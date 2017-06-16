@@ -38,6 +38,7 @@ static lmc_data_t *bmc_mc;
 #define IPMI_OEM_MLX_SET_LED_STATE_CMD      0x32
 #define IPMI_OEM_MLX_SET_LED_BLINKING_CMD   0x33
 #define IPMI_OEM_MLX_GET_FAN_PWM_CMD        0x34
+#define IPMI_OEM_MLX_GET_TOTAL_POWER_CMD    0x35
 
 /* IPMI_APP_NETFN (0x06) */
 #define IPMI_OEM_MLX_SEL_BUFFER_SET_CMD     0x5B
@@ -123,6 +124,9 @@ static const char* amber_led[MLX_STATUS_LED_MAX] =
 #define MLX_RESET_PHY        "/bsp/reset/reset_phy"
 
 #define MLX_UART_TO_BMC      "/bsp/reset/uart_sel"
+
+#define MLX_PSU_COUNT        2
+#define MLX_PSU_PIN_FILE     "/bsp/environment/psu%i_pin"
 
 /* number of thermal zones */
 #define MLX_MAX_THERMAL_ZONE 1
@@ -976,6 +980,50 @@ bmc_set_chassis_control(lmc_data_t *mc, int op, unsigned char *val,
     return 0;
 }
 
+/**
+ *
+ * ipmitool raw 0x04  0x35
+ *
+**/
+static void
+handle_get_total_power_cmd(lmc_data_t    *mc,
+                           msg_t         *msg,
+                           unsigned char *rdata,
+                           unsigned int  *rdata_len,
+                           void          *cb_data)
+{
+    unsigned char rv = 0;
+    char line_pin[10];
+    unsigned char total = 0;
+    FILE *fpin;
+
+    for (int i = 0; i < MLX_PSU_COUNT; ++i) {
+        char filename[50];
+        unsigned int tmp = 0;
+        memset(filename, 0, sizeof(filename));
+        sprintf(filename, MLX_PSU_PIN_FILE, i+1);
+
+        fpin = fopen(filename, "r");
+        if (fpin) {
+            if (0 >= fread(line_pin, 1, sizeof(line_pin),fpin))
+            {
+                fclose(fpin);
+                rdata[0] = IPMI_INVALID_DATA_FIELD_CC;
+                *rdata_len = 1;
+                return;
+            }
+            tmp = strtoul(line_pin, NULL, 0);
+            total += tmp/1000000;
+            fclose(fpin);
+        }
+    }
+
+    rdata[0] = 0;
+    rdata[1] = total;
+    *rdata_len = 2;
+    return;
+}
+
 static void
 reset_monitor_timeout(void *cb_data)
 {
@@ -1146,6 +1194,9 @@ ipmi_sim_module_init(sys_data_t *sys, const char *initstr_i)
 
     rv = ipmi_emu_register_cmd_handler(IPMI_SENSOR_EVENT_NETFN, IPMI_GET_LAST_PROCESSED_EVENT_ID_CMD,
                                        handle_get_last_processed_event, sys);
+
+    rv = ipmi_emu_register_cmd_handler(IPMI_SENSOR_EVENT_NETFN, IPMI_OEM_MLX_GET_TOTAL_POWER_CMD,
+                                       handle_get_total_power_cmd, sys);
 
     ipmi_mc_set_chassis_control_func(bmc_mc, bmc_set_chassis_control,
                                      bmc_get_chassis_control, sys);
