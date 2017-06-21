@@ -48,7 +48,6 @@ static lmc_data_t *bmc_mc;
 #define IPMI_OEM_MLX_RESET_PHY_CMD          0x60
 #define IPMI_OEM_MLX_SET_UART_TO_BMC_CMD    0x61
 #define IPMI_OEM_MLX_THERMAL_ALGORITHM_CMD  0x62
-#define IPMI_OEM_MLX_BMC_UPTIME_GET_CMD     0x63
 
 #define IPMI_OEM_MLX_SEL_LOG_SIZE_MIN       0x40
 #define IPMI_OEM_MLX_SEL_LOG_SIZE_MAX       0x0fff
@@ -132,8 +131,6 @@ static const char* amber_led[MLX_STATUS_LED_MAX] =
 /* number of thermal zones */
 #define MLX_MAX_THERMAL_ZONE 1
 #define MLX_THERMAL_ZONE     "/bsp/thermal/thermal_zone%u/mode"
-
-#define MLX_UPTIME_FILE      "/proc/uptime"
 
 static const char* reset_cause[8] =
 {
@@ -1027,47 +1024,6 @@ handle_get_total_power_cmd(lmc_data_t    *mc,
     return;
 }
 
-/**
- *
- * ipmitool raw 0x06  0x63
- *
-**/
-static void
-handle_bmc_uptime_get(lmc_data_t    *mc,
-                       msg_t         *msg,
-                       unsigned char *rdata,
-                       unsigned int  *rdata_len,
-                       void          *cb_data)
-{
-    unsigned char rv = 0;
-    char seconds[10];
-    unsigned int val = 0;
-    FILE *fuptime;
-    sys_data_t *sys = cb_data;
-
-    memset(seconds, 0, sizeof(seconds));
-    fuptime = fopen(MLX_UPTIME_FILE, "r");
-
-    if (!fuptime) {
-        sys->log(sys, OS_ERROR, NULL,"Unable to open  uptime file");
-        rdata[0] = IPMI_COULD_NOT_PROVIDE_RESPONSE_CC;
-        *rdata_len = 1;
-        return;
-    }
-
-    fscanf(fuptime, "%s", seconds);
-    val = strtoul(seconds, NULL, 0);
-
-    fclose(fuptime);
-
-    rdata[0] = 0;
-    rdata[1] = (val%60); //seconds
-    rdata[2] = ((val/60)>>8)&0xff; //minutes high
-    rdata[3] = (val/60)&0xff;  //minutes low
-    *rdata_len = 4;
-    return;
-}
-
 static void
 reset_monitor_timeout(void *cb_data)
 {
@@ -1242,9 +1198,6 @@ ipmi_sim_module_init(sys_data_t *sys, const char *initstr_i)
     rv = ipmi_emu_register_cmd_handler(IPMI_SENSOR_EVENT_NETFN, IPMI_OEM_MLX_GET_TOTAL_POWER_CMD,
                                        handle_get_total_power_cmd, sys);
 
-    rv = ipmi_emu_register_cmd_handler(IPMI_APP_NETFN, IPMI_OEM_MLX_BMC_UPTIME_GET_CMD,
-                                       handle_bmc_uptime_get, sys);
-
     ipmi_mc_set_chassis_control_func(bmc_mc, bmc_set_chassis_control,
                                      bmc_get_chassis_control, sys);
 
@@ -1280,41 +1233,13 @@ ipmi_sim_module_init(sys_data_t *sys, const char *initstr_i)
 int
 ipmi_sim_module_post_init(sys_data_t *sys)
 {
-    unsigned int fw_maj = 0;
-    unsigned int fw_min = 0;
-    unsigned char id_line[50];
-    unsigned char id_maj[2];
-    unsigned char id_min[2];
-    FILE *fid;
+    int rv;
+    unsigned char lver[4];
+    unsigned char omajor, ominor, orel;
+    unsigned int i;
+    int val;
 
-    memset(id_line, 0, sizeof(id_line));
-    memset(id_min, 0, sizeof(id_min));
-    memset(id_maj, 0, sizeof(id_maj));
 
-    system("grep ID_LIKE /etc/os-release > /tmp/release");
-    fid = fopen("/tmp/release", "r");
 
-    if (!fid) {
-        sys->log(sys, OS_ERROR, NULL, "Unable to open  FW ID file");
-        return 0;
-    }
-
-    if (0 >= fread(id_line, 1, sizeof(id_line),fid))
-    {
-        fclose(fid);
-        sys->log(sys, OS_ERROR, NULL, "Unable to read  FW ID file");
-        return 0;
-    }
-
-    fclose(fid);
-
-    memcpy(id_maj, id_line+13, sizeof(id_maj));
-    memcpy(id_min, id_line+15, sizeof(id_min));
-
-    fw_maj = strtoul(id_maj, NULL, 0);
-    fw_min = strtoul(id_min, NULL, 0);
-
-    ipmi_mc_set_fw_revision(bmc_mc, fw_maj, fw_min);
-
-    return 0;
+    return rv;
 }
