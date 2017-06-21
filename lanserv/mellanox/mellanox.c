@@ -1233,13 +1233,41 @@ ipmi_sim_module_init(sys_data_t *sys, const char *initstr_i)
 int
 ipmi_sim_module_post_init(sys_data_t *sys)
 {
-    int rv;
-    unsigned char lver[4];
-    unsigned char omajor, ominor, orel;
-    unsigned int i;
-    int val;
+    unsigned int fw_maj = 0;
+    unsigned int fw_min = 0;
+    unsigned char id_line[50];
+    unsigned char id_maj[2];
+    unsigned char id_min[2];
+    FILE *fid;
 
+    memset(id_line, 0, sizeof(id_line));
+    memset(id_min, 0, sizeof(id_min));
+    memset(id_maj, 0, sizeof(id_maj));
 
+    system("grep ID_LIKE /etc/os-release > /tmp/release");
+    fid = fopen("/tmp/release", "r");
 
-    return rv;
+    if (!fid) {
+        sys->log(sys, OS_ERROR, NULL, "Unable to open  FW ID file");
+        return 0;
+    }
+
+    if (0 >= fread(id_line, 1, sizeof(id_line),fid))
+    {
+        fclose(fid);
+        sys->log(sys, OS_ERROR, NULL, "Unable to read  FW ID file");
+        return 0;
+    }
+
+    fclose(fid);
+
+    memcpy(id_maj, id_line+13, sizeof(id_maj));
+    memcpy(id_min, id_line+15, sizeof(id_min));
+
+    fw_maj = strtoul(id_maj, NULL, 0);
+    fw_min = strtoul(id_min, NULL, 0);
+
+    ipmi_mc_set_fw_revision(bmc_mc, fw_maj, fw_min);
+
+    return 0;
 }
