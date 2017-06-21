@@ -48,6 +48,7 @@ static lmc_data_t *bmc_mc;
 #define IPMI_OEM_MLX_RESET_PHY_CMD          0x60
 #define IPMI_OEM_MLX_SET_UART_TO_BMC_CMD    0x61
 #define IPMI_OEM_MLX_THERMAL_ALGORITHM_CMD  0x62
+#define IPMI_OEM_MLX_BMC_UPTIME_GET_CMD     0x63
 
 #define IPMI_OEM_MLX_SEL_LOG_SIZE_MIN       0x40
 #define IPMI_OEM_MLX_SEL_LOG_SIZE_MAX       0x0fff
@@ -131,6 +132,8 @@ static const char* amber_led[MLX_STATUS_LED_MAX] =
 /* number of thermal zones */
 #define MLX_MAX_THERMAL_ZONE 1
 #define MLX_THERMAL_ZONE     "/bsp/thermal/thermal_zone%u/mode"
+
+#define MLX_UPTIME_FILE      "/proc/uptime"
 
 static const char* reset_cause[8] =
 {
@@ -1024,6 +1027,57 @@ handle_get_total_power_cmd(lmc_data_t    *mc,
     return;
 }
 
+/**
+ *
+ * ipmitool raw 0x06  0x63
+ *
+**/
+static void
+handle_bmc_uptime_get(lmc_data_t    *mc,
+                       msg_t         *msg,
+                       unsigned char *rdata,
+                       unsigned int  *rdata_len,
+                       void          *cb_data)
+{
+    unsigned char rv = 0;
+    char uptime[10];
+    unsigned int val = 0;
+    unsigned char seconds = 0;
+    unsigned char minutes = 0;
+    unsigned char hours = 0;
+    unsigned char days = 0;
+    FILE *fuptime;
+    sys_data_t *sys = cb_data;
+
+    memset(uptime, 0, sizeof(uptime));
+    fuptime = fopen(MLX_UPTIME_FILE, "r");
+
+    if (!fuptime) {
+        sys->log(sys, OS_ERROR, NULL,"Unable to open  uptime file");
+        rdata[0] = IPMI_COULD_NOT_PROVIDE_RESPONSE_CC;
+        *rdata_len = 1;
+        return;
+    }
+
+    fscanf(fuptime, "%s", uptime);
+    val = strtoul(uptime, NULL, 0);
+
+    fclose(fuptime);
+
+    seconds = val%60;
+    days = (val - seconds)/86400; /* 60*60*24 */
+    hours = (val - seconds)/3600 - days*24;
+    minutes = (val - seconds)/60 - (hours*60 + days*24*60);
+
+    rdata[0] = 0;
+    rdata[1] = days;
+    rdata[2] = hours;
+    rdata[3] = minutes;
+    rdata[4] = seconds;
+    *rdata_len = 5;
+    return;
+}
+
 static void
 reset_monitor_timeout(void *cb_data)
 {
@@ -1197,6 +1251,9 @@ ipmi_sim_module_init(sys_data_t *sys, const char *initstr_i)
 
     rv = ipmi_emu_register_cmd_handler(IPMI_SENSOR_EVENT_NETFN, IPMI_OEM_MLX_GET_TOTAL_POWER_CMD,
                                        handle_get_total_power_cmd, sys);
+
+    rv = ipmi_emu_register_cmd_handler(IPMI_APP_NETFN, IPMI_OEM_MLX_BMC_UPTIME_GET_CMD,
+                                       handle_bmc_uptime_get, sys);
 
     ipmi_mc_set_chassis_control_func(bmc_mc, bmc_set_chassis_control,
                                      bmc_get_chassis_control, sys);
