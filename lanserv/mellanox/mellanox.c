@@ -656,7 +656,7 @@ handle_cpu_ready_event(lmc_data_t    *mc,
 
 /**
  *
- *  ipmitool raw 0x06  0x5e
+ *  ipmitool raw 0x06  0x5e [off/on] [0x1]
  *
  **/
 static void
@@ -670,13 +670,21 @@ handle_cpu_hard_reset(lmc_data_t    *mc,
 
     FILE *freset;
     unsigned int reset;
+    unsigned char cpu_reboot_cmd = 0;
 
     if (check_msg_length(msg, 1, rdata, rdata_len)) {
         reset = 0;
     }
     else {
-        reset = msg->data[0];
-        if (reset != 1 ) {
+        if (check_msg_length(msg, 2, rdata, rdata_len)) {
+            reset = msg->data[0];
+        }
+        else {
+            reset = msg->data[0];
+            cpu_reboot_cmd = msg->data[1];
+        }
+
+        if (reset > 1 || cpu_reboot_cmd > 1) {
             rdata[0] = IPMI_INVALID_DATA_FIELD_CC;
             *rdata_len = 1;
             return;
@@ -697,7 +705,11 @@ handle_cpu_hard_reset(lmc_data_t    *mc,
     fclose(freset);
 
     if (!reset) {
-        mlx_add_event_to_sel(mc, IPMI_SENSOR_TYPE_OS_CRITICAL_STOP , 0, 0, IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, 0x3);
+        if (cpu_reboot_cmd)
+            mlx_add_event_to_sel(mc, IPMI_SENSOR_TYPE_OS_CRITICAL_STOP , 40, 0, IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, 0x3);
+        else
+            mlx_add_event_to_sel(mc, IPMI_SENSOR_TYPE_OS_CRITICAL_STOP , 0, 0, IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, 0x3);
+
     }
 
     rdata[0] = 0;
@@ -706,17 +718,27 @@ handle_cpu_hard_reset(lmc_data_t    *mc,
 
 /**
  *
- *  ipmitool raw 0x06  0x5f
+ *  ipmitool raw 0x06  0x5f [0x1]
  *
  **/
 static void
 handle_cpu_soft_reset(lmc_data_t    *mc,
-			  msg_t         *msg,
-			  unsigned char *rdata,
-			  unsigned int  *rdata_len,
-			  void          *cb_data)
+                      msg_t         *msg,
+                      unsigned char *rdata,
+                      unsigned int  *rdata_len,
+                      void          *cb_data)
 {
     FILE *freset;
+    unsigned char cpu_reboot_cmd = 0;
+
+    if (!check_msg_length(msg, 1, rdata, rdata_len)) {
+        cpu_reboot_cmd = msg->data[0];
+        if (cpu_reboot_cmd != 1 ) {
+            rdata[0] = IPMI_INVALID_DATA_FIELD_CC;
+            *rdata_len = 1;
+            return;
+        }
+    }
 
     freset = fopen(MLX_CPU_SOFT_RESET, "w");
 
@@ -731,7 +753,11 @@ handle_cpu_soft_reset(lmc_data_t    *mc,
 
     fclose(freset);
 
-    mlx_add_event_to_sel(mc, IPMI_SENSOR_TYPE_SYSTEM_BOOT_INITIATED, 0, 0, IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, 0x7); 
+    if (cpu_reboot_cmd) {
+        mlx_add_event_to_sel(mc, IPMI_SENSOR_TYPE_SYSTEM_BOOT_INITIATED, 40, 0, IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, 0x7); 
+    }
+    else
+        mlx_add_event_to_sel(mc, IPMI_SENSOR_TYPE_SYSTEM_BOOT_INITIATED, 0, 0, IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, 0x7); 
 
     rdata[0] = 0;
     *rdata_len = 1;
