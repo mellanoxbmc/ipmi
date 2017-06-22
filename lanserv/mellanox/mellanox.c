@@ -49,6 +49,7 @@ static lmc_data_t *bmc_mc;
 #define IPMI_OEM_MLX_SET_UART_TO_BMC_CMD    0x61
 #define IPMI_OEM_MLX_THERMAL_ALGORITHM_CMD  0x62
 #define IPMI_OEM_MLX_BMC_UPTIME_GET_CMD     0x63
+#define IPMI_OEM_MLX_LOG_TO_SEL_CMD         0x64
 
 #define IPMI_OEM_MLX_SEL_LOG_SIZE_MIN       0x40
 #define IPMI_OEM_MLX_SEL_LOG_SIZE_MAX       0x0fff
@@ -1078,6 +1079,37 @@ handle_bmc_uptime_get(lmc_data_t    *mc,
     return;
 }
 
+/**
+ *
+ * ipmitool raw 0x06  0x64 [sdr_type] [direction] [event_type]
+ *
+**/
+static void
+handle_log_to_sel(lmc_data_t    *mc,
+                  msg_t         *msg,
+                  unsigned char *rdata,
+                  unsigned int  *rdata_len,
+                  void          *cb_data)
+{
+    unsigned char sdr_type;
+    unsigned char direction;
+    unsigned char event_type;
+
+    if (check_msg_length(msg, 3, rdata, rdata_len)) {
+        return;
+    }
+
+    sdr_type = msg->data[0];
+    direction = msg->data[1];
+    event_type = msg->data[2];
+
+    mlx_add_event_to_sel(mc, sdr_type , 0, direction, IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, event_type);
+
+    rdata[0] = 0;
+    *rdata_len = 1;
+    return;
+}
+
 static void
 reset_monitor_timeout(void *cb_data)
 {
@@ -1254,6 +1286,9 @@ ipmi_sim_module_init(sys_data_t *sys, const char *initstr_i)
 
     rv = ipmi_emu_register_cmd_handler(IPMI_APP_NETFN, IPMI_OEM_MLX_BMC_UPTIME_GET_CMD,
                                        handle_bmc_uptime_get, sys);
+
+    rv = ipmi_emu_register_cmd_handler(IPMI_APP_NETFN, IPMI_OEM_MLX_LOG_TO_SEL_CMD,
+                                       handle_log_to_sel, sys);
 
     ipmi_mc_set_chassis_control_func(bmc_mc, bmc_set_chassis_control,
                                      bmc_get_chassis_control, sys);
