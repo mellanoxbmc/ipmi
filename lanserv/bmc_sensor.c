@@ -72,6 +72,8 @@
 #define VOLTAGE_SENSOR_TYPE             0x02
 #define CURRENT_SENSOR_TYPE             0x03
 #define FAN_SENSOR_TYPE                 0x04
+#define PSU1_PIN_SENSOR_NUM             0x14
+#define PSU2_PIN_SENSOR_NUM             0x16
 #endif
 
 static void sensor_poll(void *cb_data);
@@ -1613,6 +1615,19 @@ sensor_poll(void *cb_data)
             if (sensor->enabled) {
                 status_led_control(sensor->num, 0, sensor->sensor_type);
                 sensor->enabled = 0;
+                /* In case PSU1 or PSU2 is power-off/plugged-out add msg to the SEL */
+                if (sensor->num == PSU1_PIN_SENSOR_NUM) {
+                    if (0 == access("/bsp/fru/psu1_eeprom", F_OK)) /* AC lost or out-of-range */
+                        mlx_add_event_to_sel(sensor->mc, sensor->sensor_type, sensor->num, 0, IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, 0x4);
+                    else /* Power Supply AC lost */
+                        mlx_add_event_to_sel(sensor->mc, sensor->sensor_type, sensor->num, 0, IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, 0x3);
+                }
+                else if (sensor->num == PSU2_PIN_SENSOR_NUM) {
+                    if (0 == access("/bsp/fru/psu1_eeprom", F_OK))  /* AC lost or out-of-range */
+                        mlx_add_event_to_sel(sensor->mc, sensor->sensor_type, sensor->num, 0, IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, 0x4);
+                    else  /* Power Supply AC lost */
+                        mlx_add_event_to_sel(sensor->mc, sensor->sensor_type, sensor->num, 0, IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, 0x3);
+                }
             }
             goto out_restart;
 #else
@@ -1628,6 +1643,9 @@ sensor_poll(void *cb_data)
             if (!sensor->enabled) {
                 status_led_control(sensor->num, 1, sensor->sensor_type);
                 sensor->enabled = 1;
+                /* In case PSU1 or PSU2 is power-on add msg to the SEL */
+                if (sensor->num == PSU1_PIN_SENSOR_NUM || sensor->num == PSU2_PIN_SENSOR_NUM) /* Presence detected */
+                    mlx_add_event_to_sel(sensor->mc, sensor->sensor_type, sensor->num, 0, IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, 0x0);
             }
         }
 #endif
