@@ -48,32 +48,7 @@
 #include <OpenIPMI/ipmi_bits.h>
 
 #ifdef MLX_IPMID
-#define AMBIENT_CARRIER_TEMP_SENSOR_NUM 0x01
-#define AMBIENT_SWITCH_TEMP_SENSOR_NUM  0X02
-#define ASIC_TEMP_SENSOR_NUM            0x05
-#define PSU1_VIN_SENSOR_NUM             0x9A
-#define PSU2_VIN_SENSOR_NUM             0x9C
-#define A2D_1_8V_SENSOR_NUM             0x9E
-#define UCD_3_3V_SENSOR_NUM             0xAC
-#define UCD_1_2V_SENSOR_NUM             0xAD
-#define UCD_VCORE_SENSOR_NUM            0xAE
-#define VCORE_UCD_CURR_SENSOR_NUM       0x22
-#define UCD_3_3V_SEN_CURR_SENSOR_NUM    0x23
-#define UCD_1_2V_CURR_SENSOR_NUM        0x24
-#define FAN1_1_SENSOR_NUM               0x70
-#define FAN1_2_SENSOR_NUM               0x71
-#define FAN2_1_SENSOR_NUM               0x72
-#define FAN2_2_SENSOR_NUM               0x73
-#define FAN3_1_SENSOR_NUM               0x74
-#define FAN3_2_SENSOR_NUM               0x75
-#define FAN4_1_SENSOR_NUM               0x76
-#define FAN4_2_SENSOR_NUM               0x77
-#define TEMPERATURE_SENSOR_TYPE         0x01
-#define VOLTAGE_SENSOR_TYPE             0x02
-#define CURRENT_SENSOR_TYPE             0x03
-#define FAN_SENSOR_TYPE                 0x04
-#define PSU1_PIN_SENSOR_NUM             0x14
-#define PSU2_PIN_SENSOR_NUM             0x16
+#include <OpenIPMI/ipmi_mlx.h>
 #endif
 
 static void sensor_poll(void *cb_data);
@@ -333,11 +308,11 @@ status_led_control(unsigned char num,
    unsigned char status_led_run_str[32];
 
     switch (type) {
-    case TEMPERATURE_SENSOR_TYPE:
+    case IPMI_SENSOR_TYPE_TEMPERATURE:
         switch (num) {
-        case AMBIENT_CARRIER_TEMP_SENSOR_NUM:
-        case AMBIENT_SWITCH_TEMP_SENSOR_NUM:
-        case ASIC_TEMP_SENSOR_NUM:
+        case MLX_AMBIENT_CARRIER_TEMP_SENSOR_NUM:
+        case MLX_AMBIENT_SWITCH_TEMP_SENSOR_NUM:
+        case MLX_ASIC_TEMP_SENSOR_NUM:
             if (sprintf(status_led_run_str,"status_led.py 0x%02x %d 0x%02x\n",num, direction, type))
                  system(status_led_run_str);
             break;
@@ -345,14 +320,14 @@ status_led_control(unsigned char num,
             break;
         }
         break;
-    case VOLTAGE_SENSOR_TYPE:
+    case IPMI_SENSOR_TYPE_VOLTAGE:
         switch (num) {
-        case UCD_3_3V_SENSOR_NUM:
-        case UCD_1_2V_SENSOR_NUM:
-        case UCD_VCORE_SENSOR_NUM:
-        case PSU1_VIN_SENSOR_NUM:
-        case PSU2_VIN_SENSOR_NUM:
-        case A2D_1_8V_SENSOR_NUM:
+        case MLX_UCD_3_3V_SENSOR_NUM:
+        case MLX_UCD_1_2V_SENSOR_NUM:
+        case MLX_UCD_VCORE_SENSOR_NUM:
+        case MLX_PSU1_VIN_SENSOR_NUM:
+        case MLX_PSU2_VIN_SENSOR_NUM:
+        case MLX_A2D_1_8V_SENSOR_NUM:
             if (sprintf(status_led_run_str,"status_led.py 0x%02x %d 0x%02x\n",num, direction, type))
                  system(status_led_run_str);
             break;
@@ -360,11 +335,11 @@ status_led_control(unsigned char num,
             break;
         }
         break;
-    case CURRENT_SENSOR_TYPE:
+    case IPMI_SENSOR_TYPE_CURRENT:
         switch (num) {
-        case VCORE_UCD_CURR_SENSOR_NUM:
-        case UCD_3_3V_SEN_CURR_SENSOR_NUM:
-        case UCD_1_2V_CURR_SENSOR_NUM:
+        case MLX_VCORE_UCD_CURR_SENSOR_NUM:
+        case MLX_UCD_3_3V_SEN_CURR_SENSOR_NUM:
+        case MLX_UCD_1_2V_CURR_SENSOR_NUM:
             if (sprintf(status_led_run_str,"status_led.py 0x%02x %d 0x%02x\n",num, direction, type))
                  system(status_led_run_str);
             break;
@@ -372,16 +347,16 @@ status_led_control(unsigned char num,
             break;
         }
         break;
-    case FAN_SENSOR_TYPE:
+    case IPMI_SENSOR_TYPE_FAN:
         switch (num) {
-        case FAN1_1_SENSOR_NUM:
-        case FAN1_2_SENSOR_NUM:
-        case FAN2_1_SENSOR_NUM:
-        case FAN2_2_SENSOR_NUM:
-        case FAN3_1_SENSOR_NUM:
-        case FAN3_2_SENSOR_NUM:
-        case FAN4_1_SENSOR_NUM:
-        case FAN4_2_SENSOR_NUM:
+        case MLX_FAN1_1_SENSOR_NUM:
+        case MLX_FAN1_2_SENSOR_NUM:
+        case MLX_FAN2_1_SENSOR_NUM:
+        case MLX_FAN2_2_SENSOR_NUM:
+        case MLX_FAN3_1_SENSOR_NUM:
+        case MLX_FAN3_2_SENSOR_NUM:
+        case MLX_FAN4_1_SENSOR_NUM:
+        case MLX_FAN4_2_SENSOR_NUM:
             if (sprintf(status_led_run_str,"status_led.py 0x%02x %d 0x%02x\n",num, direction, type))
                  system(status_led_run_str);
             break;
@@ -1616,13 +1591,13 @@ sensor_poll(void *cb_data)
                 status_led_control(sensor->num, 0, sensor->sensor_type);
                 sensor->enabled = 0;
                 /* In case PSU1 or PSU2 is power-off/plugged-out add msg to the SEL */
-                if (sensor->num == PSU1_PIN_SENSOR_NUM) {
+                if (sensor->num == MLX_PSU1_PIN_SENSOR_NUM) {
                     if (0 == access("/bsp/fru/psu1_eeprom", F_OK)) /* AC lost or out-of-range */
                         mlx_add_event_to_sel(sensor->mc, sensor->sensor_type, sensor->num, 0, IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, 0x4);
                     else /* Power Supply AC lost */
                         mlx_add_event_to_sel(sensor->mc, sensor->sensor_type, sensor->num, 0, IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, 0x3);
                 }
-                else if (sensor->num == PSU2_PIN_SENSOR_NUM) {
+                else if (sensor->num == MLX_PSU2_PIN_SENSOR_NUM) {
                     if (0 == access("/bsp/fru/psu1_eeprom", F_OK))  /* AC lost or out-of-range */
                         mlx_add_event_to_sel(sensor->mc, sensor->sensor_type, sensor->num, 0, IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, 0x4);
                     else  /* Power Supply AC lost */
@@ -1644,7 +1619,7 @@ sensor_poll(void *cb_data)
                 status_led_control(sensor->num, 1, sensor->sensor_type);
                 sensor->enabled = 1;
                 /* In case PSU1 or PSU2 is power-on add msg to the SEL */
-                if (sensor->num == PSU1_PIN_SENSOR_NUM || sensor->num == PSU2_PIN_SENSOR_NUM) /* Presence detected */
+                if (sensor->num == MLX_PSU1_PIN_SENSOR_NUM || sensor->num == MLX_PSU2_PIN_SENSOR_NUM) /* Presence detected */
                     mlx_add_event_to_sel(sensor->mc, sensor->sensor_type, sensor->num, 0, IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, 0x0);
             }
         }

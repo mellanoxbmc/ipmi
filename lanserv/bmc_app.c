@@ -44,6 +44,10 @@
 #include <config.h>
 #include <stdlib.h>
 
+#ifdef MLX_IPMID
+#include <OpenIPMI/ipmi_mlx.h>
+#endif
+
 static void
 handle_get_device_id(lmc_data_t    *mc,
 		     msg_t         *msg,

@@ -282,12 +282,12 @@ mc_new_event(lmc_data_t *mc,
 
 #ifdef MLX_IPMID
     if (mc->pef.pef_control & 0x1)
-        ipmi_mc_pef_apply(mc, record_type, event);
+        mlx_mc_pef_apply(mc, record_type, event);
 #endif /* MLX_IPMID */
 }
 
 #ifdef MLX_IPMID
-void ipmi_mc_pef_apply(lmc_data_t    *mc,
+void mlx_mc_pef_apply(lmc_data_t    *mc,
                         unsigned char record_type,
                         unsigned char event[13])
 {
