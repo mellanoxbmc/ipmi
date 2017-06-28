@@ -9,6 +9,11 @@ pkginclude_HEADERS = \
 	ipmi_debug.h	ipmi_lanparm.h	ipmi_picmg.h	ipmi_string.h	\
 	ipmi_sol.h	ipmi_solparm.h	ipmi_tcl.h	deprecator.h
 
+if MLX_IPMID
+pkginclude_HEADERS += \
+	ipmi_mlx.h
+endif
+
 SUBDIRS = internal
 
 DISTCLEANFILES = ipmiif.h
