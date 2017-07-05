@@ -1,0 +1,43 @@
+########################################################################
+# Copyright (c) 2017 Mellanox Technologies.
+# Copyright (c) 2017 Nataliya Yakuts <nataliyay@mellanox.com>
+#
+# Licensed under the GNU General Public License Version 2
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+
+SUBSYSTEM=="hwmon", DEVPATH=="/devices/platform/ahb/ahb:apb/1e78a000.i2c/i2c-8/i2c-8/8-0049/hwmon/hwmon?", ACTION=="add", RUN+="/usr/bin/mlx-hw-events.sh add amb_carrier %S %p"
+SUBSYSTEM=="hwmon", DEVPATH=="/devices/platform/ahb/ahb:apb/1e78a000.i2c/i2c-8/i2c-8/8-0049/hwmon/hwmon?", ACTION=="remove", RUN+="/usr/bin/mlx-hw-events.sh rm amb_carrier %S %p"
+
+SUBSYSTEM=="hwmon", DEVPATH=="/devices/platform/ahb/ahb:apb/1e78a000.i2c/i2c-8/i2c-8/8-004a/hwmon/hwmon?", ACTION=="add", RUN+="/usr/bin/mlx-hw-events.sh add amb_switch %S %p"
+SUBSYSTEM=="hwmon", DEVPATH=="/devices/platform/ahb/ahb:apb/1e78a000.i2c/i2c-8/i2c-8/8-004a/hwmon/hwmon?", ACTION=="remove", RUN+="/usr/bin/mlx-hw-events.sh rm amb_switch %S %p"
+
+SUBSYSTEM=="hwmon", DEVPATH=="/devices/platform/ahb/ahb:apb/1e78a000.i2c/i2c-3/i2c-3/3-0059/hwmon/hwmon*", ACTION=="add", RUN+="/usr/bin/mlx-hw-events.sh add psu2 %S %p"
+SUBSYSTEM=="hwmon", DEVPATH=="/devices/platform/ahb/ahb:apb/1e78a000.i2c/i2c-3/i2c-3/3-0059/hwmon/hwmon*", ACTION=="remove", RUN+="/usr/bin/mlx-hw-events.sh rm psu2 %S %p"
+
+SUBSYSTEM=="hwmon", DEVPATH=="/devices/platform/ahb/ahb:apb/1e78a000.i2c/i2c-3/i2c-3/3-0058/hwmon/hwmon*", ACTION=="add", RUN+="/usr/bin/mlx-hw-events.sh add psu1 %S %p"
+SUBSYSTEM=="hwmon", DEVPATH=="/devices/platform/ahb/ahb:apb/1e78a000.i2c/i2c-3/i2c-3/3-0058/hwmon/hwmon*", ACTION=="remove", RUN+="/usr/bin/mlx-hw-events.sh rm psu1 %S %p"
+
+SUBSYSTEM=="hwmon", DEVPATH=="/devices/platform/ahb/ahb:apb/1e78a000.i2c/i2c-10/i2c-10/10-0027/hwmon/hwmon?", ACTION=="add", RUN+="/usr/bin/mlx-hw-events.sh add UCD %S %p"
+SUBSYSTEM=="hwmon", DEVPATH=="/devices/platform/ahb/ahb:apb/1e78a000.i2c/i2c-10/i2c-10/10-0027/hwmon/hwmon?", ACTION=="remove", RUN+="/usr/bin/mlx-hw-events.sh rm UCD %S %p"
+
+SUBSYSTEM=="hwmon", DEVPATH=="/devices/platform/ahb/ahb:apb/1e78a000.i2c/i2c-10/i2c-10/10-0041/hwmon/hwmon?", ACTION=="add", RUN+="/usr/bin/mlx-hw-events.sh add VcoreUCD %S %p"
+SUBSYSTEM=="hwmon", DEVPATH=="/devices/platform/ahb/ahb:apb/1e78a000.i2c/i2c-10/i2c-10/10-0041/hwmon/hwmon?", ACTION=="remove", RUN+="/usr/bin/mlx-hw-events.sh rm VcoreUCD %S %p"
+
+SUBSYSTEM=="hwmon", DEVPATH=="/devices/platform/ahb/ahb:apb/1e78a000.i2c/i2c-12/i2c-12/12-0048/hwmon/hwmon*", ACTION=="add", RUN+="/usr/bin/mlx-hw-events.sh add asic %S %p"
+SUBSYSTEM=="hwmon", DEVPATH=="/devices/platform/ahb/ahb:apb/1e78a000.i2c/i2c-12/i2c-12/12-0048/hwmon/hwmon*", ACTION=="remove", RUN+="/usr/bin/mlx-hw-events.sh rm asic %S %p"
+
+SUBSYSTEM=="hwmon", DEVPATH=="/devices/platform/ahb/ahb:apb/1e78a000.i2c/i2c-4/i2c-4/4-0071/hwmon/hwmon?", ACTION=="add", RUN+="/usr/bin/mlx-hw-events.sh add reset %S %p"
+SUBSYSTEM=="hwmon", DEVPATH=="/devices/platform/ahb/ahb:apb/1e78a000.i2c/i2c-4/i2c-4/4-0071/hwmon/hwmon?", ACTION=="remove", RUN+="/usr/bin/mlx-hw-events.sh rm reset %S %p"
+SUBSYSTEM=="hwmon", DEVPATH=="/devices/platform/ahb/ahb:apb/1e78a000.i2c/i2c-4/i2c-4/4-0071/hwmon/hwmon?", ACTION=="change", RUN+="/usr/bin/mlx-hw-events.sh change reset %S %p"
+
+SUBSYSTEM=="hwmon", DEVPATH=="/devices/platform/ahb/ahb:apb/1e78a000.i2c/i2c-4/i2c-4/4-0072/hwmon/hwmon?", ACTION=="add", RUN+="/usr/bin/mlx-hw-events.sh add phy_reset %S %p"
+SUBSYSTEM=="hwmon", DEVPATH=="/devices/platform/ahb/ahb:apb/1e78a000.i2c/i2c-4/i2c-4/4-0072/hwmon/hwmon?", ACTION=="remove", RUN+="/usr/bin/mlx-hw-events.sh rm phy_reset %S %p"
+SUBSYSTEM=="hwmon", DEVPATH=="/devices/platform/ahb/ahb:apb/1e78a000.i2c/i2c-4/i2c-4/4-0072/hwmon/hwmon?", ACTION=="change", RUN+="/usr/bin/mlx-hw-events.sh change phy_reset %S %p"
+
+SUBSYSTEM=="hwmon", DEVPATH=="/devices/platform/ahb/ahb:apb/1e786000.pwm/hwmon/hwmon?", ACTION=="add", RUN+="/usr/bin/mlx-hw-events.sh add fan %S %p"
+SUBSYSTEM=="hwmon", DEVPATH=="/devices/platform/ahb/ahb:apb/1e786000.pwm/hwmon/hwmon?", ACTION=="remove", RUN+="/usr/bin/mlx-hw-events.sh rm fan %S %p"
