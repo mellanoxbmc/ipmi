@@ -129,6 +129,22 @@ if [ "$1" == "add" ]; then
     echo 1 > /bsp/fan/pwm_en
     echo 6 > /bsp/fan/pwm
   fi
+  if [ "$2" == "fan_4_10" ]; then
+    mkdir -p /bsp/fan/
+
+    ln -sf $3$4/fan1_input /bsp/fan/tacho1_rpm
+    ln -sf $3$4/fan2_input /bsp/fan/tacho2_rpm
+    ln -sf $3$4/fan3_input /bsp/fan/tacho3_rpm
+    ln -sf $3$4/fan4_input /bsp/fan/tacho4_rpm
+    ln -sf $3$4/fan5_input /bsp/fan/tacho5_rpm
+    ln -sf $3$4/fan6_input /bsp/fan/tacho6_rpm
+    ln -sf $3$4/fan7_input /bsp/fan/tacho7_rpm
+    ln -sf $3$4/fan8_input /bsp/fan/tacho8_rpm
+
+    ln -sf $3$4/pwm1 /bsp/fan/pwm
+
+    echo 153 > /bsp/fan/pwm
+  fi
   if [ "$2" == "eeprom_psu1" ]; then
     mkdir -p /bsp/fru/
     ln -sf $3$4/eeprom /bsp/fru/psu1_eeprom
@@ -392,6 +408,17 @@ else
     unlink /bsp/fan/tacho7_rpm
     unlink /bsp/fan/tacho8_rpm
     unlink /bsp/fan/pwm_en
+    unlink /bsp/fan/pwm
+  fi
+  if [ "$2" == "fan_4_10" ]; then
+    unlink /bsp/fan/tacho1_rpm
+    unlink /bsp/fan/tacho2_rpm
+    unlink /bsp/fan/tacho3_rpm
+    unlink /bsp/fan/tacho4_rpm
+    unlink /bsp/fan/tacho5_rpm
+    unlink /bsp/fan/tacho6_rpm
+    unlink /bsp/fan/tacho7_rpm
+    unlink /bsp/fan/tacho8_rpm
     unlink /bsp/fan/pwm
   fi
   if [ "$2" == "eeprom_psu1" ]; then
