@@ -1591,17 +1591,50 @@ sensor_poll(void *cb_data)
                 status_led_control(sensor->num, 0, sensor->sensor_type);
                 sensor->enabled = 0;
                 /* In case PSU1 or PSU2 is power-off/plugged-out add msg to the SEL */
-                if (sensor->num == MLX_PSU1_PIN_SENSOR_NUM) {
-                    if (0 == access("/bsp/fru/psu1_eeprom", F_OK)) /* AC lost or out-of-range */
-                        mlx_add_event_to_sel(sensor->mc, sensor->sensor_type, sensor->num, 0, IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, 0x4);
-                    else /* Power Supply AC lost */
-                        mlx_add_event_to_sel(sensor->mc, sensor->sensor_type, sensor->num, 0, IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, 0x3);
-                }
-                else if (sensor->num == MLX_PSU2_PIN_SENSOR_NUM) {
-                    if (0 == access("/bsp/fru/psu1_eeprom", F_OK))  /* AC lost or out-of-range */
-                        mlx_add_event_to_sel(sensor->mc, sensor->sensor_type, sensor->num, 0, IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, 0x4);
-                    else  /* Power Supply AC lost */
-                        mlx_add_event_to_sel(sensor->mc, sensor->sensor_type, sensor->num, 0, IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, 0x3);
+                switch (sensor->num) {
+                case MLX_PSU1_PIN_SENSOR_NUM:
+                if (access("/bsp/fru/psu1_eeprom", F_OK) == 0) /* AC lost or out-of-range */
+                    mlx_add_event_to_sel(sensor->mc, sensor->sensor_type, sensor->num, 0, IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, 0x4);
+                else /* Power Supply AC lost */
+                    mlx_add_event_to_sel(sensor->mc, sensor->sensor_type, sensor->num, 0, IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, 0x3);
+                break;
+                case MLX_PSU2_PIN_SENSOR_NUM:
+                if (access("/bsp/fru/psu1_eeprom", F_OK) == 0)  /* AC lost or out-of-range */
+                    mlx_add_event_to_sel(sensor->mc, sensor->sensor_type, sensor->num, 0, IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, 0x4);
+                else  /* Power Supply AC lost */
+                    mlx_add_event_to_sel(sensor->mc, sensor->sensor_type, sensor->num, 0, IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, 0x3);
+                break;
+                    /* In case any FAN is plugged-out sensor can't be read add msg to the SEL */
+                case MLX_FAN1_1_SENSOR_NUM:
+                case MLX_FAN1_2_SENSOR_NUM:
+                if (access("/bsp/fru/fan1_eeprom", F_OK) == 0) /* "Availability State",  "Device Disabled" */
+                    mlx_add_event_to_sel(sensor->mc, sensor->sensor_type, sensor->num, 0, IPMI_EVENT_READING_TYPE_DISCRETE_DEVICE_ENABLE, 0x0);
+                else /* "Availability State",  "Device Absent" */
+                    mlx_add_event_to_sel(sensor->mc, sensor->sensor_type, sensor->num, 0, IPMI_EVENT_READING_TYPE_DISCRETE_DEVICE_PRESENCE, 0x0);
+                break;
+                case MLX_FAN2_1_SENSOR_NUM:
+                case MLX_FAN2_2_SENSOR_NUM:
+                if (access("/bsp/fru/fan2_eeprom", F_OK) == 0)  /* "Availability State",  "Device Disabled" */
+                    mlx_add_event_to_sel(sensor->mc, sensor->sensor_type, sensor->num, 0, IPMI_EVENT_READING_TYPE_DISCRETE_DEVICE_ENABLE, 0x0);
+                else  /* "Availability State",  "Device Absent" */
+                    mlx_add_event_to_sel(sensor->mc, sensor->sensor_type, sensor->num, 0, IPMI_EVENT_READING_TYPE_DISCRETE_DEVICE_PRESENCE, 0x0);
+                break;
+                case MLX_FAN3_1_SENSOR_NUM:
+                case MLX_FAN3_2_SENSOR_NUM:
+                if (access("/bsp/fru/fan3_eeprom", F_OK) == 0) /* "Availability State",  "Device Disabled" */
+                    mlx_add_event_to_sel(sensor->mc, sensor->sensor_type, sensor->num, 0, IPMI_EVENT_READING_TYPE_DISCRETE_DEVICE_ENABLE, 0x0);
+                else /* "Availability State",  "Device Absent" */
+                    mlx_add_event_to_sel(sensor->mc, sensor->sensor_type, sensor->num, 0, IPMI_EVENT_READING_TYPE_DISCRETE_DEVICE_PRESENCE, 0x0);
+                break;
+                case MLX_FAN4_1_SENSOR_NUM:
+                case MLX_FAN4_2_SENSOR_NUM:
+                if (access("/bsp/fru/fan4_eeprom", F_OK) == 0) /* "Availability State",  "Device Disabled" */
+                    mlx_add_event_to_sel(sensor->mc, sensor->sensor_type, sensor->num, 0, IPMI_EVENT_READING_TYPE_DISCRETE_DEVICE_ENABLE, 0x0);
+                else /* "Availability State",  "Device Absent" */
+                    mlx_add_event_to_sel(sensor->mc, sensor->sensor_type, sensor->num, 0, IPMI_EVENT_READING_TYPE_DISCRETE_DEVICE_PRESENCE, 0x0);
+                break;
+                default:
+                    break;
                 }
             }
             goto out_restart;
@@ -1618,9 +1651,26 @@ sensor_poll(void *cb_data)
             if (!sensor->enabled) {
                 status_led_control(sensor->num, 1, sensor->sensor_type);
                 sensor->enabled = 1;
+                switch (sensor->num) {
                 /* In case PSU1 or PSU2 is power-on add msg to the SEL */
-                if (sensor->num == MLX_PSU1_PIN_SENSOR_NUM || sensor->num == MLX_PSU2_PIN_SENSOR_NUM) /* Presence detected */
+                case MLX_PSU1_PIN_SENSOR_NUM:
+                case MLX_PSU2_PIN_SENSOR_NUM:
                     mlx_add_event_to_sel(sensor->mc, sensor->sensor_type, sensor->num, 0, IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, 0x0);
+                break;
+                /* In case any FAN is plugged-out sensor can't be read add msg to the SEL */
+                case MLX_FAN1_1_SENSOR_NUM:
+                case MLX_FAN1_2_SENSOR_NUM:
+                case MLX_FAN2_1_SENSOR_NUM:
+                case MLX_FAN2_2_SENSOR_NUM:
+                case MLX_FAN3_1_SENSOR_NUM:
+                case MLX_FAN3_2_SENSOR_NUM:
+                case MLX_FAN4_1_SENSOR_NUM:
+                case MLX_FAN4_2_SENSOR_NUM:
+                    mlx_add_event_to_sel(sensor->mc, sensor->sensor_type, sensor->num, 0, IPMI_EVENT_READING_TYPE_DISCRETE_DEVICE_ENABLE, 0x1);
+                break;
+                default:
+                    break;
+                }
             }
         }
 #endif
