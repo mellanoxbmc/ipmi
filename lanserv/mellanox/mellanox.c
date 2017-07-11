@@ -25,9 +25,11 @@
 #include <OpenIPMI/ipmi_bits.h>
 #include <OpenIPMI/ipmi_mc.h>
 #include <OpenIPMI/serv.h>
+#include <OpenIPMI/ipmi_mlx.h>
 #include "../bmc.h"
 
 static lmc_data_t *bmc_mc;
+static unsigned char all_fans_failure = 0;
 
 /**************************************************************************
  *                  Mellanox custom commands codes                        *
@@ -166,6 +168,11 @@ enum reset_cause_e {
 static ipmi_timer_t *reset_monitor_timer = NULL;
 #define MLX_RESET_MONITOR_TIMEOUT         10
 
+/*
+ * This timer is called periodically to monitor the FANs
+ */
+static ipmi_timer_t *fans_monitor_timer = NULL;
+#define MLX_FANS_MONITOR_TIMEOUT          5
 
 
 
@@ -1205,6 +1212,38 @@ reset_monitor_timeout(void *cb_data)
     sys->start_timer(reset_monitor_timer, &tv);
 }
 
+static void
+fans_monitor_timeout(void *cb_data)
+{
+    sys_data_t *sys = cb_data;
+    struct timeval tv;
+    int failed = 0;
+    int i = 0;
+    unsigned char fname[30];
+
+    for (i = 1; i <= sys_devices.fan_tacho_number; ++i) {
+        memset(fname, 0, sizeof(fname));
+        sprintf(fname, "/bsp/fan/tacho%i_rpm", i);
+        if (access(fname, F_OK) != 0)
+            ++failed;
+    }
+
+    if (failed == sys_devices.fan_tacho_number) {
+        if (all_fans_failure == 0) {
+            mlx_add_event_to_sel(sys->mc, IPMI_SENSOR_TYPE_FAN, 0 , 0, IPMI_EVENT_READING_TYPE_DISCRETE_DEVICE_ENABLE, 0x0);
+            all_fans_failure = 1;
+        }
+    }
+    else if (all_fans_failure == 1) {
+        mlx_add_event_to_sel(sys->mc, IPMI_SENSOR_TYPE_FAN, 0 , 1, IPMI_EVENT_READING_TYPE_DISCRETE_DEVICE_ENABLE, 0x0);
+        all_fans_failure = 0;
+    }
+
+    tv.tv_sec = MLX_FANS_MONITOR_TIMEOUT;
+    tv.tv_usec = 0;
+    sys->start_timer(fans_monitor_timer, &tv);
+}
+
 /*
  * Chassis control get for the chassis.
  */
@@ -1356,6 +1395,9 @@ ipmi_sim_module_post_init(sys_data_t *sys)
     unsigned char id_line[50];
     unsigned char id_maj[2];
     unsigned char id_min[2];
+    unsigned int  productId;
+    struct timeval tv;
+    int rv;
     FILE *fid;
 
     memset(id_line, 0, sizeof(id_line));
@@ -1386,6 +1428,30 @@ ipmi_sim_module_post_init(sys_data_t *sys)
     fw_min = strtoul(id_min, NULL, 0);
 
     ipmi_mc_set_fw_revision(bmc_mc, fw_maj, fw_min);
+
+    productId = (sys->mc->product_id[1] << 8) | sys->mc->product_id[0];
+    switch (productId) {
+    case 1: /* Baidu BMC */
+        sys_devices.fan_number = 4;
+        sys_devices.fan_tacho_number = 8;
+        sys_devices.fan_eeprom_number = 4;
+        sys_devices.psu_number = 2;
+        break;
+    default:
+        break;
+    }
+
+    rv = sys->alloc_timer(sys, fans_monitor_timeout, sys, &fans_monitor_timer);
+    if (rv) {
+        int errval = errno;
+        sys->log(sys, SETUP_ERROR, NULL, "Unable to create FANs monitoring timer");
+        return errval;
+    }
+    else {
+        tv.tv_sec = MLX_FANS_MONITOR_TIMEOUT;
+        tv.tv_usec = 0;
+        sys->start_timer(fans_monitor_timer, &tv);
+    }
 
     return 0;
 }

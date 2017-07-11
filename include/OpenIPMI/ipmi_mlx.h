@@ -5,6 +5,8 @@
 #ifndef _IPMI_MLX_H
 #define _IPMI_MLX_H
 
+#include <OpenIPMI/mcserv.h>
+
 #define MLX_AMBIENT_CARRIER_TEMP_SENSOR_NUM 0x01
 #define MLX_AMBIENT_SWITCH_TEMP_SENSOR_NUM  0X02
 #define MLX_PSU1 temp_SENSOR_NUM            0x03
@@ -67,5 +69,14 @@ void mlx_add_event_to_sel(lmc_data_t    *mc,
 void mlx_mc_pef_apply(lmc_data_t    *mc,
                        unsigned char record_type,
                        unsigned char event[13]);
+
+struct mlx_devices_data {
+    unsigned char fan_number;
+    unsigned char fan_tacho_number;
+    unsigned char fan_eeprom_number;
+    unsigned char psu_number;
+};
+
+struct mlx_devices_data sys_devices;
 
 #endif /* _IPMI_MLX_H */
