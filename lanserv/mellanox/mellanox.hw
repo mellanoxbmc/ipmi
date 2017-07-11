@@ -17,6 +17,10 @@
 # The BMC is the MC at address 20
 mc_setbmc 0x20
 
+
+#Product ID:
+# 1 - Baidu BMC
+
 # Now add the BMC
 #      IPMB DevID DevSDRs?       Rev   Maj   Min   Dev   MFG      Prod
 #                                      FW    FW    Sup   ID       Id
