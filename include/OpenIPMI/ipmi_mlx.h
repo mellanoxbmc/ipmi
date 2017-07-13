@@ -75,6 +75,8 @@ struct mlx_devices_data {
     unsigned char fan_tacho_number;
     unsigned char fan_eeprom_number;
     unsigned char psu_number;
+	unsigned char status_led_number;
+	unsigned char fan_led_number;
 };
 
 struct mlx_devices_data sys_devices;

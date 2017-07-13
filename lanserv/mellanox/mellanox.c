@@ -81,24 +81,26 @@ static const char* fan_tacho_en[MLX_FAN_MAX] =
 
 /**  LED FUNCTIONALITY DEFINES  **/
 #define MLX_STATUS_LED_MAX 1
-#define MLX_PSU_LED_MAX    1
 #define MLX_FAN_LED_MAX    4
-#define MLX_MAX_LEDS       MLX_FAN_LED_MAX + MLX_PSU_LED_MAX + MLX_STATUS_LED_MAX
+#define MLX_MAX_LEDS       MLX_FAN_LED_MAX + MLX_STATUS_LED_MAX
 
 #define LED_FAN_FILE "/bsp/leds/fan/"
 #define LED_STATUS_FILE "/bsp/leds/status/"
-#define LED_PSU_FILE "/bsp/leds/psu/"
 #define LED_BRIGHTNESS "brightness"
-#define LED_TRIGGER    "trigger"
+#define LED_DELAY_OFF  "delay_off"
+#define LED_DELAY_ON   "delay_on"
 
 #define LED_COLOR_RED    1
 #define LED_COLOR_GREEN  2
 #define LED_COLOR_AMBER  3
 
+#define MLX_LED_BLINK_OFF 0
+#define MLX_LED_BLINK_3HZ 3
+#define MLX_LED_BLINK_6HZ 6
+
 static const char* red_led[MLX_MAX_LEDS] =
 {
     LED_STATUS_FILE"red/",
-    LED_PSU_FILE"red/",
     LED_FAN_FILE"red/1/",
     LED_FAN_FILE"red/2/",
     LED_FAN_FILE"red/3/",
@@ -108,7 +110,6 @@ static const char* red_led[MLX_MAX_LEDS] =
 static const char* green_led[MLX_MAX_LEDS] =
 {
     LED_STATUS_FILE"green/",
-    LED_PSU_FILE"green/",
     LED_FAN_FILE"green/1/",
     LED_FAN_FILE"green/2/",
     LED_FAN_FILE"green/3/",
@@ -373,21 +374,26 @@ handle_set_led_state(lmc_data_t    *mc,
 
 /**
  *
- * ipmitool raw 0x04  0x033  LedNum  Color Time
+ * ipmitool raw 0x04  0x33  LedNum  Color Time
  *
  * LedNum:
- * 0x0 - status LED
- * 0x1 - PSU LED
+ * 0x1 - status LED
  * 0x2 - FAN1 LED
  * 0x3 - FAN2 LED
  * 0x4 - FAN2 LED
  * 0x5 - FAN2 LED
  *
- * Color
+ * Color:
  * 0x1 - red
  * 0x2 - green
- * 0x3 - amber
-**/
+ * 0x3 - amber 
+ *
+ * Time: 
+ * 0x0 - off blinking
+ * 0x3 - blinking 3HZ
+ * 0x6 - blinking 6HZ 
+ *
+ *  */ 
 static void
 handle_set_led_blinking (lmc_data_t    *mc,
                 msg_t         *msg,
@@ -395,52 +401,115 @@ handle_set_led_blinking (lmc_data_t    *mc,
                 unsigned int  *rdata_len,
                 void          *cb_data)
 {
-    unsigned int led;
-    unsigned int time;
-    FILE *f_trigger;
+    unsigned char led;
+    unsigned char time;
+    unsigned char color;
+    FILE *f_delayon;
+    FILE *f_delayoff;
     char fname[100];
 
     if (check_msg_length(msg, 3, rdata, rdata_len))
-	return;
+        return;
 
     led = msg->data[0];
-    if (led >= MLX_MAX_LEDS) {
-	rdata[0] = IPMI_INVALID_DATA_FIELD_CC;
-	*rdata_len = 1;
-	return;
-    }
-
-    if (msg->data[1] == LED_COLOR_AMBER && led == 0) { // only status led support AMBER
-        memset(fname, 0, sizeof(fname));
-        sprintf(fname, "%s%s", amber_led[led],LED_TRIGGER);
-        f_trigger = fopen(fname, "w");
-    }
-    else if (msg->data[1] == LED_COLOR_RED) {
-        memset(fname, 0, sizeof(fname));
-        sprintf(fname, "%s%s", red_led[led],LED_TRIGGER);
-        f_trigger = fopen(fname, "w");
-    } else if (msg->data[1] == LED_COLOR_GREEN) {
-        memset(fname, 0, sizeof(fname));
-        sprintf(fname, "%s%s", green_led[led],LED_TRIGGER);
-        f_trigger = fopen(fname, "w");
-    }
-    else {
+    color = msg->data[1];
+    time = msg->data[2];
+    if (led == 0 ||
+        led > sys_devices.status_led_number + sys_devices.fan_led_number || 
+        color > LED_COLOR_AMBER ||
+        color < LED_COLOR_RED ||
+        (time != MLX_LED_BLINK_OFF && 
+         time != MLX_LED_BLINK_3HZ && 
+         time != MLX_LED_BLINK_6HZ)) {
         rdata[0] = IPMI_INVALID_DATA_FIELD_CC;
         *rdata_len = 1;
         return;
     }
 
-    if (!f_trigger) {
-        printf("\nUnable to open LED trigger file");
+    if (led <= sys_devices.status_led_number) {
+        switch (color) {
+        case LED_COLOR_RED:
+            memset(fname, 0, sizeof(fname));
+            sprintf(fname, "%sred/%s", LED_STATUS_FILE, LED_DELAY_OFF);
+            f_delayoff = fopen(fname, "w");
+            memset(fname, 0, sizeof(fname));
+            sprintf(fname, "%sred/%s", LED_STATUS_FILE,LED_DELAY_ON);
+            f_delayon = fopen(fname, "w");
+            break;
+        case LED_COLOR_GREEN:
+            memset(fname, 0, sizeof(fname));
+            sprintf(fname, "%sgreen/%s", LED_STATUS_FILE, LED_DELAY_OFF);
+            f_delayoff = fopen(fname, "w");
+            memset(fname, 0, sizeof(fname));
+            sprintf(fname, "%sgreen/%s", LED_STATUS_FILE,LED_DELAY_ON);
+            f_delayon = fopen(fname, "w");
+            break;
+        case LED_COLOR_AMBER:
+            memset(fname, 0, sizeof(fname));
+            sprintf(fname, "%samber/%s", LED_STATUS_FILE, LED_DELAY_OFF);
+            f_delayoff = fopen(fname, "w");
+            memset(fname, 0, sizeof(fname));
+            sprintf(fname, "%samber/%s", LED_STATUS_FILE,LED_DELAY_ON);
+            f_delayon = fopen(fname, "w");
+            break;
+        default:
+            break;
+        }
+    }
+    else if (led > sys_devices.status_led_number && 
+             led < sys_devices.status_led_number + sys_devices.fan_led_number) {
+        switch (color) {
+        case LED_COLOR_RED:
+            memset(fname, 0, sizeof(fname));
+            sprintf(fname, "%sred/%u/%s", LED_FAN_FILE, led - sys_devices.status_led_number, LED_DELAY_OFF);
+            f_delayoff = fopen(fname, "w");
+            memset(fname, 0, sizeof(fname));
+            sprintf(fname, "%sred/%s", LED_FAN_FILE, led - sys_devices.status_led_number,LED_DELAY_ON);
+            f_delayon = fopen(fname, "w");
+            break;
+        case LED_COLOR_GREEN:
+            memset(fname, 0, sizeof(fname));
+            sprintf(fname, "%sgreen/%u/%s", LED_FAN_FILE, led - sys_devices.status_led_number, LED_DELAY_OFF);
+            f_delayoff = fopen(fname, "w");
+            memset(fname, 0, sizeof(fname));
+            sprintf(fname, "%sgreen/%u/%s", LED_FAN_FILE, led - sys_devices.status_led_number,LED_DELAY_ON);
+            f_delayon = fopen(fname, "w");
+            break;
+        default:
+            break;
+        }
+    }
+
+    if (!f_delayon || !f_delayoff) {
+        if (f_delayoff)
+            fclose(f_delayoff);
+        if (f_delayon)
+            fclose(f_delayon);
+
         rdata[0] = IPMI_COULD_NOT_PROVIDE_RESPONSE_CC;
         *rdata_len = 1;
         return;
     }
 
-    time = msg->data[2];
-    fprintf(f_trigger, "%u", time);
+    switch (time) {
+    case MLX_LED_BLINK_OFF:
+        fprintf(f_delayoff, "%u", 0);
+        fprintf(f_delayon, "%u", 0);
+        break;
+    case MLX_LED_BLINK_3HZ:
+        fprintf(f_delayoff, "%u", 83);
+        fprintf(f_delayon, "%u", 83);
+        break;
+    case MLX_LED_BLINK_6HZ:
+        fprintf(f_delayoff, "%u", 167);
+        fprintf(f_delayon, "%u", 167);
+        break;
+    default:
+        break;
+    }
 
-    fclose(f_trigger);
+    fclose(f_delayon);
+    fclose(f_delayoff);
 
     rdata[0] = 0;
     *rdata_len = 1;
@@ -534,15 +603,14 @@ static unsigned char get_led_color(unsigned int led, unsigned char *color)
 
 /**
  *
- * ipmitool raw 0x04  0x031  LedNum
+ * ipmitool raw 0x04  0x31  LedNum
  *
  * LedNum:
  * 0x0 - status LED
- * 0x1 - PSU LED
- * 0x2 - FAN1 LED
+ * 0x1 - FAN1 LED
+ * 0x2 - FAN2 LED
  * 0x3 - FAN2 LED
  * 0x4 - FAN2 LED
- * 0x5 - FAN2 LED
  *
 **/
 static void
@@ -1436,6 +1504,8 @@ ipmi_sim_module_post_init(sys_data_t *sys)
         sys_devices.fan_tacho_number = 8;
         sys_devices.fan_eeprom_number = 4;
         sys_devices.psu_number = 2;
+        sys_devices.status_led_number = 1;
+        sys_devices.fan_led_number = 4;
         break;
     default:
         break;

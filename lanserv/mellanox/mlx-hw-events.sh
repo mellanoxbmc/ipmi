@@ -456,48 +456,70 @@ else
   if [ "$2" == "fan1_green" ]; then
     unlink /bsp/leds/fan/green/1/brightness
     unlink /bsp/leds/fan/green/1/trigger
+    unlink /bsp/leds/fan/green/1/delay_on
+    unlink /bsp/leds/fan/green/1/delay_off
   fi
   if [ "$2" == "fan1_red" ]; then
-    unlink/bsp/leds/fan/red/1/brightness
+    unlink /bsp/leds/fan/red/1/brightness
     unlink /bsp/leds/fan/red/1/trigger
+    unlink /bsp/leds/fan/red/1/delay_on
+    unlink /bsp/leds/fan/red/1/delay_off
   fi
   if [ "$2" == "fan2_green" ]; then
     unlink /bsp/leds/fan/green/2/brightness
     unlink /bsp/leds/fan/green/2/trigger
+    unlink /bsp/leds/fan/green/2/delay_on
+    unlink /bsp/leds/fan/green/2/delay_off
   fi
   if [ "$2" == "fan2_red" ]; then
     unlink /bsp/leds/fan/red/2/brightness
     unlink /bsp/leds/fan/red/2/trigger
+    unlink /bsp/leds/fan/red/2/delay_on
+    unlink /bsp/leds/fan/red/2/delay_off
   fi
   if [ "$2" == "fan3_green" ]; then
     unlink /bsp/leds/fan/green/3/brightness
     unlink /bsp/leds/fan/green/3/trigger
+    unlink /bsp/leds/fan/green/3/delay_on
+    unlink /bsp/leds/fan/green/3/delay_off
   fi
   if [ "$2" == "fan3_red" ]; then
     unlink /bsp/leds/fan/red/3/brightness
     unlink /bsp/leds/fan/red/3/trigger
+    unlink /bsp/leds/fan/red/3/delay_on
+    unlink /bsp/leds/fan/red/3/delay_off
   fi
   if [ "$2" == "fan4_green" ]; then
     unlink /bsp/leds/fan/green/4/brightness
     unlink /bsp/leds/fan/green/4/trigger
+    unlink /bsp/leds/fan/green/4/delay_on
+    unlink /bsp/leds/fan/green/4/delay_off
   fi
   if [ "$2" == "fan4_red" ]; then
     unlink /bsp/leds/fan/red/4/brightness
     unlink /bsp/leds/fan/red/4/trigger
+    unlink /bsp/leds/fan/red/4/delay_on
+    unlink /bsp/leds/fan/red/4/delay_off
   fi
   if [ "$2" == "status_green" ]; then
     unlink /bsp/leds/status/green/brightness
     unlink /bsp/leds/status/green/trigger
+    unlink /bsp/leds/status/green/delay_on
+    unlink /bsp/leds/status/green/delay_off
   fi
   if [ "$2" == "status_red" ]; then
     unlink /bsp/leds/status/red/brightness
     unlink /bsp/leds/status/red/trigger
+    unlink /bsp/leds/status/red/delay_on
+    unlink /bsp/leds/status/red/delay_off
   fi
   if [ "$2" == "status_amber" ]; then
     unlink /bsp/leds/status/amber/brightness
     unlink /bsp/leds/status/amber/trigger
+    unlink /bsp/leds/status/amber/delay_on
+    unlink /bsp/leds/status/amber/delay_off
   fi
   if [ "$2" == "thermal_zone0" ]; then
-    unlink $3$4/mode /bsp/thermal/$2/mode
+    unlink /bsp/thermal/$2/mode
   fi
 fi
