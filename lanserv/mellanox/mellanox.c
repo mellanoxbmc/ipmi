@@ -80,15 +80,13 @@ static const char* fan_tacho_en[MLX_FAN_MAX] =
 };
 
 /**  LED FUNCTIONALITY DEFINES  **/
-#define MLX_STATUS_LED_MAX 1
-#define MLX_FAN_LED_MAX    4
-#define MLX_MAX_LEDS       MLX_FAN_LED_MAX + MLX_STATUS_LED_MAX
-
 #define LED_FAN_FILE "/bsp/leds/fan/"
 #define LED_STATUS_FILE "/bsp/leds/status/"
 #define LED_BRIGHTNESS "brightness"
+#define LED_TRIGGER    "trigger"
 #define LED_DELAY_OFF  "delay_off"
 #define LED_DELAY_ON   "delay_on"
+#define LED_TIMER      "timer"
 
 #define LED_COLOR_RED    1
 #define LED_COLOR_GREEN  2
@@ -97,29 +95,6 @@ static const char* fan_tacho_en[MLX_FAN_MAX] =
 #define MLX_LED_BLINK_OFF 0
 #define MLX_LED_BLINK_3HZ 3
 #define MLX_LED_BLINK_6HZ 6
-
-static const char* red_led[MLX_MAX_LEDS] =
-{
-    LED_STATUS_FILE"red/",
-    LED_FAN_FILE"red/1/",
-    LED_FAN_FILE"red/2/",
-    LED_FAN_FILE"red/3/",
-    LED_FAN_FILE"red/4/",
-};
-
-static const char* green_led[MLX_MAX_LEDS] =
-{
-    LED_STATUS_FILE"green/",
-    LED_FAN_FILE"green/1/",
-    LED_FAN_FILE"green/2/",
-    LED_FAN_FILE"green/3/",
-    LED_FAN_FILE"green/4/",
-};
-
-static const char* amber_led[MLX_STATUS_LED_MAX] =
-{
-    LED_STATUS_FILE"amber/"
-};
 
 /* Reset links */
 #define MLX_BMC_SOFT_RESET   "/bsp/reset/bmc_reset_soft"
@@ -281,35 +256,78 @@ handle_get_fan_pwm_cmd(lmc_data_t    *mc,
     return;
 }
 
-static void set_led_command(unsigned char led,
+static unsigned char set_led_command(unsigned char led,
                             unsigned char color,
                             unsigned char cmd)
 {
-    char command[100];
+    FILE *fbrightness;
+    FILE *ftrigger;
+    char fname[100];
+    char cmd_trigger[100];
 
-    if (color == LED_COLOR_RED) {
-        memset(command, 0, sizeof(command));
-        sprintf(command, "echo %i > %s%s", cmd, red_led[led],LED_BRIGHTNESS);
-        system(command);
+    memset(fname, 0, sizeof(fname));
+    memset(cmd_trigger, 0, sizeof(cmd_trigger));
+
+    switch (color) {
+    case LED_COLOR_RED:
+        if (led <= sys_devices.status_led_number) {
+            if (cmd)
+                sprintf(cmd_trigger,"echo timer > %sred/%s\n",LED_STATUS_FILE, LED_TRIGGER);
+
+            sprintf(fname, "%sred/%s", LED_STATUS_FILE, LED_BRIGHTNESS);
+        }
+        else {
+            if (cmd)
+                sprintf(cmd_trigger,"echo timer > %sred/%u/%s\n",LED_FAN_FILE, led - sys_devices.status_led_number, LED_TRIGGER);
+
+            sprintf(fname, "%sred/%u/%s", LED_FAN_FILE, led - sys_devices.status_led_number, LED_BRIGHTNESS);
+        }
+        break;
+    case LED_COLOR_GREEN:
+        if (led <= sys_devices.status_led_number) {
+            if (cmd)
+                sprintf(cmd_trigger,"echo timer > %sgreen/%s\n",LED_STATUS_FILE, LED_TRIGGER);
+
+            sprintf(fname, "%sgreen/%s", LED_STATUS_FILE, LED_BRIGHTNESS);
+        }
+        else {
+            if (cmd)
+                sprintf(cmd_trigger,"echo timer > %sgreen/%u/%s\n",LED_FAN_FILE, led - sys_devices.status_led_number, LED_TRIGGER);
+
+            sprintf(fname, "%sgreen/%u/%s", LED_FAN_FILE, led - sys_devices.status_led_number, LED_BRIGHTNESS);
+        }
+        break;
+    case LED_COLOR_AMBER:
+        if (cmd)
+            sprintf(cmd_trigger,"echo timer > %samber/%s\n",LED_STATUS_FILE, LED_TRIGGER);
+
+        sprintf(fname, "%samber/%s", LED_STATUS_FILE, LED_BRIGHTNESS);
+        break;
+    default:
+        break;
     }
-    else if (color == LED_COLOR_GREEN) { 
-        memset(command, 0, sizeof(command));
-        sprintf(command, "echo %i > %s%s", cmd, green_led[led],LED_BRIGHTNESS);
-        system(command);
-    } else if (color == LED_COLOR_AMBER) {
-        memset(command, 0, sizeof(command));
-        sprintf(command, "echo %i > %s%s", cmd, amber_led[led],LED_BRIGHTNESS);
-        system(command);
+
+    fbrightness = fopen(fname, "w");
+
+    if (!fbrightness) {
+        fclose(fbrightness);
+        return IPMI_COULD_NOT_PROVIDE_RESPONSE_CC;
     }
+
+    fprintf(fbrightness, "%u", cmd);
+    system(cmd_trigger);
+
+    fclose(fbrightness);
+
+    return 0;
 }
 
 /**
  *
- * ipmitool raw 0x04  0x032  LedNum  Color
+ * ipmitool raw 0x04  0x32  LedNum  Color
  *
  * LedNum:
- * 0x0 - status LED
- * 0x1 - PSU LED
+ * 0x1 - status LED
  * 0x2 - FAN1 LED
  * 0x3 - FAN2 LED
  * 0x4 - FAN2 LED
@@ -325,13 +343,15 @@ handle_set_led_state(lmc_data_t    *mc,
                      unsigned int  *rdata_len,
                      void          *cb_data)
 {
+    unsigned char rv = 0;
     unsigned char led, color;
 
     if (check_msg_length(msg, 2, rdata, rdata_len))
         return;
 
     led = msg->data[0];
-    if (led >= MLX_MAX_LEDS) {
+    if (led > sys_devices.status_led_number + sys_devices.fan_led_number ||
+        led == 0) {
         rdata[0] = IPMI_INVALID_DATA_FIELD_CC;
         *rdata_len = 1;
         return;
@@ -344,31 +364,54 @@ handle_set_led_state(lmc_data_t    *mc,
         return;
     }
 
-    if (msg->data[1] == LED_COLOR_AMBER &&
-        led < MLX_STATUS_LED_MAX) { // only status led support AMBER
-        set_led_command(led, LED_COLOR_RED, 0);
-        set_led_command(led, LED_COLOR_GREEN, 0);
-        set_led_command(led, LED_COLOR_AMBER, 1);
-    }
-    else if (color == LED_COLOR_RED) {
-        if (led < MLX_STATUS_LED_MAX)
-            set_led_command(led, LED_COLOR_AMBER, 0);
-        set_led_command(led, LED_COLOR_GREEN, 0);
-        set_led_command(led, LED_COLOR_RED, 1);
-    }
-    else if (color == LED_COLOR_GREEN) {
-        if (led < MLX_STATUS_LED_MAX)
-            set_led_command(led, LED_COLOR_AMBER, 0);
-        set_led_command(led, LED_COLOR_RED, 0);
-        set_led_command(led, LED_COLOR_GREEN, 1);
-    }
-    else {
-        rdata[0] = IPMI_INVALID_DATA_FIELD_CC;
-        *rdata_len = 1;
-        return;
+    switch (color) {
+    case LED_COLOR_AMBER:
+        if (led > sys_devices.status_led_number) {
+            rv = IPMI_INVALID_DATA_FIELD_CC;
+            goto out;
+        }
+        rv = set_led_command(led, LED_COLOR_RED, 0);
+        if (rv)
+            goto out;
+        rv = set_led_command(led, LED_COLOR_GREEN, 0);
+        if (rv)
+            goto out;
+        rv = set_led_command(led, LED_COLOR_AMBER, 1);
+        if (rv)
+            goto out;
+        break;
+    case LED_COLOR_RED:
+        if (led <= sys_devices.status_led_number){
+            rv = set_led_command(led, LED_COLOR_AMBER, 0);
+            if (rv)
+                goto out;
+        }
+        rv = set_led_command(led, LED_COLOR_GREEN, 0);
+        if (rv)
+            goto out;
+        rv = set_led_command(led, LED_COLOR_RED, 1);
+        if (rv)
+            goto out;
+        break;
+    case LED_COLOR_GREEN:
+        if (led <= sys_devices.status_led_number) {
+            rv = set_led_command(led, LED_COLOR_AMBER, 0);
+            if (rv)
+                goto out;
+        }
+        rv = set_led_command(led, LED_COLOR_RED, 0);
+        if (rv)
+            goto out;
+        rv = set_led_command(led, LED_COLOR_GREEN, 1);
+        if (rv)
+            goto out;
+        break;
+    default:
+        break;
     }
 
-    rdata[0] = 0;
+ out:
+    rdata[0] = rv;
     *rdata_len = 1;
 }
 
@@ -527,9 +570,9 @@ static unsigned char get_led_color(unsigned int led, unsigned char *color)
     int red, green, amber;
     char fname[100];
 
-    if (led < MLX_STATUS_LED_MAX) {
+    if (led <= sys_devices.status_led_number) {
         memset(fname, 0, sizeof(fname));
-        sprintf(fname, "%s%s", amber_led[led],LED_BRIGHTNESS);
+        sprintf(fname, "%samber/%s", LED_STATUS_FILE, LED_BRIGHTNESS);
 
         f_amber = fopen(fname, "r");
         if (!f_amber) {
@@ -543,19 +586,28 @@ static unsigned char get_led_color(unsigned int led, unsigned char *color)
         }
 
         amber = strtoul(line_amber, NULL, 0);
+
+        memset(fname, 0, sizeof(fname));
+        sprintf(fname, "%sgreen/%s", LED_STATUS_FILE, LED_BRIGHTNESS);
+        f_green = fopen(fname, "r");
+
+        memset(fname, 0, sizeof(fname));
+        sprintf(fname, "%sred/%s", LED_STATUS_FILE, LED_BRIGHTNESS);
+        f_red = fopen(fname, "r");
     }
+    else {
+        memset(fname, 0, sizeof(fname));
+        sprintf(fname, "%sgreen/%u/%s", LED_FAN_FILE, led - sys_devices.status_led_number, LED_BRIGHTNESS);
+        f_green = fopen(fname, "r");
 
-    memset(fname, 0, sizeof(fname));
-    sprintf(fname, "%s%s", green_led[led],LED_BRIGHTNESS);
-    f_green = fopen(fname, "r");
-
-    memset(fname, 0, sizeof(fname));
-    sprintf(fname, "%s%s", red_led[led],LED_BRIGHTNESS);
-    f_red = fopen(fname, "r");
+        memset(fname, 0, sizeof(fname));
+        sprintf(fname, "%sred/%u/%s", LED_FAN_FILE, led - sys_devices.status_led_number, LED_BRIGHTNESS);
+        f_red = fopen(fname, "r");
+    }
 
     if (!f_green || !f_red) {
         printf("\nUnable to open LED status file");
-        if (led < MLX_STATUS_LED_MAX)
+        if (led <= sys_devices.status_led_number)
             fclose(f_amber);
         if (f_red)
             fclose(f_red);
@@ -568,7 +620,7 @@ static unsigned char get_led_color(unsigned int led, unsigned char *color)
     if ((0 >= fread(line_green, 1, sizeof(line_green),f_green))||
          (0 >= fread(line_red, 1, sizeof(line_red),f_red)))
     {
-        if (led < MLX_STATUS_LED_MAX)
+        if (led <= sys_devices.status_led_number)
             fclose(f_amber);
         fclose(f_green);
         fclose(f_red);
@@ -578,7 +630,7 @@ static unsigned char get_led_color(unsigned int led, unsigned char *color)
     red = strtoul(line_red, NULL, 0);
     green = strtoul(line_green, NULL, 0);
 
-    if (led < MLX_STATUS_LED_MAX) {
+    if (led <= sys_devices.status_led_number) {
         if (amber && !green && !red)
             *color = LED_COLOR_AMBER;
         else if (!amber && green && !red)
@@ -615,10 +667,10 @@ static unsigned char get_led_color(unsigned int led, unsigned char *color)
 **/
 static void
 handle_get_led_state(lmc_data_t    *mc,
-				   msg_t         *msg,
-				   unsigned char *rdata,
-				   unsigned int  *rdata_len,
-				   void          *cb_data)
+                     msg_t         *msg,
+                     unsigned char *rdata,
+                     unsigned int  *rdata_len,
+                     void          *cb_data)
 {
     unsigned int led;
     unsigned char color = LED_COLOR_RED;
@@ -628,7 +680,7 @@ handle_get_led_state(lmc_data_t    *mc,
 	return;
 
     led = msg->data[0];
-    if (led >= MLX_MAX_LEDS) {
+    if (led > sys_devices.status_led_number + sys_devices.fan_led_number) {
         rdata[0] = IPMI_INVALID_DATA_FIELD_CC;
         *rdata_len = 1;
         return;

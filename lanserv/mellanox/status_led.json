@@ -42,15 +42,15 @@
     "status": [
       {
         "color": "green",
-        "cmd": "echo 0 > /bsp/leds/status/red/brightness;echo 0 > /bsp/leds/status/amber/brightness;echo 1 > /bsp/leds/status/green/brightness"
+        "cmd": "echo 0 > /bsp/leds/status/red/brightness;echo 0 > /bsp/leds/status/amber/brightness;echo 1 > /bsp/leds/status/green/brightness;echo timer > /bsp/leds/status/green/trigger"
       },
       {
         "color": "amber",
-        "cmd": "echo 0 > /bsp/leds/status/green/brightness;echo 0 > /bsp/leds/status/red/brightness;echo 1 > /bsp/leds/status/amber/brightness"
+        "cmd": "echo 0 > /bsp/leds/status/green/brightness;echo 0 > /bsp/leds/status/red/brightness;echo 1 > /bsp/leds/status/amber/brightness;echo timer > /bsp/leds/status/amber/trigger"
       },
       {
         "color": "red",
-        "cmd": "echo 0 > /bsp/leds/status/amber/brightness;echo 0 > /bsp/leds/status/green/brightness;echo 1 > /bsp/leds/status/red/brightness"
+        "cmd": "echo 0 > /bsp/leds/status/amber/brightness;echo 0 > /bsp/leds/status/green/brightness;echo 1 > /bsp/leds/status/red/brightness;echo timer > /bsp/leds/status/red/trigger"
       }
     ]
 }
