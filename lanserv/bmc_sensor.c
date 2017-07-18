@@ -305,16 +305,37 @@ status_led_control(unsigned char num,
                    unsigned char direction,
                    unsigned char type)
 {
-   unsigned char status_led_run_str[32];
+    unsigned char status_led_run_str[32];
+    FILE *fstatus;
+    unsigned long int status;
+    char line_status[10];
 
     switch (type) {
     case IPMI_SENSOR_TYPE_TEMPERATURE:
         switch (num) {
         case MLX_AMBIENT_CARRIER_TEMP_SENSOR_NUM:
         case MLX_AMBIENT_SWITCH_TEMP_SENSOR_NUM:
-        case MLX_ASIC_TEMP_SENSOR_NUM:
             if (sprintf(status_led_run_str,"status_led.py 0x%02x %d 0x%02x\n",num, direction, type))
                  system(status_led_run_str);
+            break;
+        case MLX_ASIC_TEMP_SENSOR_NUM:
+
+            fstatus = fopen("/bsp/environment/cpu_status", "w");
+
+            if (!fstatus)
+                return;
+
+            if (0 >= fread(line_status, 1, sizeof(line_status),fstatus)) {
+                fclose(fstatus);
+                return;
+            }
+
+            status = strtoul(line_status, NULL, 0);
+            if (status) {
+                if (sprintf(status_led_run_str,"status_led.py 0x%02x %d 0x%02x\n",num, direction, type))
+                     system(status_led_run_str);
+            }
+            fclose(fstatus);
             break;
         default:
             break;

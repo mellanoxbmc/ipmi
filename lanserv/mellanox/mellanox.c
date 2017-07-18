@@ -765,6 +765,8 @@ handle_cpu_ready_event(lmc_data_t    *mc,
         }
     }
 
+   if (sprintf(status_led_run_str,"status_led.py 0x%02x %d 0x%02x\n",0xbc, 1, 0))
+       system(status_led_run_str);
 
    if (sprintf(status_led_run_str,"status_led.py 0x%02x %d 0x%02x\n",0xbb, ready, IPMI_SENSOR_TYPE_PROCESSOR))
        system(status_led_run_str);
@@ -857,6 +859,9 @@ handle_cpu_soft_reset(lmc_data_t    *mc,
 {
     FILE *freset;
     unsigned char cpu_reboot_cmd = 0;
+    char trigger[100];
+    FILE *ftrigger;
+    sys_data_t *sys = cb_data;
 
     if (!check_msg_length(msg, 1, rdata, rdata_len)) {
         cpu_reboot_cmd = msg->data[0];
@@ -876,6 +881,19 @@ handle_cpu_soft_reset(lmc_data_t    *mc,
             return;
     } else {
         fprintf(freset, "%u", 0);
+
+        /* sel status LED to green to enable delay_off/delay_on */
+        set_led_command(1, LED_COLOR_GREEN, 1);
+
+       /* set 0 state at CPU reboot */
+        system("echo 0 > /bsp/environment/cpu_status");
+
+        /* set LED blinking on CPU restart */
+        memset(trigger, 0, sizeof(trigger));
+        if (sprintf(trigger,"status_led.py 0x%02x %d 0x%02x\n", 0xbc, 0, 0))
+            system(trigger);
+        else
+            sys->log(sys, OS_ERROR, NULL,"Unable to set status LED blinking");
     }
 
     fclose(freset);

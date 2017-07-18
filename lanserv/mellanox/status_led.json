@@ -27,7 +27,8 @@
       "0xb8": "1",
       "0xb9": "1",
       "0xba": "1",
-      "0xbb": "1"
+      "0xbb": "1",
+      "0xbc": "3"
     },
     "type": {
               "0x04": {
@@ -42,7 +43,7 @@
     "status": [
       {
         "color": "green",
-        "cmd": "echo 0 > /bsp/leds/status/red/brightness;echo 0 > /bsp/leds/status/amber/brightness;echo 1 > /bsp/leds/status/green/brightness;echo timer > /bsp/leds/status/green/trigger"
+        "cmd": "echo 0 > /bsp/leds/status/red/brightness;echo 0 > /bsp/leds/status/amber/brightness;echo 1 > /bsp/leds/status/green/brightness;echo timer > /bsp/leds/status/green/trigger;echo 0 > /bsp/leds/status/green/delay_off;echo 0 > /bsp/leds/status/green/delay_on"
       },
       {
         "color": "amber",
@@ -51,6 +52,10 @@
       {
         "color": "red",
         "cmd": "echo 0 > /bsp/leds/status/amber/brightness;echo 0 > /bsp/leds/status/green/brightness;echo 1 > /bsp/leds/status/red/brightness;echo timer > /bsp/leds/status/red/trigger"
+      },
+      {
+        "color": "blink",
+        "cmd": "echo blink >> /tmp/nata_log;echo 0 > /bsp/leds/status/amber/brightness;echo 0 > /bsp/leds/status/red/brightness;echo 1 > /bsp/leds/status/green/brightness;echo timer > /bsp/leds/status/green/trigger;echo 167 > /bsp/leds/status/green/delay_off;echo 167 > /bsp/leds/status/green/delay_on"
       }
     ]
 }
