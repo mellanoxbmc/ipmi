@@ -22,6 +22,7 @@ Sensor number (1-st param):
     fan3_2                0x75
     fan4_1                0x76
     fan4_2                0x77
+    ipmi_wd               0xb4
     PSU1 drw              0xb5
     PSU2 drw              0xb6
     FAN1 drw              0xb7
@@ -29,6 +30,7 @@ Sensor number (1-st param):
     FAN3 drw              0xb9
     FAN4 drw              0xba
     CPU ready             0xbb
+    CPU reboot            0xbc
 
 Sensor Types (3-rd param):
     Temperature           0x01
@@ -93,7 +95,7 @@ def main():
     open('/tmp/led_status', 'w').write(str(entrys))
     set_status_led()
 
-#allways set worst status
+#always set worst status
 def set_status_led():
     status = 0 #green by default
     global status_led_sysfs
