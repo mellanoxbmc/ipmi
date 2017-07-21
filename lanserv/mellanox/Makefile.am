@@ -15,6 +15,7 @@ install-data-local:
 	$(INSTALL) -m 775 $(srcdir)/sel_set_log_size.sh "$(DESTDIR)$(bindir)"; \
 	$(INSTALL) -m 775 $(srcdir)/50-mlx-events.rules "$(DESTDIR)$(localstatedir)/mlx_ipmid/mellanox/"; \
 	$(INSTALL) -m 775 $(srcdir)/50-mlx-hwmon-events.rules "$(DESTDIR)$(localstatedir)/mlx_ipmid/mellanox/"; \
+	$(INSTALL) -m 775 $(srcdir)/50-mlx-hwmon-4-10-events.rules "$(DESTDIR)$(localstatedir)/mlx_ipmid/mellanox/"; \
 	$(INSTALL) -m 775 $(srcdir)/mlx-hw-events.sh "$(DESTDIR)$(bindir)"; \
 	$(INSTALL) -m 775 $(srcdir)/status_led.py "$(DESTDIR)$(bindir)"; \
 	$(INSTALL) -m 644 $(srcdir)/status_led.json "$(DESTDIR)$(sysconfdir)";
