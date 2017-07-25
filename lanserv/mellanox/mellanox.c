@@ -30,6 +30,8 @@
 
 static lmc_data_t *bmc_mc;
 static unsigned char all_fans_failure = 0;
+static unsigned int fan_speed_front_profile1[] = {21000, 6300, 6300, 6300, 8400, 10500, 12700, 15000, 17000, 19500};
+static unsigned int fan_speed_rear_profile1[] = {18000, 5400, 5400, 5400, 7200, 9000, 10800, 12600, 14500, 16500};
 
 /**************************************************************************
  *                  Mellanox custom commands codes                        *
@@ -60,24 +62,9 @@ static unsigned char all_fans_failure = 0;
 #define SEL_SET_SCRIPT_NAME "sel_set_log_size.sh"
 
 /**  FAN FUNCTIONALITY DEFINES  **/
-#define MLX_FAN_MAX   8
 #define MLX_FAN_TACHO_FILE  "/bsp/fan/tacho"
 #define MLX_FAN_PWM_FILE            "/bsp/fan/pwm"
 #define MLX_FAN_PWM_ENABLE_FILE     "/bsp/fan/pwm_en"
-#define MLX_PWM_MIN                 0
-#define MLX_PWM_MAX                 9
-
-static const char* fan_tacho_en[MLX_FAN_MAX] =
-{
-    MLX_FAN_TACHO_FILE"1_en",
-    MLX_FAN_TACHO_FILE"2_en",
-    MLX_FAN_TACHO_FILE"3_en",
-    MLX_FAN_TACHO_FILE"4_en",
-    MLX_FAN_TACHO_FILE"5_en",
-    MLX_FAN_TACHO_FILE"6_en",
-    MLX_FAN_TACHO_FILE"7_en",
-    MLX_FAN_TACHO_FILE"8_en"
-};
 
 /**  LED FUNCTIONALITY DEFINES  **/
 #define LED_FAN_FILE "/bsp/leds/fan/"
@@ -148,7 +135,7 @@ static ipmi_timer_t *reset_monitor_timer = NULL;
  * This timer is called periodically to monitor the FANs
  */
 static ipmi_timer_t *fans_monitor_timer = NULL;
-#define MLX_FANS_MONITOR_TIMEOUT          5
+#define MLX_FANS_MONITOR_TIMEOUT          10
 
 
 
@@ -185,7 +172,7 @@ handle_set_fan_speed_cmd (lmc_data_t    *mc,
     unsigned char pwm = 0;
 
     pwm = msg->data[0];
-    if (pwm > MLX_PWM_MAX) {
+    if (pwm > sys_devices.fan_pwm_max) {
         rdata[0] = IPMI_INVALID_DATA_FIELD_CC;
         *rdata_len = 1;
         return;
@@ -1350,6 +1337,23 @@ reset_monitor_timeout(void *cb_data)
     sys->start_timer(reset_monitor_timer, &tv);
 }
 
+static unsigned int 
+get_expected_fan_speed(unsigned char tacho_num,
+                         unsigned char fan_pwm)
+{
+    switch (sys_devices.fan_tacho_per_drw) {
+    case 2:
+        if (tacho_num%2 == 1)
+            return sys_devices.fan_speed_front[fan_pwm];
+        else
+            return sys_devices.fan_speed_rear[fan_pwm];
+        break;
+    default:
+        break;
+    }
+    return 0;
+}
+
 static void
 fans_monitor_timeout(void *cb_data)
 {
@@ -1358,15 +1362,17 @@ fans_monitor_timeout(void *cb_data)
     int failed = 0;
     int i = 0;
     unsigned char fname[30];
+    unsigned char data[MLX_EVENT_TO_SEL_BUF_SIZE];
 
-    for (i = 1; i <= sys_devices.fan_tacho_number; ++i) {
+    for (i = 1; i <= sys_devices.fan_number * sys_devices.fan_tacho_per_drw; ++i) {
         memset(fname, 0, sizeof(fname));
         sprintf(fname, "/bsp/fan/tacho%i_rpm", i);
         if (access(fname, F_OK) != 0)
             ++failed;
     }
 
-    if (failed == sys_devices.fan_tacho_number) {
+    /* All FANs failure monitoring */
+    if (failed == sys_devices.fan_number * sys_devices.fan_tacho_per_drw) {
         if (all_fans_failure == 0) {
             mlx_add_event_to_sel(sys->mc, IPMI_SENSOR_TYPE_FAN, 0 , 0, IPMI_EVENT_READING_TYPE_DISCRETE_DEVICE_ENABLE, 0x0);
             all_fans_failure = 1;
@@ -1375,6 +1381,73 @@ fans_monitor_timeout(void *cb_data)
     else if (all_fans_failure == 1) {
         mlx_add_event_to_sel(sys->mc, IPMI_SENSOR_TYPE_FAN, 0 , 1, IPMI_EVENT_READING_TYPE_DISCRETE_DEVICE_ENABLE, 0x0);
         all_fans_failure = 0;
+    }
+
+    /* Abnormal FAN speed monitoring */
+    for (i = 1; i <= sys_devices.fan_number * sys_devices.fan_tacho_per_drw; ++i) {
+        FILE *file;
+        unsigned long int rpm, pwm;
+        unsigned int expected_speed;
+        char line[10];
+
+        memset(fname, 0, sizeof(fname));
+        sprintf(fname, "/bsp/fan/tacho%i_rpm", i);
+
+        file = fopen(fname, "r");
+
+        if (!file)
+            continue;
+
+        if (0 >= fread(line, 1, sizeof(line),file)) {
+            fclose(file);
+            continue;
+        }
+        rpm = strtoul(line, NULL, 0);
+        fclose(file);
+
+        memset(fname, 0, sizeof(fname));
+        sprintf(fname, "/bsp/fan/pwm", i);
+        file = fopen(fname, "r");
+
+        if (!file)
+            continue;
+
+        if (0 >= fread(line, 1, sizeof(line),file)) {
+            fclose(file);
+            continue;
+        }
+
+        pwm = strtoul(line, NULL, 0);
+        fclose(file);
+
+        if (rpm == 0) {
+            memset(data, 0, MLX_EVENT_TO_SEL_BUF_SIZE);
+
+            data[1] = 0x0; /* event descr id */
+            data[2] = 0x70 + i - 1; /*FAN# */
+
+            mc_new_event(bmc_mc, 0xE0, data);
+        }
+        else {
+            expected_speed = sys_devices.get_fan_speed(i, pwm);
+
+            if (rpm < expected_speed * (1 - sys_devices.fan_speed_deviation)) {
+                memset(data, 0, MLX_EVENT_TO_SEL_BUF_SIZE);
+
+                data[1] = 0x1; /* event descr id */
+                data[2] = 0x70 + i -1;/* FAN# */
+
+                mc_new_event(bmc_mc, 0xE0, data);
+            }
+            if (rpm > expected_speed * (1 + sys_devices.fan_speed_deviation)) {
+                memset(data, 0, MLX_EVENT_TO_SEL_BUF_SIZE);
+
+                data[1] = 0x2; /* event descr id */
+                data[2] = 0x70 + i -1; /* FAN# */
+
+                mc_new_event(bmc_mc, 0xE0, data);
+            }
+        }
     }
 
     tv.tv_sec = MLX_FANS_MONITOR_TIMEOUT;
@@ -1416,6 +1489,7 @@ ipmi_sim_module_init(sys_data_t *sys, const char *initstr_i)
     int rv;
     unsigned int i;
     struct timeval tv;
+    char fname[50];
 
     printf("IPMI Mellanox module");
 
@@ -1433,8 +1507,10 @@ ipmi_sim_module_init(sys_data_t *sys, const char *initstr_i)
                  "Unable to enable pwm_en: %s", strerror(rv));
     }
 
-    for (i = 0; i < MLX_FAN_MAX; ++i) {
-        rv = set_fan_enable(fan_tacho_en[i]);
+    for (i = 1; i <= sys_devices.fan_number * sys_devices.fan_tacho_per_drw; ++i) {
+        memset(fname, 0, sizeof(fname));
+        sprintf(fname, "%s%i_en", MLX_FAN_TACHO_FILE, i);
+        rv = set_fan_enable(fname);
 
         if (rv) {
             sys->log(sys, OS_ERROR, NULL,
@@ -1571,11 +1647,16 @@ ipmi_sim_module_post_init(sys_data_t *sys)
     switch (productId) {
     case 1: /* Baidu BMC */
         sys_devices.fan_number = 4;
-        sys_devices.fan_tacho_number = 8;
+        sys_devices.fan_tacho_per_drw = 2;
+        sys_devices.fan_pwm_max = 9;
         sys_devices.fan_eeprom_number = 4;
         sys_devices.psu_number = 2;
         sys_devices.status_led_number = 1;
         sys_devices.fan_led_number = 4;
+        sys_devices.fan_speed_deviation = 0.15;
+        sys_devices.get_fan_speed = get_expected_fan_speed;
+        sys_devices.fan_speed_front = fan_speed_front_profile1;
+        sys_devices.fan_speed_rear = fan_speed_rear_profile1;
         break;
     default:
         break;

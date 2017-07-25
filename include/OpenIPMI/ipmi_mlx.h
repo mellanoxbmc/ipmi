@@ -70,13 +70,20 @@ void mlx_mc_pef_apply(lmc_data_t    *mc,
                        unsigned char record_type,
                        unsigned char event[13]);
 
+typedef unsigned int (*mlx_get_expected_fan_speed)(unsigned char tacho_num, unsigned char fan_pwm);
+
 struct mlx_devices_data {
     unsigned char fan_number;
-    unsigned char fan_tacho_number;
+    unsigned char fan_tacho_per_drw;
+    unsigned char fan_pwm_max;
     unsigned char fan_eeprom_number;
     unsigned char psu_number;
-	unsigned char status_led_number;
-	unsigned char fan_led_number;
+    unsigned char status_led_number;
+    unsigned char fan_led_number;
+    float fan_speed_deviation;
+    mlx_get_expected_fan_speed get_fan_speed;
+    unsigned int *fan_speed_front;
+    unsigned int *fan_speed_rear;
 };
 
 struct mlx_devices_data sys_devices;
