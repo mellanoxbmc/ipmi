@@ -87,16 +87,19 @@ if [ "$1" == "add" ]; then
     ln -sf $3$4/system_reset_hard /bsp/reset/system_reset_hard
     ln -sf $3$4/bmc_uart_en /bsp/reset/bmc_uart_en
     ln -sf $3$4/uart_sel /bsp/reset/uart_sel
-    ln -sf $3$4/bmc_upgrade /bsp/reset/bmc_upgrade
 
     ln -sf $3$4/ac_power_cycle /bsp/reset/ac_power_cycle
     ln -sf $3$4/dc_power_cycle /bsp/reset/dc_power_cycle
-    ln -sf $3$4/bmc_upgrade /bsp/reset/bmc_upgrade
-    ln -sf $3$4/cpu_kernel_panic /bsp/reset/cpu_kernel_panic
+    ln -sf $3$4/bmc_soft_rst /bsp/reset/bmc_soft_rst
+    ln -sf $3$4/platform_rst /bsp/reset/platform_rst
+    ln -sf $3$4/thermal_or_swb_fail /bsp/reset/thermal_or_swb_fail
     ln -sf $3$4/cpu_power_down /bsp/reset/cpu_power_down
     ln -sf $3$4/cpu_reboot /bsp/reset/cpu_reboot
-    ln -sf $3$4/cpu_shutdown /bsp/reset/cpu_shutdown
-    ln -sf $3$4/cpu_watchdog /bsp/reset/cpu_watchdog
+    ln -sf $3$4/cpu_sleep_or_fail /bsp/reset/cpu_sleep_or_fail
+    ln -sf $3$4/rst_from_cpu /bsp/reset/rst_from_cpu
+    ln -sf $3$4/sys_pwr_cycle /bsp/reset/sys_pwr_cycle
+    ln -sf $3$4/cpu_rst /bsp/reset/cpu_rst
+    ln -sf $3$4/psu_pwrok_fail /bsp/reset/psu_pwrok_fail
   fi
   if [ "$2" == "phy_reset" ]; then
     mkdir -p /bsp/reset/
@@ -288,15 +291,18 @@ elif [ "$1" == "change" ]; then
     unlink /bsp/reset/system_reset_hard
     unlink /bsp/reset/bmc_uart_en
     unlink /bsp/reset/uart_sel
-    unlink /bsp/reset/bmc_upgrade
     unlink /bsp/reset/ac_power_cycle
     unlink /bsp/reset/dc_power_cycle
-    unlink /bsp/reset/bmc_upgrade
-    unlink /bsp/reset/cpu_kernel_panic
+    unlink /bsp/reset/platform_rst
+    unlink /bsp/reset/thermal_or_swb_fail
     unlink /bsp/reset/cpu_power_down
     unlink /bsp/reset/cpu_reboot
-    unlink /bsp/reset/cpu_shutdown
-    unlink /bsp/reset/cpu_watchdog
+    unlink /bsp/reset/cpu_sleep_or_fail
+    unlink /bsp/reset/rst_from_cpu
+    unlink /bsp/reset/bmc_soft_rst
+    unlink /bsp/reset/sys_pwr_cycle
+    unlink /bsp/reset/cpu_rst
+    unlink /bsp/reset/psu_pwrok_fail
 
     ln -sf $3$4/bmc_reset_soft /bsp/reset/bmc_reset_soft
     ln -sf $3$4/cpu_reset_hard /bsp/reset/cpu_reset_hard
@@ -304,15 +310,18 @@ elif [ "$1" == "change" ]; then
     ln -sf $3$4/system_reset_hard /bsp/reset/system_reset_hard
     ln -sf $3$4/bmc_uart_en /bsp/reset/bmc_uart_en
     ln -sf $3$4/uart_sel /bsp/reset/uart_sel
-    ln -sf $3$4/bmc_upgrade /bsp/reset/bmc_upgrade
     ln -sf $3$4/ac_power_cycle /bsp/reset/ac_power_cycle
     ln -sf $3$4/dc_power_cycle /bsp/reset/dc_power_cycle
-    ln -sf $3$4/bmc_upgrade /bsp/reset/bmc_upgrade
-    ln -sf $3$4/cpu_kernel_panic /bsp/reset/cpu_kernel_panic
+    ln -sf $3$4/platform_rst /bsp/reset/platform_rst
+    ln -sf $3$4/thermal_or_swb_fail /bsp/reset/thermal_or_swb_fail
     ln -sf $3$4/cpu_power_down /bsp/reset/cpu_power_down
     ln -sf $3$4/cpu_reboot /bsp/reset/cpu_reboot
-    ln -sf $3$4/cpu_shutdown /bsp/reset/cpu_shutdown
-    ln -sf $3$4/cpu_watchdog /bsp/reset/cpu_watchdog
+    ln -sf $3$4/cpu_sleep_or_fail /bsp/reset/cpu_sleep_or_fail
+    ln -sf $3$4/rst_from_cpu /bsp/reset/rst_from_cpu
+    ln -sf $3$4/bmc_soft_rst /bsp/reset/bmc_soft_rst
+    ln -sf $3$4/sys_pwr_cycle /bsp/reset/sys_pwr_cycle
+    ln -sf $3$4/cpu_rst /bsp/reset/cpu_rst
+    ln -sf $3$4/psu_pwrok_fail /bsp/reset/psu_pwrok_fail
   fi
   if [ "$2" == "phy_reset" ]; then
     unlink /bsp/reset/reset_phy
@@ -379,12 +388,16 @@ else
     unlink /bsp/reset/uart_sel
     unlink /bsp/reset/ac_power_cycle
     unlink /bsp/reset/dc_power_cycle
-    unlink /bsp/reset/bmc_upgrade
-    unlink /bsp/reset/cpu_kernel_panic
+    unlink /bsp/reset/platform_rst
+    unlink /bsp/reset/thermal_or_swb_fail
     unlink /bsp/reset/cpu_power_down
     unlink /bsp/reset/cpu_reboot
-    unlink /bsp/reset/cpu_shutdown
-    unlink /bsp/reset/cpu_watchdog
+    unlink /bsp/reset/cpu_sleep_or_fail
+    unlink /bsp/reset/rst_from_cpu
+    unlink /bsp/reset/bmc_soft_rst
+    unlink /bsp/reset/sys_pwr_cycle
+    unlink /bsp/reset/cpu_rst
+    unlink /bsp/reset/psu_pwrok_fail
   fi
   if [ "$2" == "phy_reset" ]; then
     unlink /bsp/reset/reset_phy

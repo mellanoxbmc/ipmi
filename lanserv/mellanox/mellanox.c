@@ -105,23 +105,31 @@ static const char* reset_cause[8] =
 {
     "/bsp/reset/ac_power_cycle",
     "/bsp/reset/dc_power_cycle",
-    "/bsp/reset/bmc_upgrade",
-    "/bsp/reset/cpu_kernel_panic",
+    "/bsp/reset/platform_rst",
+    "/bsp/reset/thermal_or_swb_fail",
     "/bsp/reset/cpu_power_down",
     "/bsp/reset/cpu_reboot",
-    "/bsp/reset/cpu_shutdown",
-    "/bsp/reset/cpu_watchdog"
+    "/bsp/reset/cpu_sleep_or_fail",
+    "/bsp/reset/rst_from_cpu",
+    "/bsp/reset/bmc_soft_rst",
+    "/bsp/reset/sys_pwr_cycle",
+    "/bsp/reset/cpu_rst",
+    "/bsp/reset/psu_pwrok_fail"
 };
 
 enum reset_cause_e {
     MLX_RESET_CAUSE_AC_POWER_CYCLE = 0,
     MLX_RESET_CAUSE_DC_POWER_CYCLE,
-    MLX_RESET_CAUSE_BMC_UPGRADE,
-    MLX_RESET_CAUSE_CPU_KERNEL_PANIC,
+    MLX_RESET_CAUSE_PLATFORM_RST,
+    MLX_RESET_CAUSE_THERMAL_OR_SWB_FAIL,
     MLX_RESET_CAUSE_CPU_POWER_DOWN,
     MLX_RESET_CAUSE_CPU_REBOOT,
-    MLX_RESET_CAUSE_CPU_SHUTDOWN,
-    MLX_RESET_CAUSE_CPU_WATCHDOG,
+    MLX_RESET_CAUSE_CPU_SLEEP_OR_FAIL,
+    MLX_RESET_CAUSE_RESET_FROM_CPU,
+    MLX_RESET_CAUSE_BMC_SOFT_RST,
+    MLX_RESET_CAUSE_SYS_PWR_CYCLE,
+    MLX_RESET_CAUSE_CPU_RST,
+    MLX_RESET_CAUSE_PSU_PWROK_FAIL,
     MLX_RESET_CAUSE_BUTTON
 };
 
@@ -1292,39 +1300,39 @@ reset_monitor_timeout(void *cb_data)
         if (active) {
             switch (i) {
             case MLX_RESET_CAUSE_AC_POWER_CYCLE:
-                //"Power Unit", "Power cycle"
+                /* "Power Unit", "Power cycle" */
                 mlx_add_event_to_sel(sys->mc, IPMI_SENSOR_TYPE_POWER_UNIT, 0 , 0, IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, 0x1);
                 break;
             case MLX_RESET_CAUSE_DC_POWER_CYCLE:
-                //"System Event", "OEM System boot event"
+                /* "System Event", "OEM System boot event" */
                 mlx_add_event_to_sel(sys->mc, IPMI_SENSOR_TYPE_SYSTEM_EVENT, 0 , 0, IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, 0x1);
                 break;
-            case MLX_RESET_CAUSE_BMC_UPGRADE:
-                //"Version Change", "Firmware or software change success"
+            case MLX_RESET_CAUSE_PLATFORM_RST:
+                /* "Version Change", "Firmware or software change success" */
                 mlx_add_event_to_sel(sys->mc, IPMI_SENSOR_TYPE_VERSION_CHANGE, 0 , 0, IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, 0x7);
                 break;
-            case MLX_RESET_CAUSE_CPU_KERNEL_PANIC:
-                //"System Firmware Error", "Unknown Error"
+            case MLX_RESET_CAUSE_THERMAL_OR_SWB_FAIL:
+                /* "System Firmware Error", "Unknown Error" */
                 mlx_add_event_to_sel(sys->mc, IPMI_SENSOR_TYPE_SYSTEM_FIRMWARE_PROGRESS, 0 , 0, IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, 0x0);
                 break;
             case MLX_RESET_CAUSE_CPU_POWER_DOWN:
-                //"Power Unit", "Power off/down"
+                /* "Power Unit", "Power off/down" */
                 mlx_add_event_to_sel(sys->mc, IPMI_SENSOR_TYPE_POWER_UNIT, 0 , 0, IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, 0x0);
                 break;
             case MLX_RESET_CAUSE_CPU_REBOOT:
-                //"System Boot Initiated", "System Restart" 
+                /* "System Boot Initiated", "System Restart" */
                 mlx_add_event_to_sel(sys->mc, IPMI_SENSOR_TYPE_SYSTEM_BOOT_INITIATED, 0 , 0, IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, 0x7);
                 break;
-            case MLX_RESET_CAUSE_CPU_SHUTDOWN:
-                //"OS Stop/Shutdown", "OS graceful shutdown"
+            case MLX_RESET_CAUSE_CPU_SLEEP_OR_FAIL:
+                /* "OS Stop/Shutdown", "OS graceful shutdown" */
                 mlx_add_event_to_sel(sys->mc, IPMI_SENSOR_TYPE_OS_CRITICAL_STOP, 0 , 0, IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, 0x3);
                 break;
-            case MLX_RESET_CAUSE_CPU_WATCHDOG:
-                //"Watchdog 2", "Power cycle"
+            case MLX_RESET_CAUSE_RESET_FROM_CPU:
+                /* "Watchdog 2", "Power cycle" */
                 mlx_add_event_to_sel(sys->mc, IPMI_SENSOR_TYPE_WATCHDOG_2, 0 , 0, IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, 0x3);
                 break;
             case MLX_RESET_CAUSE_BUTTON:
-                //"Button", "Reset Button pressed"
+                /* "Button", "Reset Button pressed" */
                 mlx_add_event_to_sel(sys->mc, IPMI_SENSOR_TYPE_BUTTON, 0 , 0, IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, 0x2);
                 break;
             }
