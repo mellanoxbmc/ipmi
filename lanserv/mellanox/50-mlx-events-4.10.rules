@@ -1,0 +1,71 @@
+########################################################################
+# Copyright (c) 2017 Mellanox Technologies.
+# Copyright (c) 2017 Nataliya Yakuts <nataliyay@mellanox.com>
+#
+# Licensed under the GNU General Public License Version 2
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+
+SUBSYSTEM=="iio", KERNEL=="iio:device0", ACTION=="add", RUN+="/usr/bin/mlx-hw-events.sh add A2D %S %p"
+SUBSYSTEM=="iio", KERNEL=="iio:device0", ACTION=="remove", RUN+="/usr/bin/mlx-hw-events.sh rm A2D %S %p"
+
+SUBSYSTEM=="platform", KERNEL=="1e6e9000.adc", ACTION=="add", RUN+="/usr/bin/mlx-hw-events.sh add ADC %S %p"
+SUBSYSTEM=="platform", KERNEL=="1e6e9000.adc", ACTION=="rm", RUN+="/usr/bin/mlx-hw-events.sh add ADC %S %p"
+
+SUBSYSTEM=="i2c", KERNEL=="3-0051", ACTION=="add", RUN+="/usr/bin/mlx-hw-events.sh add eeprom_psu2 %S %p"
+SUBSYSTEM=="i2c", KERNEL=="3-0051", ACTION=="remove", RUN+="/usr/bin/mlx-hw-events.sh rm eeprom_psu2 %S %p"
+
+SUBSYSTEM=="i2c", KERNEL=="3-0050", ACTION=="add", RUN+="/usr/bin/mlx-hw-events.sh add eeprom_psu1 %S %p"
+SUBSYSTEM=="i2c", KERNEL=="3-0050", ACTION=="remove", RUN+="/usr/bin/mlx-hw-events.sh rm eeprom_psu1 %S %p"
+
+SUBSYSTEM=="i2c", KERNEL=="14-0050", ACTION=="add", RUN+="/usr/bin/mlx-hw-events.sh add eeprom_fan1 %S %p"
+SUBSYSTEM=="i2c", KERNEL=="14-0050", ACTION=="remove", RUN+="/usr/bin/mlx-hw-events.sh rm eeprom_fan1 %S %p"
+
+SUBSYSTEM=="i2c", KERNEL=="15-0050", ACTION=="add", RUN+="/usr/bin/mlx-hw-events.sh add eeprom_fan2 %S %p"
+SUBSYSTEM=="i2c", KERNEL=="15-0050", ACTION=="remove", RUN+="/usr/bin/mlx-hw-events.sh rm eeprom_fan2 %S %p"
+
+SUBSYSTEM=="i2c", KERNEL=="16-0050", ACTION=="add", RUN+="/usr/bin/mlx-hw-events.sh add eeprom_fan3 %S %p"
+SUBSYSTEM=="i2c", KERNEL=="16-0050", ACTION=="remove", RUN+="/usr/bin/mlx-hw-events.sh rm eeprom_fan3 %S %p"
+
+SUBSYSTEM=="i2c", KERNEL=="17-0050", ACTION=="add", RUN+="/usr/bin/mlx-hw-events.sh add eeprom_fan4 %S %p"
+SUBSYSTEM=="i2c", KERNEL=="17-0050", ACTION=="remove", RUN+="/usr/bin/mlx-hw-events.sh rm eeprom_fan4 %S %p"
+
+SUBSYSTEM=="leds", KERNEL=="mlxreg:fan1:green", ACTION=="add", RUN+="/usr/bin/mlx-hw-events.sh add fan1_green %S %p"
+SUBSYSTEM=="leds", KERNEL=="mlxreg:fan1:green", ACTION=="remove", RUN+="/usr/bin/mlx-hw-events.sh rm fan1_green %S %p"
+
+SUBSYSTEM=="leds", KERNEL=="mlxreg:fan1:red", ACTION=="add", RUN+="/usr/bin/mlx-hw-events.sh add fan1_red %S %p"
+SUBSYSTEM=="leds", KERNEL=="mlxreg:fan1:red", ACTION=="remove", RUN+="/usr/bin/mlx-hw-events.sh rm fan1_red %S %p"
+
+SUBSYSTEM=="leds", KERNEL=="mlxreg:fan2:green", ACTION=="add", RUN+="/usr/bin/mlx-hw-events.sh add fan2_green %S %p"
+SUBSYSTEM=="leds", KERNEL=="mlxreg:fan2:green", ACTION=="remove", RUN+="/usr/bin/mlx-hw-events.sh rm fan2_green %S %p"
+
+SUBSYSTEM=="leds", KERNEL=="mlxreg:fan2:red", ACTION=="add", RUN+="/usr/bin/mlx-hw-events.sh add fan2_red %S %p"
+SUBSYSTEM=="leds", KERNEL=="mlxreg:fan2:red", ACTION=="remove", RUN+="/usr/bin/mlx-hw-events.sh rm fan2_red %S %p"
+
+SUBSYSTEM=="leds", KERNEL=="mlxreg:fan3:green", ACTION=="add", RUN+="/usr/bin/mlx-hw-events.sh add fan3_green %S %p"
+SUBSYSTEM=="leds", KERNEL=="mlxreg:fan3:green", ACTION=="remove", RUN+="/usr/bin/mlx-hw-events.sh rm fan3_green %S %p"
+
+SUBSYSTEM=="leds", KERNEL=="mlxreg:fan3:red", ACTION=="add", RUN+="/usr/bin/mlx-hw-events.sh add fan3_red %S %p"
+SUBSYSTEM=="leds", KERNEL=="mlxreg:fan3:red", ACTION=="remove", RUN+="/usr/bin/mlx-hw-events.sh rm fan3_red %S %p"
+
+SUBSYSTEM=="leds", KERNEL=="mlxreg:fan4:green", ACTION=="add", RUN+="/usr/bin/mlx-hw-events.sh add fan4_green %S %p"
+SUBSYSTEM=="leds", KERNEL=="mlxreg:fan4:green", ACTION=="remove", RUN+="/usr/bin/mlx-hw-events.sh rm fan4_green %S %p"
+
+SUBSYSTEM=="leds", KERNEL=="mlxreg:fan4:red", ACTION=="add", RUN+="/usr/bin/mlx-hw-events.sh add fan4_red %S %p"
+SUBSYSTEM=="leds", KERNEL=="mlxreg:fan4:red", ACTION=="remove", RUN+="/usr/bin/mlx-hw-events.sh rm fan4_red %S %p"
+
+SUBSYSTEM=="leds", KERNEL=="mlxreg:status:green", ACTION=="add", RUN+="/usr/bin/mlx-hw-events.sh add status_green %S %p"
+SUBSYSTEM=="leds", KERNEL=="mlxreg:status:green", ACTION=="remove", RUN+="/usr/bin/mlx-hw-events.sh rm status_green %S %p"
+
+SUBSYSTEM=="leds", KERNEL=="mlxreg:status:red", ACTION=="add", RUN+="/usr/bin/mlx-hw-events.sh add status_red %S %p"
+SUBSYSTEM=="leds", KERNEL=="mlxreg:status:red", ACTION=="remove", RUN+="/usr/bin/mlx-hw-events.sh rm status_red %S %p"
+
+SUBSYSTEM=="leds", KERNEL=="mlxreg:status:amber", ACTION=="add", RUN+="/usr/bin/mlx-hw-events.sh add status_amber %S %p"
+SUBSYSTEM=="leds", KERNEL=="mlxreg:status:amber", ACTION=="remove", RUN+="/usr/bin/mlx-hw-events.sh rm status_amber %S %p"
+
+SUBSYSTEM=="thermal", KERNEL=="thermal_zone0", ACTION=="add", RUN+="/usr/bin/mlx-hw-events.sh add thermal_zone0 %S %p"
+SUBSYSTEM=="thermal", KERNEL=="thermal_zone0", ACTION=="remove", RUN+="/usr/bin/mlx-hw-events.sh rm thermal_zone0 %S %p"
