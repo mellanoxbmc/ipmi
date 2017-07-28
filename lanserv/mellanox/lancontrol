@@ -269,6 +269,8 @@ do_set() {
 		rm /tmp/default_gw_ip_addr
 		sed -i '/\b\(Network\|Address\|Gateway\)\b/d' /etc/systemd/network/50-static.network
 
+		echo [Match] >> /etc/systemd/network/50-static.network
+		echo Name=eth0 >> /etc/systemd/network/50-static.network
 		echo [Network] >> /etc/systemd/network/50-static.network
 		echo Address="$tmp_ip_addr"/"$tmp_netmask" >> /etc/systemd/network/50-static.network
 		echo Gateway="$tmp_gateway" >> /etc/systemd/network/50-static.network
