@@ -720,6 +720,9 @@ handle_set_sel_time(lmc_data_t    *mc,
     mc->emu->sysinfo->get_monotonic_time(mc->emu->sysinfo, &t);
     mc->sel.time_offset = ipmi_get_uint32(msg->data) - t.tv_sec;
 
+    if (mc->sys_time_set_func)
+        mc->sys_time_set_func(msg->data);
+
     rdata[0] = 0;
     *rdata_len = 1;
 }

@@ -1466,6 +1466,28 @@ bmc_get_chassis_control(lmc_data_t *mc, int op, unsigned char *val,
     return 0;
 }
 
+void sys_time_set(unsigned char* data)
+{
+    struct tm *nowtm;
+    char tmbuf[64];
+    uint32_t timeval = ipmi_get_uint32(data);
+
+    system("systemctl stop systemd-timesyncd");
+    system("systemctl disable systemd-timesyncd");
+
+    time_t nowtime = *((time_t*)&timeval);
+    nowtm = localtime(&nowtime);
+    system("timedatectl set-ntp false");
+
+    memset(tmbuf, 0, sizeof(tmbuf));
+    strftime(tmbuf, sizeof(tmbuf), "timedatectl set-time %Y-%m-%d", nowtm);
+    system(tmbuf);
+
+    memset(tmbuf, 0, sizeof(tmbuf));
+    strftime(tmbuf, sizeof(tmbuf), "timedatectl set-time %H:%M:%S", nowtm);
+    system(tmbuf);
+}
+
 int
 ipmi_sim_module_print_version(sys_data_t *sys, char *initstr)
 {
@@ -1673,6 +1695,8 @@ ipmi_sim_module_post_init(sys_data_t *sys)
         tv.tv_usec = 0;
         sys->start_timer(fans_monitor_timer, &tv);
     }
+
+    sys->mc->sys_time_set_func = sys_time_set;
 
     return 0;
 }
