@@ -114,7 +114,15 @@ static const char* reset_cause[8] =
     "/bsp/reset/bmc_soft_rst",
     "/bsp/reset/sys_pwr_cycle",
     "/bsp/reset/cpu_rst",
-    "/bsp/reset/psu_pwrok_fail"
+    "/bsp/reset/psu_pwrok_fail",
+    "/bsp/reset/sw_cmd",
+    "/bsp/reset/rst_from_mb",
+    "/bsp/reset/aux_off_or_reload",
+    "/bsp/reset/cpu_pwr_fail",
+    "/bsp/reset/plat_rst_assert",
+    "/bsp/reset/pwroff_by_soc",
+    "/bsp/reset/cpu_rst_by_wd",
+    "/bsp/reset/power_ok_assert"
 };
 
 enum reset_cause_e {
@@ -130,6 +138,14 @@ enum reset_cause_e {
     MLX_RESET_CAUSE_SYS_PWR_CYCLE,
     MLX_RESET_CAUSE_CPU_RST,
     MLX_RESET_CAUSE_PSU_PWROK_FAIL,
+    MLX_RESET_CAUSE_SW_CMD,
+    MLX_RESET_CAUSE_RST_FROM_MB,
+    MLX_RESET_CAUSE_AUX_OFF_OR_RELOAD,
+    MLX_RESET_CAUSE_CPU_POWER_FAIL,
+    MLX_RESET_CAUSE_PLAT_RST_ASSERT,
+    MLX_RESET_CAUSE_PWROFF_BY_SOC,
+    MLX_RESET_CAUSE_CPU_RST_BY_WD,
+    MLX_RESET_CAUSE_POWER_OK_ASSERT,
     MLX_RESET_CAUSE_BUTTON
 };
 
@@ -1327,7 +1343,7 @@ reset_monitor_timeout(void *cb_data)
                 /* "OS Stop/Shutdown", "OS graceful shutdown" */
                 mlx_add_event_to_sel(sys->mc, IPMI_SENSOR_TYPE_OS_CRITICAL_STOP, 0 , 0, IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, 0x3);
                 break;
-            case MLX_RESET_CAUSE_RESET_FROM_CPU:
+            case MLX_RESET_CAUSE_CPU_RST_BY_WD:
                 /* "Watchdog 2", "Power cycle" */
                 mlx_add_event_to_sel(sys->mc, IPMI_SENSOR_TYPE_WATCHDOG_2, 0 , 0, IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, 0x3);
                 break;
@@ -1607,7 +1623,7 @@ ipmi_sim_module_init(sys_data_t *sys, const char *initstr_i)
 		 "Unable to register NEW handler: %s", strerror(rv));
     }
 
-    rv = sys->alloc_timer(sys, reset_monitor_timeout, sys, &reset_monitor_timer);
+    /*rv = sys->alloc_timer(sys, reset_monitor_timeout, sys, &reset_monitor_timer);
     if (rv) {
         int errval = errno;
         sys->log(sys, SETUP_ERROR, NULL, "Unable to create reset monitoring timer");
@@ -1616,7 +1632,7 @@ ipmi_sim_module_init(sys_data_t *sys, const char *initstr_i)
         tv.tv_sec = MLX_RESET_MONITOR_TIMEOUT;
         tv.tv_usec = 0;
         sys->start_timer(reset_monitor_timer, &tv);
-    }
+    }*/
 
     /* set "Disabled" state at startup */
     system("echo 256 > /bsp/environment/cpu_status");

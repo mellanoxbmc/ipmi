@@ -105,6 +105,17 @@ if [ "$1" == "add" ]; then
     mkdir -p /bsp/reset/
     ln -sf $3$4/phy_reset /bsp/reset/reset_phy
   fi
+  if [ "$2" == "cpu_reset" ]; then
+    mkdir -p /bsp/reset/
+    ln -sf $3$4/sw_cmd /bsp/reset/sw_cmd
+    ln -sf $3$4/rst_from_mb /bsp/reset/rst_from_mb
+    ln -sf $3$4/aux_off_or_reload /bsp/reset/aux_off_or_reload
+    ln -sf $3$4/cpu_pwr_fail /bsp/reset/cpu_pwr_fail
+    ln -sf $3$4/plat_rst_assert /bsp/reset/plat_rst_assert
+    ln -sf $3$4/pwroff_by_soc /bsp/reset/pwroff_by_soc
+    ln -sf $3$4/cpu_rst_by_wd /bsp/reset/cpu_rst_by_wd
+    ln -sf $3$4/power_ok_assert /bsp/reset/power_ok_assert
+  fi
   if [ "$2" == "fan" ]; then
     mkdir -p /bsp/fan/
     ln -sf $3$4/tacho0_en /bsp/fan/tacho1_en
@@ -401,6 +412,16 @@ else
   fi
   if [ "$2" == "phy_reset" ]; then
     unlink /bsp/reset/reset_phy
+  fi
+  if [ "$2" == "cpu_reset" ]; then
+    unlink /bsp/reset/sw_cmd
+    unlink /bsp/reset/rst_from_mb
+    unlink /bsp/reset/aux_off_or_reload
+    unlink /bsp/reset/cpu_pwr_fail
+    unlink /bsp/reset/plat_rst_assert
+    unlink /bsp/reset/pwroff_by_soc
+    unlink /bsp/reset/cpu_rst_by_wd
+    unlink /bsp/reset/power_ok_assert
   fi
   if [ "$2" == "fan" ]; then
     unlink /bsp/fan/tacho1_en
