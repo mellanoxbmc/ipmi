@@ -161,7 +161,15 @@ static ipmi_timer_t *reset_monitor_timer = NULL;
 static ipmi_timer_t *fans_monitor_timer = NULL;
 #define MLX_FANS_MONITOR_TIMEOUT          10
 
-
+/*
+ * This timer is called periodically for overheat monitoring
+ */
+static ipmi_timer_t *overheat_monitor_timer = NULL;
+#define MLX_OVERHEAT_MONITOR_TIMEOUT          5
+#define MLX_CPU_TEMPERATURE_FILE              "/bsp/thermal/cpu_temp"
+#define MLX_ASIC_TEMPERATURE_FILE             "/bsp/thermal/asic_temp"
+#define MLX_CPU_MAX_TEMP                      110000
+#define MLX_ASIC_MAX_TEMP                     82000
 
 static unsigned char set_fan_enable(const char* fname)
 {
@@ -1479,6 +1487,69 @@ fans_monitor_timeout(void *cb_data)
     sys->start_timer(fans_monitor_timer, &tv);
 }
 
+static void
+overheat_monitor_timeout(void *cb_data)
+{
+    sys_data_t *sys = cb_data;
+    struct timeval tv;
+    FILE *file;
+    unsigned long int cpu_temp, asic_temp;
+    char line[10];
+
+    file = fopen(MLX_CPU_TEMPERATURE_FILE, "r");
+
+    if (!file)
+        goto asic_monitor;
+
+    if (0 >= fread(line, 1, sizeof(line),file)) {
+        fclose(file);
+        goto asic_monitor;
+    }
+    cpu_temp = strtoul(line, NULL, 0);
+    fclose(file);
+
+    if (cpu_temp > MLX_CPU_MAX_TEMP) {
+        file = fopen(MLX_CPU_HARD_RESET, "w");
+
+        if (!file) {
+            sys->log(sys, OS_ERROR, NULL, "CPU temperature is too high! Unable to power-off the CPU!");
+        } else {
+            fprintf(file, "0");
+            fclose(file);
+        }
+    }
+
+ asic_monitor:
+    file = fopen(MLX_ASIC_TEMPERATURE_FILE, "r");
+
+    if (!file)
+        goto out;
+
+    if (0 >= fread(line, 1, sizeof(line),file)) {
+        fclose(file);
+        goto out;
+    }
+
+    asic_temp = strtoul(line, NULL, 0);
+    fclose(file);
+
+    if (asic_temp > MLX_ASIC_MAX_TEMP) {
+        file = fopen(MLX_SYS_HARD_RESET, "w");
+
+        if (!file)
+            sys->log(sys, OS_ERROR, NULL, "ASIC temperature is too high! Unable to reset the system");
+        else {
+            fprintf(file, "0");
+            fclose(file);
+        }
+    }
+
+ out:
+    tv.tv_sec = MLX_OVERHEAT_MONITOR_TIMEOUT;
+    tv.tv_usec = 0;
+    sys->start_timer(overheat_monitor_timer, &tv);
+}
+
 /*
  * Chassis control get for the chassis.
  */
@@ -1633,6 +1704,17 @@ ipmi_sim_module_init(sys_data_t *sys, const char *initstr_i)
         tv.tv_usec = 0;
         sys->start_timer(reset_monitor_timer, &tv);
     }*/
+
+    rv = sys->alloc_timer(sys, overheat_monitor_timeout, sys, &overheat_monitor_timer);
+    if (rv) {
+        int errval = errno;
+        sys->log(sys, SETUP_ERROR, NULL, "Unable to create overheat monitoring timer");
+        return errval;
+    } else {
+        tv.tv_sec = MLX_OVERHEAT_MONITOR_TIMEOUT;
+        tv.tv_usec = 0;
+        sys->start_timer(overheat_monitor_timer, &tv);
+    }
 
     /* set "Disabled" state at startup */
     system("echo 256 > /bsp/environment/cpu_status");

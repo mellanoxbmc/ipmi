@@ -60,6 +60,16 @@ sensor_add 0x20  0    5     1     1 \
         poll 5000 \
         file "/bsp/thermal/asic_temp" sub=-128000 div=1000
 
+# CPU Temp
+sensor_add 0x20  0    6     1     1 \
+        poll 5000 \
+        file "/bsp/thermal/cpu_temp" div=1000
+
+# Comex ambient Temp
+sensor_add 0x20  0    7     1     1 \
+        poll 5000 \
+        file "/bsp/thermal/comex_ambient_temp" sub=-128000  div=1000
+
 ########## FAN ############
 
 #Fan1_1 (max scale 25.000(25.000rpm) -> 250 k=100)

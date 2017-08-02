@@ -294,6 +294,14 @@ if [ "$1" == "add" ]; then
     mkdir -p /bsp/thermal/$2/
     ln -sf $3$4/mode /bsp/thermal/$2/mode
   fi
+  if [ "$2" == "cpu_temp" ]; then
+    mkdir -p /bsp/thermal/
+    ln -sf $3$4/temp1_input /bsp/thermal/$2
+  fi
+  if [ "$2" == "comex" ]; then
+    mkdir -p /bsp/thermal/
+    ln -sf $3$4/temp1_input /bsp/thermal/$2_ambient_temp
+  fi
 elif [ "$1" == "change" ]; then
   if [ "$2" == "reset" ]; then
     unlink /bsp/reset/bmc_reset_soft
@@ -555,5 +563,11 @@ else
   fi
   if [ "$2" == "thermal_zone0" ]; then
     unlink /bsp/thermal/$2/mode
+  fi
+  if [ "$2" == "cpu_temp" ]; then
+    unlink /bsp/thermal/$2
+  fi
+  if [ "$2" == "comex" ]; then
+    unlink /bsp/thermal/$2_ambient_temp
   fi
 fi

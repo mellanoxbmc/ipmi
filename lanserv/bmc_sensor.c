@@ -320,7 +320,7 @@ status_led_control(unsigned char num,
             break;
         case MLX_ASIC_TEMP_SENSOR_NUM:
 
-            fstatus = fopen("/bsp/environment/cpu_status", "w");
+            fstatus = fopen("/bsp/environment/cpu_status", "r");
 
             if (!fstatus)
                 return;
