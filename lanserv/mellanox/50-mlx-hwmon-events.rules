@@ -50,3 +50,9 @@ SUBSYSTEM=="hwmon", DEVPATH=="/devices/platform/ahb/ahb:apb/1e78a000.i2c/i2c-1/i
 
 SUBSYSTEM=="hwmon", DEVPATH=="/devices/platform/ahb/ahb:apb/1e78a000.i2c/i2c-1/i2c-1/1-0049/hwmon/hwmon*", ACTION=="add", RUN+="/usr/bin/mlx-hw-events.sh add comex %S %p"
 SUBSYSTEM=="hwmon", DEVPATH=="/devices/platform/ahb/ahb:apb/1e78a000.i2c/i2c-1/i2c-1/1-0049/hwmon/hwmon*", ACTION=="remove", RUN+="/usr/bin/mlx-hw-events.sh rm comex %S %p"
+
+SUBSYSTEM=="hwmon", DEVPATH=="/devices/platform/ahb/ahb:apb/1e78a000.i2c/i2c-1/i2c-1/1-0058/hwmon/hwmon*", ACTION=="add", RUN+="/usr/bin/mlx-hw-events.sh add cpu_v %S %p"
+SUBSYSTEM=="hwmon", DEVPATH=="/devices/platform/ahb/ahb:apb/1e78a000.i2c/i2c-1/i2c-1/1-0058/hwmon/hwmon*", ACTION=="remove", RUN+="/usr/bin/mlx-hw-events.sh rm cpu_v %S %p"
+
+SUBSYSTEM=="hwmon", DEVPATH=="/devices/platform/ahb/ahb:apb/1e78a000.i2c/i2c-1/i2c-1/1-0061/hwmon/hwmon*", ACTION=="add", RUN+="/usr/bin/mlx-hw-events.sh add cpu_1_2v %S %p"
+SUBSYSTEM=="hwmon", DEVPATH=="/devices/platform/ahb/ahb:apb/1e78a000.i2c/i2c-1/i2c-1/1-0061/hwmon/hwmon*", ACTION=="remove", RUN+="/usr/bin/mlx-hw-events.sh rm cpu_1_2v %S %p"

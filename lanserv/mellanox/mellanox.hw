@@ -236,6 +236,21 @@ sensor_add 0x20 0 174 1 1\
         poll 5000 \
         file "/bsp/environment/VcoreUCD" div=5
 
+#CPU_VCCIN sensor (max scale 1950(1.95V) -> 195 k=10)
+sensor_add 0x20 0 175 1 1\
+        poll 5000 \
+        file "/bsp/environment/cpu_vccin" div=10
+
+#CPU_1_05V sensor (max scale 1050(1.2V) -> 210 k=5)
+sensor_add 0x20 0 176 1 1\
+        poll 5000 \
+        file "/bsp/environment/cpu_1_05v" div=5
+
+#CPU_1_2V sensor
+sensor_add 0x20 0 177 1 1\
+        poll 5000 \
+        file "/bsp/environment/cpu_1_2v" div=10
+
 ########## Power ############
 #PSU1 power sensor (max scale 880.000.000(880W) -> 220 k=4000000)
 sensor_add 0x20 0 20 1 1\

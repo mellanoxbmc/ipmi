@@ -302,6 +302,15 @@ if [ "$1" == "add" ]; then
     mkdir -p /bsp/thermal/
     ln -sf $3$4/temp1_input /bsp/thermal/$2_ambient_temp
   fi
+  if [ "$2" == "cpu_v" ]; then
+    mkdir -p /bsp/environment/
+    ln -sf $3$4/in2_input /bsp/environment/cpu_vccin
+    ln -sf $3$4/in3_input /bsp/environment/cpu_1_05v
+  fi
+  if [ "$2" == "cpu_1_2v" ]; then
+    mkdir -p /bsp/environment/
+    ln -sf $3$4/in2_input /bsp/environment/$2
+  fi
 elif [ "$1" == "change" ]; then
   if [ "$2" == "reset" ]; then
     unlink /bsp/reset/bmc_reset_soft
