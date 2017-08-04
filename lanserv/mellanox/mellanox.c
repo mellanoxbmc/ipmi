@@ -1751,25 +1751,24 @@ ipmi_sim_module_post_init(sys_data_t *sys)
 
     if (!fid) {
         sys->log(sys, OS_ERROR, NULL, "Unable to open  FW ID file");
-        return 0;
+    }else {
+        if (0 >= fread(id_line, 1, sizeof(id_line),fid))
+        {
+            fclose(fid);
+            sys->log(sys, OS_ERROR, NULL, "Unable to read  FW ID file");
+        }
+        else {
+            fclose(fid);
+
+            memcpy(id_maj, id_line+13, sizeof(id_maj));
+            memcpy(id_min, id_line+15, sizeof(id_min));
+
+            fw_maj = strtoul(id_maj, NULL, 0);
+            fw_min = strtoul(id_min, NULL, 0);
+
+            ipmi_mc_set_fw_revision(bmc_mc, fw_maj, fw_min);
+        }
     }
-
-    if (0 >= fread(id_line, 1, sizeof(id_line),fid))
-    {
-        fclose(fid);
-        sys->log(sys, OS_ERROR, NULL, "Unable to read  FW ID file");
-        return 0;
-    }
-
-    fclose(fid);
-
-    memcpy(id_maj, id_line+13, sizeof(id_maj));
-    memcpy(id_min, id_line+15, sizeof(id_min));
-
-    fw_maj = strtoul(id_maj, NULL, 0);
-    fw_min = strtoul(id_min, NULL, 0);
-
-    ipmi_mc_set_fw_revision(bmc_mc, fw_maj, fw_min);
 
     productId = (sys->mc->product_id[1] << 8) | sys->mc->product_id[0];
     switch (productId) {
