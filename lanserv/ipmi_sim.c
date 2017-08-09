@@ -1761,7 +1761,7 @@ main(int argc, const char *argv[])
     system("echo 1 > /bsp/reset/uart_sel");
 
 /*CPU go*/
-    system("(sleep 30;echo 1 > /bsp/reset/cpu_reset_hard)&");
+    system("(sleep 10;echo 1 > /bsp/reset/cpu_reset_hard)&");
 #endif
 
     data.os_hnd->operation_loop(data.os_hnd);
