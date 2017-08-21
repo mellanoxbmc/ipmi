@@ -28,6 +28,10 @@
 #include <OpenIPMI/ipmi_mlx.h>
 #include "../bmc.h"
 
+#if HAVE_SYSLOG
+#include <syslog.h>
+#endif
+
 static lmc_data_t *bmc_mc;
 static unsigned char all_fans_failure = 0;
 static unsigned int fan_speed_front_profile1[] = {21000, 6300, 6300, 6300, 8400, 10500, 12700, 15000, 17000, 19500};
@@ -1493,7 +1497,8 @@ overheat_monitor_timeout(void *cb_data)
     sys_data_t *sys = cb_data;
     struct timeval tv;
     FILE *file;
-    unsigned long int cpu_temp, asic_temp;
+    long int cpu_temp;
+    unsigned long int asic_temp;
     char line[10];
 
     file = fopen(MLX_CPU_TEMPERATURE_FILE, "r");
@@ -1505,18 +1510,27 @@ overheat_monitor_timeout(void *cb_data)
         fclose(file);
         goto asic_monitor;
     }
-    cpu_temp = strtoul(line, NULL, 0);
+    errno =0;
+    cpu_temp = strtol(line, NULL, 0);
+    if (errno == ERANGE)
+    {
+	    syslog(LOG_ERR, "MLX_CPU_TEMPERATURE_FILE read out of range.");
+	    cpu_temp = 0;
+    }
     fclose(file);
+    if(cpu_temp > 0) {
+	    if (cpu_temp > MLX_CPU_MAX_TEMP) {
+		file = fopen(MLX_CPU_HARD_RESET, "w");
 
-    if (cpu_temp > MLX_CPU_MAX_TEMP) {
-        file = fopen(MLX_CPU_HARD_RESET, "w");
-
-        if (!file) {
-            sys->log(sys, OS_ERROR, NULL, "CPU temperature is too high! Unable to power-off the CPU!");
-        } else {
-            fprintf(file, "0");
-            fclose(file);
-        }
+		if (!file) {
+		    sys->log(sys, OS_ERROR, NULL, "CPU temperature is too high! Unable to power-off the CPU!");
+		} else {
+		    fprintf(file, "0");
+		    fclose(file);
+		}
+	    }
+    } else {
+	    syslog(LOG_ERR, "MLX_CPU_TEMPERATURE_FILE read neagtive value: %d", cpu_temp);
     }
 
  asic_monitor:
