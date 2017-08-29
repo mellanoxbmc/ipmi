@@ -92,6 +92,8 @@ static unsigned int fan_speed_rear_profile1[] = {18000, 5400, 5400, 5400, 7200, 
 #define MLX_CPU_HARD_RESET   "/bsp/reset/cpu_reset_hard"
 #define MLX_CPU_SOFT_RESET   "/bsp/reset/cpu_reset_soft"
 #define MLX_SYS_HARD_RESET   "/bsp/reset/system_reset_hard"
+#define MLX_PS1_ON           "/bsp/reset/ps1_on"
+#define MLX_PS2_ON           "/bsp/reset/ps2_on"
 #define MLX_RESET_PHY        "/bsp/reset/reset_phy"
 
 #define MLX_UART_TO_BMC      "/bsp/reset/uart_sel"
@@ -1144,6 +1146,31 @@ static void handle_get_last_processed_event(lmc_data_t    *mc,
     *rdata_len = count + 5;
 }
 
+static unsigned char chassis_power_on_off(unsigned char val)
+{
+    FILE *file;
+
+    file = fopen(MLX_PS1_ON, "w");
+
+    if (!file)
+        goto ps2_on;
+
+    fprintf(file, "%u", !val);
+    fclose(file);
+
+ ps2_on:
+    file = fopen(MLX_PS2_ON, "w");
+
+    if (!file)
+        goto out;
+
+    fprintf(file, "%u", !val);
+    fclose(file);
+
+ out:
+    return 0;
+}
+
 /*
  * Chassis control for the chassis
  */
@@ -1155,6 +1182,8 @@ bmc_set_chassis_control(lmc_data_t *mc, int op, unsigned char *val,
 
     switch (op) {
     case CHASSIS_CONTROL_POWER:
+        chassis_power_on_off(*val);
+        break;
     case CHASSIS_CONTROL_BOOT_INFO_ACK:
     case CHASSIS_CONTROL_BOOT:
     case CHASSIS_CONTROL_GRACEFUL_SHUTDOWN:

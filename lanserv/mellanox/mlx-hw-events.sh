@@ -85,6 +85,8 @@ if [ "$1" == "add" ]; then
     ln -sf $3$4/cpu_reset_hard /bsp/reset/cpu_reset_hard
     ln -sf $3$4/cpu_reset_soft /bsp/reset/cpu_reset_soft
     ln -sf $3$4/system_reset_hard /bsp/reset/system_reset_hard
+    ln -sf $3$4/ps1_on /bsp/reset/ps1_on
+    ln -sf $3$4/ps2_on /bsp/reset/ps2_on
     ln -sf $3$4/bmc_uart_en /bsp/reset/bmc_uart_en
     ln -sf $3$4/uart_sel /bsp/reset/uart_sel
 
@@ -317,6 +319,8 @@ elif [ "$1" == "change" ]; then
     unlink /bsp/reset/cpu_reset_hard
     unlink /bsp/reset/cpu_reset_soft
     unlink /bsp/reset/system_reset_hard
+    unlink /bsp/reset/ps1_on
+    unlink /bsp/reset/ps2_on
     unlink /bsp/reset/bmc_uart_en
     unlink /bsp/reset/uart_sel
     unlink /bsp/reset/ac_power_cycle
@@ -336,6 +340,8 @@ elif [ "$1" == "change" ]; then
     ln -sf $3$4/cpu_reset_hard /bsp/reset/cpu_reset_hard
     ln -sf $3$4/cpu_reset_soft /bsp/reset/cpu_reset_soft
     ln -sf $3$4/system_reset_hard /bsp/reset/system_reset_hard
+    ln -sf $3$4/ps1_on /bsp/reset/ps1_on
+    ln -sf $3$4/ps2_on /bsp/reset/ps2_on
     ln -sf $3$4/bmc_uart_en /bsp/reset/bmc_uart_en
     ln -sf $3$4/uart_sel /bsp/reset/uart_sel
     ln -sf $3$4/ac_power_cycle /bsp/reset/ac_power_cycle
@@ -411,6 +417,8 @@ else
     unlink /bsp/reset/cpu_reset_hard
     unlink /bsp/reset/cpu_reset_soft
     unlink /bsp/reset/system_reset_hard
+    unlink /bsp/reset/ps1_on
+    unlink /bsp/reset/ps2_on
     unlink /bsp/reset/reset_phy
     unlink /bsp/reset/bmc_uart_en
     unlink /bsp/reset/uart_sel
