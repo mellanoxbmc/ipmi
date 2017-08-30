@@ -1576,16 +1576,8 @@ overheat_monitor_timeout(void *cb_data)
     asic_temp = strtoul(line, NULL, 0);
     fclose(file);
 
-    if (asic_temp > MLX_ASIC_MAX_TEMP) {
-        file = fopen(MLX_SYS_HARD_RESET, "w");
-
-        if (!file)
-            sys->log(sys, OS_ERROR, NULL, "ASIC temperature is too high! Unable to reset the system");
-        else {
-            fprintf(file, "0");
-            fclose(file);
-        }
-    }
+    if (asic_temp > MLX_ASIC_MAX_TEMP)
+        chassis_power_on_off(0);
 
  out:
     tv.tv_sec = MLX_OVERHEAT_MONITOR_TIMEOUT;
