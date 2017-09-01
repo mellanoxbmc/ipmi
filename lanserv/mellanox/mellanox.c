@@ -107,7 +107,32 @@ static unsigned int fan_speed_rear_profile1[] = {18000, 5400, 5400, 5400, 7200, 
 
 #define MLX_UPTIME_FILE      "/proc/uptime"
 
-static const char* reset_cause[8] =
+enum reset_cause_e {
+    MLX_RESET_CAUSE_AC_POWER_CYCLE = 0,
+    MLX_RESET_CAUSE_DC_POWER_CYCLE,
+    MLX_RESET_CAUSE_PLATFORM_RST,
+    MLX_RESET_CAUSE_THERMAL_OR_SWB_FAIL,
+    MLX_RESET_CAUSE_CPU_POWER_DOWN,
+    MLX_RESET_CAUSE_CPU_REBOOT,
+    MLX_RESET_CAUSE_CPU_SLEEP_OR_FAIL,
+    MLX_RESET_CAUSE_RESET_FROM_CPU,
+    MLX_RESET_CAUSE_BMC_SOFT_RST,
+    MLX_RESET_CAUSE_SYS_PWR_CYCLE,
+    MLX_RESET_CAUSE_CPU_RST,
+    MLX_RESET_CAUSE_PSU_PWROK_FAIL,
+    MLX_RESET_CAUSE_SW_CMD,
+    MLX_RESET_CAUSE_RST_FROM_MB,
+    MLX_RESET_CAUSE_AUX_OFF_OR_RELOAD,
+    MLX_RESET_CAUSE_CPU_POWER_FAIL,
+    MLX_RESET_CAUSE_PLAT_RST_ASSERT,
+    MLX_RESET_CAUSE_PWROFF_BY_SOC,
+    MLX_RESET_CAUSE_CPU_RST_BY_WD,
+    MLX_RESET_CAUSE_POWER_OK_ASSERT,
+    MLX_RESET_CAUSE_BUTTON,
+    MLX_RESET_CAUSE_MAX = MLX_RESET_CAUSE_BUTTON
+};
+
+static const char* reset_cause[MLX_RESET_CAUSE_MAX] =
 {
     "/bsp/reset/ac_power_cycle",
     "/bsp/reset/dc_power_cycle",
@@ -131,29 +156,7 @@ static const char* reset_cause[8] =
     "/bsp/reset/power_ok_assert"
 };
 
-enum reset_cause_e {
-    MLX_RESET_CAUSE_AC_POWER_CYCLE = 0,
-    MLX_RESET_CAUSE_DC_POWER_CYCLE,
-    MLX_RESET_CAUSE_PLATFORM_RST,
-    MLX_RESET_CAUSE_THERMAL_OR_SWB_FAIL,
-    MLX_RESET_CAUSE_CPU_POWER_DOWN,
-    MLX_RESET_CAUSE_CPU_REBOOT,
-    MLX_RESET_CAUSE_CPU_SLEEP_OR_FAIL,
-    MLX_RESET_CAUSE_RESET_FROM_CPU,
-    MLX_RESET_CAUSE_BMC_SOFT_RST,
-    MLX_RESET_CAUSE_SYS_PWR_CYCLE,
-    MLX_RESET_CAUSE_CPU_RST,
-    MLX_RESET_CAUSE_PSU_PWROK_FAIL,
-    MLX_RESET_CAUSE_SW_CMD,
-    MLX_RESET_CAUSE_RST_FROM_MB,
-    MLX_RESET_CAUSE_AUX_OFF_OR_RELOAD,
-    MLX_RESET_CAUSE_CPU_POWER_FAIL,
-    MLX_RESET_CAUSE_PLAT_RST_ASSERT,
-    MLX_RESET_CAUSE_PWROFF_BY_SOC,
-    MLX_RESET_CAUSE_CPU_RST_BY_WD,
-    MLX_RESET_CAUSE_POWER_OK_ASSERT,
-    MLX_RESET_CAUSE_BUTTON
-};
+static unsigned int reset_logged = 0;
 
 /*
  * This timer is called periodically to monitor the system reset cause.
@@ -250,7 +253,7 @@ handle_get_fan_pwm_cmd(lmc_data_t    *mc,
                        void          *cb_data)
 {
     unsigned char rv = 0;
-    char line_pwm[10];
+    char line_pwm[MLX_READ_BUF_SIZE];
     int pwm;
     FILE *fpwm;
 
@@ -1220,7 +1223,7 @@ handle_get_total_power_cmd(lmc_data_t    *mc,
                            void          *cb_data)
 {
     unsigned char rv = 0;
-    char line_pin[10];
+    char line_pin[MLX_READ_BUF_SIZE];
     unsigned char total = 0;
     FILE *fpin;
 
@@ -1341,8 +1344,9 @@ reset_monitor_timeout(void *cb_data)
     struct timeval tv;
     int fd;
     int rv;
+    unsigned char data[MLX_EVENT_TO_SEL_BUF_SIZE];
 
-    for (i = 0; i < 8; ++i) {
+    for (i = 0; i < MLX_RESET_CAUSE_MAX; ++i) {
         unsigned char c = 0;
         int active = 0;
 
@@ -1354,45 +1358,41 @@ reset_monitor_timeout(void *cb_data)
             continue;
         }
         active = atoi(&c);
-        if (active) {
-            switch (i) {
-            case MLX_RESET_CAUSE_AC_POWER_CYCLE:
-                /* "Power Unit", "Power cycle" */
-                mlx_add_event_to_sel(sys->mc, IPMI_SENSOR_TYPE_POWER_UNIT, 0 , 0, IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, 0x1);
-                break;
-            case MLX_RESET_CAUSE_DC_POWER_CYCLE:
-                /* "System Event", "OEM System boot event" */
-                mlx_add_event_to_sel(sys->mc, IPMI_SENSOR_TYPE_SYSTEM_EVENT, 0 , 0, IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, 0x1);
-                break;
-            case MLX_RESET_CAUSE_PLATFORM_RST:
-                /* "Version Change", "Firmware or software change success" */
-                mlx_add_event_to_sel(sys->mc, IPMI_SENSOR_TYPE_VERSION_CHANGE, 0 , 0, IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, 0x7);
-                break;
-            case MLX_RESET_CAUSE_THERMAL_OR_SWB_FAIL:
-                /* "System Firmware Error", "Unknown Error" */
-                mlx_add_event_to_sel(sys->mc, IPMI_SENSOR_TYPE_SYSTEM_FIRMWARE_PROGRESS, 0 , 0, IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, 0x0);
-                break;
-            case MLX_RESET_CAUSE_CPU_POWER_DOWN:
-                /* "Power Unit", "Power off/down" */
-                mlx_add_event_to_sel(sys->mc, IPMI_SENSOR_TYPE_POWER_UNIT, 0 , 0, IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, 0x0);
-                break;
-            case MLX_RESET_CAUSE_CPU_REBOOT:
-                /* "System Boot Initiated", "System Restart" */
-                mlx_add_event_to_sel(sys->mc, IPMI_SENSOR_TYPE_SYSTEM_BOOT_INITIATED, 0 , 0, IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, 0x7);
-                break;
-            case MLX_RESET_CAUSE_CPU_SLEEP_OR_FAIL:
-                /* "OS Stop/Shutdown", "OS graceful shutdown" */
-                mlx_add_event_to_sel(sys->mc, IPMI_SENSOR_TYPE_OS_CRITICAL_STOP, 0 , 0, IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, 0x3);
-                break;
-            case MLX_RESET_CAUSE_CPU_RST_BY_WD:
-                /* "Watchdog 2", "Power cycle" */
-                mlx_add_event_to_sel(sys->mc, IPMI_SENSOR_TYPE_WATCHDOG_2, 0 , 0, IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, 0x3);
-                break;
-            case MLX_RESET_CAUSE_BUTTON:
-                /* "Button", "Reset Button pressed" */
-                mlx_add_event_to_sel(sys->mc, IPMI_SENSOR_TYPE_BUTTON, 0 , 0, IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, 0x2);
-                break;
+        switch (i) {
+        case MLX_RESET_CAUSE_AC_POWER_CYCLE:
+            if (active && !(reset_logged & (1 << MLX_RESET_CAUSE_AC_POWER_CYCLE))) {
+                memset(data, 0, MLX_EVENT_TO_SEL_BUF_SIZE);
+                data[1] = MLX_AC_PWR_CYCLE_EVENT;
+                mc_new_event(bmc_mc, MLX_OEM_SEL_RECORD_TYPE, data);
+                reset_logged |= 1 << MLX_RESET_CAUSE_AC_POWER_CYCLE;
             }
+            else if (!active && (reset_logged & (1 << MLX_RESET_CAUSE_AC_POWER_CYCLE)))
+                reset_logged ^= 1 << MLX_RESET_CAUSE_AC_POWER_CYCLE;
+            break;
+
+        case MLX_RESET_CAUSE_DC_POWER_CYCLE:
+            if (active && !(reset_logged & (1 << MLX_RESET_CAUSE_DC_POWER_CYCLE))) {
+                memset(data, 0, MLX_EVENT_TO_SEL_BUF_SIZE);
+                data[1] = MLX_DC_PWR_CYCLE_EVENT;
+                mc_new_event(bmc_mc, MLX_OEM_SEL_RECORD_TYPE, data);
+                reset_logged |= 1 << MLX_RESET_CAUSE_DC_POWER_CYCLE;
+            }
+            else if (!active && (reset_logged & (1 << MLX_RESET_CAUSE_DC_POWER_CYCLE)))
+                reset_logged ^= 1 << MLX_RESET_CAUSE_DC_POWER_CYCLE;
+            break;
+
+
+        case MLX_RESET_CAUSE_CPU_POWER_DOWN:
+            if (active && !(reset_logged & (1 << MLX_RESET_CAUSE_CPU_POWER_DOWN))) {
+                memset(data, 0, MLX_EVENT_TO_SEL_BUF_SIZE);
+                data[1] = MLX_CPU_PWR_DOWN_EVENT;
+                mc_new_event(bmc_mc, MLX_OEM_SEL_RECORD_TYPE, data);
+                reset_logged |= 1 << MLX_RESET_CAUSE_CPU_POWER_DOWN;
+           }
+            else if (!active && (reset_logged & (1 << MLX_RESET_CAUSE_CPU_POWER_DOWN)))
+                reset_logged ^= 1 << MLX_RESET_CAUSE_CPU_POWER_DOWN;
+
+            break;
         }
         close(fd);
     }
@@ -1453,7 +1453,7 @@ fans_monitor_timeout(void *cb_data)
         FILE *file;
         unsigned long int rpm, pwm;
         unsigned int expected_speed;
-        char line[10];
+        char line[MLX_READ_BUF_SIZE];
 
         memset(fname, 0, sizeof(fname));
         sprintf(fname, "/bsp/fan/tacho%i_rpm", i);
@@ -1488,10 +1488,10 @@ fans_monitor_timeout(void *cb_data)
         if (rpm == 0) {
             memset(data, 0, MLX_EVENT_TO_SEL_BUF_SIZE);
 
-            data[1] = 0x0; /* event descr id */
+            data[1] = MLX_FAN_STOPPED_EVENT;
             data[2] = 0x70 + i - 1; /*FAN# */
 
-            mc_new_event(bmc_mc, 0xE0, data);
+            mc_new_event(bmc_mc, MLX_OEM_SEL_RECORD_TYPE, data);
         }
         else {
             expected_speed = sys_devices.get_fan_speed(i, pwm);
@@ -1499,18 +1499,18 @@ fans_monitor_timeout(void *cb_data)
             if (rpm < expected_speed * (1 - sys_devices.fan_speed_deviation)) {
                 memset(data, 0, MLX_EVENT_TO_SEL_BUF_SIZE);
 
-                data[1] = 0x1; /* event descr id */
+                data[1] = MLX_FAN_SPEED_TOO_LOW_EVENT;
                 data[2] = 0x70 + i -1;/* FAN# */
 
-                mc_new_event(bmc_mc, 0xE0, data);
+                mc_new_event(bmc_mc, MLX_OEM_SEL_RECORD_TYPE, data);
             }
             if (rpm > expected_speed * (1 + sys_devices.fan_speed_deviation)) {
                 memset(data, 0, MLX_EVENT_TO_SEL_BUF_SIZE);
 
-                data[1] = 0x2; /* event descr id */
+                data[1] = MLX_FAN_SPEED_TOO_HIGH_EVENT;
                 data[2] = 0x70 + i -1; /* FAN# */
 
-                mc_new_event(bmc_mc, 0xE0, data);
+                mc_new_event(bmc_mc, MLX_OEM_SEL_RECORD_TYPE, data);
             }
         }
     }
@@ -1528,7 +1528,8 @@ overheat_monitor_timeout(void *cb_data)
     FILE *file;
     long int cpu_temp;
     unsigned long int asic_temp;
-    char line[10];
+    char line[MLX_READ_BUF_SIZE];
+    unsigned char data[MLX_EVENT_TO_SEL_BUF_SIZE];
 
     file = fopen(MLX_CPU_TEMPERATURE_FILE, "r");
 
@@ -1543,23 +1544,29 @@ overheat_monitor_timeout(void *cb_data)
     cpu_temp = strtol(line, NULL, 0);
     if (errno == ERANGE)
     {
-	    syslog(LOG_ERR, "MLX_CPU_TEMPERATURE_FILE read out of range.");
-	    cpu_temp = 0;
+        syslog(LOG_ERR, "MLX_CPU_TEMPERATURE_FILE read out of range.");
+        cpu_temp = 0;
     }
     fclose(file);
     if(cpu_temp > 0) {
-	    if (cpu_temp > MLX_CPU_MAX_TEMP) {
-		file = fopen(MLX_CPU_HARD_RESET, "w");
+        if (cpu_temp > MLX_CPU_MAX_TEMP) {
+            file = fopen(MLX_CPU_HARD_RESET, "w");
 
-		if (!file) {
-		    sys->log(sys, OS_ERROR, NULL, "CPU temperature is too high! Unable to power-off the CPU!");
-		} else {
-		    fprintf(file, "0");
-		    fclose(file);
-		}
-	    }
+            if (!file) {
+                sys->log(sys, OS_ERROR, NULL, "CPU temperature is too high! Unable to power-off the CPU!");
+            } else {
+                fprintf(file, "0");
+                fclose(file);
+            }
+
+            memset(data, 0, MLX_EVENT_TO_SEL_BUF_SIZE);
+            data[1] = MLX_CPU_OVERHEAT_EVENT;
+            data[2] = cpu_temp;
+            mc_new_event(bmc_mc, MLX_OEM_SEL_RECORD_TYPE, data);
+
+        }
     } else {
-	    syslog(LOG_ERR, "MLX_CPU_TEMPERATURE_FILE read neagtive value: %d", cpu_temp);
+        syslog(LOG_ERR, "MLX_CPU_TEMPERATURE_FILE read neagtive value: %d", cpu_temp);
     }
 
  asic_monitor:
@@ -1576,8 +1583,13 @@ overheat_monitor_timeout(void *cb_data)
     asic_temp = strtoul(line, NULL, 0);
     fclose(file);
 
-    if (asic_temp > MLX_ASIC_MAX_TEMP)
+    if (asic_temp > MLX_ASIC_MAX_TEMP) {
         chassis_power_on_off(0);
+        memset(data, 0, MLX_EVENT_TO_SEL_BUF_SIZE);
+        data[1] = MLX_ASIC_OVERHEAT_EVENT;
+        data[2] = asic_temp;
+        mc_new_event(bmc_mc, MLX_OEM_SEL_RECORD_TYPE, data);
+    }
 
  out:
     tv.tv_sec = MLX_OVERHEAT_MONITOR_TIMEOUT;
@@ -1729,7 +1741,7 @@ ipmi_sim_module_init(sys_data_t *sys, const char *initstr_i)
 		 "Unable to register NEW handler: %s", strerror(rv));
     }
 
-    /*rv = sys->alloc_timer(sys, reset_monitor_timeout, sys, &reset_monitor_timer);
+    rv = sys->alloc_timer(sys, reset_monitor_timeout, sys, &reset_monitor_timer);
     if (rv) {
         int errval = errno;
         sys->log(sys, SETUP_ERROR, NULL, "Unable to create reset monitoring timer");
@@ -1738,7 +1750,7 @@ ipmi_sim_module_init(sys_data_t *sys, const char *initstr_i)
         tv.tv_sec = MLX_RESET_MONITOR_TIMEOUT;
         tv.tv_usec = 0;
         sys->start_timer(reset_monitor_timer, &tv);
-    }*/
+    }
 
     rv = sys->alloc_timer(sys, overheat_monitor_timeout, sys, &overheat_monitor_timer);
     if (rv) {

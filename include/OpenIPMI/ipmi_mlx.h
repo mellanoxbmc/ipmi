@@ -59,6 +59,18 @@
 #define MLX_EVENT_TO_SEL_BUF_SIZE           13
 #define MLX_EVENT_DIRECTION_SHIFT           7
 
+#define MLX_READ_BUF_SIZE                   10
+
+#define MLX_OEM_SEL_RECORD_TYPE      0xE0
+#define MLX_FAN_STOPPED_EVENT        0x0
+#define MLX_FAN_SPEED_TOO_LOW_EVENT  0x1
+#define MLX_FAN_SPEED_TOO_HIGH_EVENT 0x2
+#define MLX_ASIC_OVERHEAT_EVENT      0x3
+#define MLX_CPU_OVERHEAT_EVENT       0x4
+#define MLX_AC_PWR_CYCLE_EVENT       0x5
+#define MLX_DC_PWR_CYCLE_EVENT       0x6
+#define MLX_CPU_PWR_DOWN_EVENT       0x7
+
 void mlx_add_event_to_sel(lmc_data_t    *mc,
                           unsigned char sensor_type,
                           unsigned char sensor_num,
