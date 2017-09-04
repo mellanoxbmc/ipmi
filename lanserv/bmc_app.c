@@ -272,7 +272,8 @@ watchdog_timeout(void *cb_data)
 #ifdef MLX_IPMID
         /*Uart to BMC*/
         system("echo 0 > /bsp/reset/uart_sel");
-        mlx_add_event_to_sel(mc, IPMI_SENSOR_TYPE_WATCHDOG_1, 0 , 0, IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, 0x6);
+        mlx_add_event_to_sel(mc, IPMI_SENSOR_TYPE_WATCHDOG_1, 0 , MLX_EVENT_ASSERTED, 
+			     IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, MLX_WD_EXPIRED_EVENT);
 #else
 	set_sensor_bit(mc, sens, 0, 1, 0xc0, mc->watchdog_use & 0xf, 0xff, 1);
 #endif
@@ -282,7 +283,8 @@ watchdog_timeout(void *cb_data)
 #ifdef MLX_IPMID
         /*CPU Reset*/
         system("echo 0 > /bsp/reset/cpu_reset_soft");
-        mlx_add_event_to_sel(mc, IPMI_SENSOR_TYPE_WATCHDOG_1, 0 , 0, IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, 0x1);
+        mlx_add_event_to_sel(mc, IPMI_SENSOR_TYPE_WATCHDOG_1, 0 , MLX_EVENT_ASSERTED,
+			     IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, MLX_WD_OS_RESET_EVENT);
 #else
 	set_sensor_bit(mc, sens, 1, 1, 0xc1, mc->watchdog_use & 0xf, 0xff, 1);
 	bchan->hw_op(bchan, HW_OP_RESET);
@@ -293,7 +295,8 @@ watchdog_timeout(void *cb_data)
 #ifdef MLX_IPMID
         /*CPU Power-off*/
         system("echo 0 > /bsp/reset/cpu_reset_hard");
-        mlx_add_event_to_sel(mc, IPMI_SENSOR_TYPE_WATCHDOG_1, 0 , 0, IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, 0x3);
+        mlx_add_event_to_sel(mc, IPMI_SENSOR_TYPE_WATCHDOG_1, 0 , MLX_EVENT_ASSERTED, 
+			     IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, MLX_WD_PWR_DOWN_EVENT);
 #else
 	set_sensor_bit(mc, sens, 2, 1, 0xc2, mc->watchdog_use & 0xf, 0xff, 1);
 	bchan->hw_op(bchan, HW_OP_POWEROFF);
@@ -308,7 +311,8 @@ watchdog_timeout(void *cb_data)
         system("echo 0 > /bsp/reset/cpu_reset_hard");
         sleep(3);
         system("echo 1 > /bsp/reset/cpu_reset_hard");
-        mlx_add_event_to_sel(mc, IPMI_SENSOR_TYPE_WATCHDOG_1, 0 , 0, IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, 0x4);
+        mlx_add_event_to_sel(mc, IPMI_SENSOR_TYPE_WATCHDOG_1, 0 , MLX_EVENT_ASSERTED, 
+			     IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, MLX_WD_PWR_CYCLE_EVENT);
 #else
 	set_sensor_bit(mc, sens, 3, 1, 0xc3, mc->watchdog_use & 0xf, 0xff, 1);
 	bchan->hw_op(bchan, HW_OP_POWEROFF);

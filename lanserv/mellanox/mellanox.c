@@ -290,8 +290,8 @@ static unsigned char set_led_command(unsigned char led,
 {
     FILE *fbrightness;
     FILE *ftrigger;
-    char fname[100];
-    char cmd_trigger[100];
+    char fname[MLX_FILE_NAME_SIZE];
+    char cmd_trigger[MLX_SYS_CMD_BUF_SIZE];
 
     memset(fname, 0, sizeof(fname));
     memset(cmd_trigger, 0, sizeof(cmd_trigger));
@@ -477,7 +477,7 @@ handle_set_led_blinking (lmc_data_t    *mc,
     unsigned char color;
     FILE *f_delayon;
     FILE *f_delayoff;
-    char fname[100];
+    char fname[MLX_FILE_NAME_SIZE];
 
     if (check_msg_length(msg, 3, rdata, rdata_len))
         return;
@@ -592,11 +592,11 @@ static unsigned char get_led_color(unsigned int led, unsigned char *color)
     FILE *f_green;
     FILE *f_red;
     FILE *f_amber;
-    char line_green[10];
-    char line_red[10];
-    char line_amber[10];
+    char line_green[MLX_READ_BUF_SIZE];
+    char line_red[MLX_READ_BUF_SIZE];
+    char line_amber[MLX_READ_BUF_SIZE];
     int red, green, amber;
-    char fname[100];
+    char fname[MLX_FILE_NAME_SIZE];
 
     if (led <= sys_devices.status_led_number) {
         memset(fname, 0, sizeof(fname));
@@ -753,7 +753,8 @@ handle_bmc_cold_reset(lmc_data_t    *mc,
             *rdata_len = 1;
             return;
     } else {
-        mlx_add_event_to_sel(mc, IPMI_SENSOR_TYPE_SYSTEM_BOOT_INITIATED, mc->ipmb, 0, IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, 0x6);
+        mlx_add_event_to_sel(mc, IPMI_SENSOR_TYPE_SYSTEM_BOOT_INITIATED, mc->ipmb, 
+                             MLX_EVENT_ASSERTED, IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, MLX_OS_WARM_RESET_EVENT);
 
         if (reset_monitor_timer)
             sys->free_timer(reset_monitor_timer);
@@ -778,7 +779,7 @@ handle_cpu_ready_event(lmc_data_t    *mc,
 			  unsigned int  *rdata_len,
 			  void          *cb_data)
 {
-    unsigned char status_led_run_str[32];
+    unsigned char status_led_run_str[MLX_SYS_CMD_BUF_SIZE];
     unsigned int ready;
 
     if (check_msg_length(msg, 1, rdata, rdata_len)) {
@@ -793,20 +794,22 @@ handle_cpu_ready_event(lmc_data_t    *mc,
         }
     }
 
-   if (sprintf(status_led_run_str,"status_led.py 0x%02x %d 0x%02x\n",0xbc, 1, 0))
-       system(status_led_run_str);
+    memset(status_led_run_str, 0, sizeof(status_led_run_str));
+    if (sprintf(status_led_run_str,"status_led.py 0x%02x %d 0x%02x\n",MLX_CPU_REBOOT_LOG_NUM, 1, 0))
+        system(status_led_run_str);
 
-   if (sprintf(status_led_run_str,"status_led.py 0x%02x %d 0x%02x\n",0xbb, ready, IPMI_SENSOR_TYPE_PROCESSOR))
-       system(status_led_run_str);
+    memset(status_led_run_str, 0, sizeof(status_led_run_str));
+    if (sprintf(status_led_run_str,"status_led.py 0x%02x %d 0x%02x\n",MLX_CPU_READY_LOG_NUM, ready, IPMI_SENSOR_TYPE_PROCESSOR))
+        system(status_led_run_str);
 
-   if (ready) {
+    if (ready) {
         /* set "Presence detected" if CPU started successfully */
         system("echo 128 > /bsp/environment/cpu_status");
-   }
-   else {
+    }
+    else {
         /* set "IERR" in case something goes wrong on CPU sturtup */
         system("echo 1 > /bsp/environment/cpu_status");
-   }
+    }
     rdata[0] = 0;
     *rdata_len = 1;
 }
@@ -823,8 +826,6 @@ handle_cpu_hard_reset(lmc_data_t    *mc,
 			  unsigned int  *rdata_len,
 			  void          *cb_data)
 {
-    printf("\n %d: %s, %s()", __LINE__, __FILE__, __FUNCTION__);
-
     FILE *freset;
     unsigned int reset;
     unsigned char cpu_reboot_cmd = 0;
@@ -863,9 +864,11 @@ handle_cpu_hard_reset(lmc_data_t    *mc,
 
     if (!reset) {
         if (cpu_reboot_cmd)
-            mlx_add_event_to_sel(mc, IPMI_SENSOR_TYPE_OS_CRITICAL_STOP , 40, 0, IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, 0x3);
+            mlx_add_event_to_sel(mc, IPMI_SENSOR_TYPE_OS_CRITICAL_STOP , MLX_CPU_STATUS_SENSOR_NUM, 
+                                 MLX_EVENT_ASSERTED, IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, MLX_OS_SHUTDOWN_EVENT);
         else
-            mlx_add_event_to_sel(mc, IPMI_SENSOR_TYPE_OS_CRITICAL_STOP , 0, 0, IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, 0x3);
+            mlx_add_event_to_sel(mc, IPMI_SENSOR_TYPE_OS_CRITICAL_STOP , 0, 
+                                 MLX_EVENT_ASSERTED, IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, MLX_OS_SHUTDOWN_EVENT);
 
     }
 
@@ -887,7 +890,7 @@ handle_cpu_soft_reset(lmc_data_t    *mc,
 {
     FILE *freset;
     unsigned char cpu_reboot_cmd = 0;
-    char trigger[100];
+    char trigger[MLX_SYS_CMD_BUF_SIZE];
     FILE *ftrigger;
     sys_data_t *sys = cb_data;
 
@@ -927,10 +930,12 @@ handle_cpu_soft_reset(lmc_data_t    *mc,
     fclose(freset);
 
     if (cpu_reboot_cmd) {
-        mlx_add_event_to_sel(mc, IPMI_SENSOR_TYPE_SYSTEM_BOOT_INITIATED, 40, 0, IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, 0x7); 
+        mlx_add_event_to_sel(mc, IPMI_SENSOR_TYPE_SYSTEM_BOOT_INITIATED, MLX_CPU_STATUS_SENSOR_NUM, 
+                             MLX_EVENT_ASSERTED, IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, MLX_SYS_RESTART_EVENT); 
     }
     else
-        mlx_add_event_to_sel(mc, IPMI_SENSOR_TYPE_SYSTEM_BOOT_INITIATED, 0, 0, IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, 0x7); 
+        mlx_add_event_to_sel(mc, IPMI_SENSOR_TYPE_SYSTEM_BOOT_INITIATED, 0, 
+                             MLX_EVENT_ASSERTED, IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, MLX_SYS_RESTART_EVENT); 
 
     rdata[0] = 0;
     *rdata_len = 1;
@@ -981,8 +986,6 @@ handle_set_uart_to_bmc(lmc_data_t    *mc,
                      unsigned int  *rdata_len,
                      void          *cb_data)
 {
-    printf("\n %d: %s, %s()", __LINE__, __FILE__, __FUNCTION__);
-
     FILE *fset;
     unsigned int uart;
 
@@ -1027,7 +1030,7 @@ handle_sel_buffer_set(lmc_data_t    *mc,
               void          *cb_data)
 {
     uint16_t max_entries = 0;
-    char sel_set_cmd_buf[100];
+    char sel_set_cmd_buf[MLX_SYS_CMD_BUF_SIZE];
 
     if (check_msg_length(msg, 2, rdata, rdata_len)){
         return;
@@ -1063,7 +1066,7 @@ handle_thermal_algorithm_set(lmc_data_t    *mc,
 {
     unsigned int zone, state;
     FILE *file;
-    char fname[100];
+    char fname[MLX_FILE_NAME_SIZE];
 
     if (check_msg_length(msg, 2, rdata, rdata_len))
         return;
@@ -1197,7 +1200,8 @@ bmc_set_chassis_control(lmc_data_t *mc, int op, unsigned char *val,
         if (!freset) {
                 return ETXTBSY;
         } else {
-            mlx_add_event_to_sel(mc, IPMI_SENSOR_TYPE_SYSTEM_EVENT, 0 , 0, IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, 0x1);
+            mlx_add_event_to_sel(mc, IPMI_SENSOR_TYPE_SYSTEM_EVENT, 0 , 
+                                 MLX_EVENT_ASSERTED, IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, MLX_SYS_BOOT_EVENT);
             fprintf(freset, "%u", 0);
         }
 
@@ -1228,7 +1232,7 @@ handle_get_total_power_cmd(lmc_data_t    *mc,
     FILE *fpin;
 
     for (int i = 0; i < MLX_PSU_COUNT; ++i) {
-        char filename[50];
+        char filename[MLX_FILE_NAME_SIZE];
         unsigned int tmp = 0;
         memset(filename, 0, sizeof(filename));
         sprintf(filename, MLX_PSU_PIN_FILE, i+1);
@@ -1267,7 +1271,7 @@ handle_bmc_uptime_get(lmc_data_t    *mc,
                        void          *cb_data)
 {
     unsigned char rv = 0;
-    char uptime[10];
+    char uptime[MLX_READ_BUF_SIZE];
     unsigned int val = 0;
     unsigned char seconds = 0;
     unsigned char minutes = 0;
@@ -1426,7 +1430,7 @@ fans_monitor_timeout(void *cb_data)
     struct timeval tv;
     int failed = 0;
     int i = 0;
-    unsigned char fname[30];
+    char fname[MLX_FILE_NAME_SIZE];
     unsigned char data[MLX_EVENT_TO_SEL_BUF_SIZE];
 
     for (i = 1; i <= sys_devices.fan_number * sys_devices.fan_tacho_per_drw; ++i) {
@@ -1439,12 +1443,14 @@ fans_monitor_timeout(void *cb_data)
     /* All FANs failure monitoring */
     if (failed == sys_devices.fan_number * sys_devices.fan_tacho_per_drw) {
         if (all_fans_failure == 0) {
-            mlx_add_event_to_sel(sys->mc, IPMI_SENSOR_TYPE_FAN, 0 , 0, IPMI_EVENT_READING_TYPE_DISCRETE_DEVICE_ENABLE, 0x0);
+            mlx_add_event_to_sel(sys->mc, IPMI_SENSOR_TYPE_FAN, 0 , 
+                                 MLX_EVENT_ASSERTED, IPMI_EVENT_READING_TYPE_DISCRETE_DEVICE_ENABLE, MLX_DEVICE_DISABLED_EVENT);
             all_fans_failure = 1;
         }
     }
     else if (all_fans_failure == 1) {
-        mlx_add_event_to_sel(sys->mc, IPMI_SENSOR_TYPE_FAN, 0 , 1, IPMI_EVENT_READING_TYPE_DISCRETE_DEVICE_ENABLE, 0x0);
+        mlx_add_event_to_sel(sys->mc, IPMI_SENSOR_TYPE_FAN, 0 , 
+                             MLX_EVENT_DEASSERTED, IPMI_EVENT_READING_TYPE_DISCRETE_DEVICE_ENABLE, MLX_DEVICE_DISABLED_EVENT);
         all_fans_failure = 0;
     }
 
@@ -1489,7 +1495,7 @@ fans_monitor_timeout(void *cb_data)
             memset(data, 0, MLX_EVENT_TO_SEL_BUF_SIZE);
 
             data[1] = MLX_FAN_STOPPED_EVENT;
-            data[2] = 0x70 + i - 1; /*FAN# */
+            data[2] = MLX_FAN1_1_SENSOR_NUM + i - 1; /*FAN# */
 
             mc_new_event(bmc_mc, MLX_OEM_SEL_RECORD_TYPE, data);
         }
@@ -1500,7 +1506,7 @@ fans_monitor_timeout(void *cb_data)
                 memset(data, 0, MLX_EVENT_TO_SEL_BUF_SIZE);
 
                 data[1] = MLX_FAN_SPEED_TOO_LOW_EVENT;
-                data[2] = 0x70 + i -1;/* FAN# */
+                data[2] = MLX_FAN1_1_SENSOR_NUM + i -1;/* FAN# */
 
                 mc_new_event(bmc_mc, MLX_OEM_SEL_RECORD_TYPE, data);
             }
@@ -1508,7 +1514,7 @@ fans_monitor_timeout(void *cb_data)
                 memset(data, 0, MLX_EVENT_TO_SEL_BUF_SIZE);
 
                 data[1] = MLX_FAN_SPEED_TOO_HIGH_EVENT;
-                data[2] = 0x70 + i -1; /* FAN# */
+                data[2] = MLX_FAN1_1_SENSOR_NUM + i -1; /* FAN# */
 
                 mc_new_event(bmc_mc, MLX_OEM_SEL_RECORD_TYPE, data);
             }
@@ -1611,7 +1617,7 @@ bmc_get_chassis_control(lmc_data_t *mc, int op, unsigned char *val,
 void sys_time_set(unsigned char* data)
 {
     struct tm *nowtm;
-    char tmbuf[64];
+    char tmbuf[MLX_SYS_CMD_BUF_SIZE];
     uint32_t timeval = ipmi_get_uint32(data);
 
     system("systemctl stop systemd-timesyncd");
@@ -1653,7 +1659,7 @@ ipmi_sim_module_init(sys_data_t *sys, const char *initstr_i)
     int rv;
     unsigned int i;
     struct timeval tv;
-    char fname[50];
+    char fname[MLX_FILE_NAME_SIZE];
 
     printf("IPMI Mellanox module");
 

@@ -7,6 +7,7 @@
 
 #include <OpenIPMI/mcserv.h>
 
+/* MLX Sensors */
 #define MLX_AMBIENT_CARRIER_TEMP_SENSOR_NUM 0x01
 #define MLX_AMBIENT_SWITCH_TEMP_SENSOR_NUM  0X02
 #define MLX_PSU1 temp_SENSOR_NUM            0x03
@@ -56,11 +57,24 @@
 #define MLX_PSU2_FAN_SENSOR_NUM             0x79
 #define MLX_CPU_STATUS_SENSOR_NUM           0x28
 
+#define MLX_IPMIWD_LOG_NUM                  0xb4
+#define MLX_PSU1_DRW_LOG_NUM                0xb5
+#define MLX_PSU2_DRW_LOG_NUM                0xb6
+#define MLX_FAN1_DRW_LOG_NUM                0xb7
+#define MLX_FAN2_DRW_LOG_NUM                0xb8
+#define MLX_FAN3_DRW_LOG_NUM                0xb9
+#define MLX_FAN4_DRW_LOG_NUM                0xba
+#define MLX_CPU_READY_LOG_NUM               0xbb
+#define MLX_CPU_REBOOT_LOG_NUM              0xbc
+
 #define MLX_EVENT_TO_SEL_BUF_SIZE           13
 #define MLX_EVENT_DIRECTION_SHIFT           7
 
 #define MLX_READ_BUF_SIZE                   10
+#define MLX_FILE_NAME_SIZE                  50
+#define MLX_SYS_CMD_BUF_SIZE                100
 
+/* Mlx OEM SEL event description */
 #define MLX_OEM_SEL_RECORD_TYPE      0xE0
 #define MLX_FAN_STOPPED_EVENT        0x0
 #define MLX_FAN_SPEED_TOO_LOW_EVENT  0x1
@@ -70,6 +84,26 @@
 #define MLX_AC_PWR_CYCLE_EVENT       0x5
 #define MLX_DC_PWR_CYCLE_EVENT       0x6
 #define MLX_CPU_PWR_DOWN_EVENT       0x7
+
+/* Event directions */
+#define MLX_EVENT_ASSERTED           0x0
+#define MLX_EVENT_DEASSERTED         0x1
+
+/* Event description offset */
+#define MLX_DEVICE_DISABLED_EVENT     0x0
+#define MLX_DEVICE_ENABLED_EVENT      0x1
+#define MLX_DEVICE_ABSENT_EVENT       0x0
+#define MLX_WD_OS_RESET_EVENT         0x1
+#define MLX_WD_PWR_DOWN_EVENT         0x3
+#define MLX_WD_PWR_CYCLE_EVENT        0x4
+#define MLX_WD_EXPIRED_EVENT          0x6 
+#define MLX_PWR_AC_LOST_EVENT         0x3
+#define MLX_PWR_AC_OUT_OF_RANGE_EVENT 0x4
+#define MLX_OS_WARM_RESET_EVENT       0x6
+#define MLX_SYS_RESTART_EVENT         0x7
+#define MLX_OS_SHUTDOWN_EVENT         0x3
+#define MLX_SYS_BOOT_EVENT            0x1
+#define MLX_PSU_PRESENT_EVENT         0x0
 
 void mlx_add_event_to_sel(lmc_data_t    *mc,
                           unsigned char sensor_type,
