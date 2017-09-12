@@ -873,6 +873,17 @@ case $host in
    *-sun-*) AC_DEFINE([_SUNOS], [], [Solaris's term.h does horrid things.]);;
 esac
 
+AC_ARG_WITH([dbus],
+    [AS_HELP_STRING([--with-dbus],
+        [Enable DBUS support, DBUS is required when using with gecko-mediaplayer])],
+        [],
+        [with_dbus=check])
+AS_IF([test "x$with_dbus" != xno],
+	[PKG_CHECK_MODULES(DBUS, [dbus-1 >= 0.95 dbus-glib-1 >= 0.70],[AC_DEFINE([DBUS_ENABLED],[1],[Define to 1 to enable dbus support])], [AC_MSG_NOTICE([Compiling without dbus support cannot be used with gecko-mediaplayer, may cause cause compile to fail])])
+	AC_SUBST(DBUS_CFLAGS)
+	AC_SUBST(DBUS_LIBS)
+	])
+
 AC_CHECK_LIB(curses, tgetent, TERM_LIBS=-lcurses,
    [AC_CHECK_LIB(ncursesw, tgetent, TERM_LIBS=-lncursesw,
     [AC_CHECK_LIB(ncurses, tgetent, TERM_LIBS=-lncurses,

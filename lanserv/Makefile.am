@@ -10,7 +10,7 @@ SUBDIRS = OpenIPMI sdrcomp @MARVELL_BMC_DIR@ @MELLANOX_DIR@
 DIST_SUBDIRS = OpenIPMI sdrcomp marvell-bmc mellanox
 
 AM_CFLAGS = -Wall -Wsign-compare -I$(top_srcdir)/include -DIPMI_CHECK_LOCKS \
-	$(OPENSSLINCS) -DPVERSION="\"$(PVERSION)\""
+	$(DBUS_CFLAGS) $(OPENSSLINCS) -DPVERSION="\"$(PVERSION)\""
 
 AM_CPPFLAGS = -DSYSCONFDIR='"$(sysconfdir)"' -DSTATEDIR='"$(localstatedir)"'
 
@@ -44,7 +44,7 @@ mlx_ipmid_SOURCES = ipmi_sim.c bmc.c emu_cmd.c sol.c \
 	bmc_storage.c bmc_app.c bmc_chassis.c bmc_transport.c \
 	bmc_sensor.c bmc_picmg.c
 
-mlx_ipmid_LDADD = $(POPTLIBS) libIPMIlanserv.la -lpthread
+mlx_ipmid_LDADD = $(POPTLIBS) libIPMIlanserv.la -lpthread $(DBUS_LIBS)
 mlx_ipmid_LDFLAGS = -rdynamic ../unix/libOpenIPMIposix.la \
 	../utils/libOpenIPMIutils.la
 else
