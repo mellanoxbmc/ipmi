@@ -157,6 +157,7 @@ static const char* reset_cause[MLX_RESET_CAUSE_MAX] =
 };
 
 static unsigned int reset_logged = 0;
+static unsigned int chassis_status = 0;
 
 /*
  * This timer is called periodically to monitor the system reset cause.
@@ -795,7 +796,7 @@ handle_cpu_ready_event(lmc_data_t    *mc,
     }
 
     memset(status_led_run_str, 0, sizeof(status_led_run_str));
-    if (sprintf(status_led_run_str,"status_led.py 0x%02x %d 0x%02x\n",MLX_CPU_REBOOT_LOG_NUM, 1, 0))
+    if (sprintf(status_led_run_str,"status_led.py 0x%02x %d 0x%02x\n",MLX_CPU_REBOOT_LOG_NUM, MLX_EVENT_DEASSERTED, 0))
         system(status_led_run_str);
 
     memset(status_led_run_str, 0, sizeof(status_led_run_str));
@@ -921,7 +922,7 @@ handle_cpu_soft_reset(lmc_data_t    *mc,
 
         /* set LED blinking on CPU restart */
         memset(trigger, 0, sizeof(trigger));
-        if (sprintf(trigger,"status_led.py 0x%02x %d 0x%02x\n", 0xbc, 0, 0))
+        if (sprintf(trigger,"status_led.py 0x%02x %d 0x%02x\n", MLX_CPU_REBOOT_LOG_NUM, MLX_EVENT_ASSERTED, 0))
             system(trigger);
         else
             sys->log(sys, OS_ERROR, NULL,"Unable to set status LED blinking");
@@ -1155,6 +1156,7 @@ static void handle_get_last_processed_event(lmc_data_t    *mc,
 static unsigned char chassis_power_on_off(unsigned char val)
 {
     FILE *file;
+    unsigned char chassis_status_str[MLX_SYS_CMD_BUF_SIZE];
 
     file = fopen(MLX_PS1_ON, "w");
 
@@ -1174,6 +1176,17 @@ static unsigned char chassis_power_on_off(unsigned char val)
     fclose(file);
 
  out:
+    if (val) 
+        chassis_status |= val;
+    else {
+        /* clear the power status bit */
+        chassis_status &= MLX_CHASSIS_POWER_ON_CLEAR;
+    }
+
+    memset(chassis_status_str, 0, sizeof(chassis_status_str));
+    if (sprintf(chassis_status_str,"echo %u > /bsp/environment/chassis_status", chassis_status))
+        system(chassis_status_str);
+
     return 0;
 }
 
@@ -1432,6 +1445,7 @@ fans_monitor_timeout(void *cb_data)
     int i = 0;
     char fname[MLX_FILE_NAME_SIZE];
     unsigned char data[MLX_EVENT_TO_SEL_BUF_SIZE];
+    char chassis_status_str[MLX_SYS_CMD_BUF_SIZE];
 
     for (i = 1; i <= sys_devices.fan_number * sys_devices.fan_tacho_per_drw; ++i) {
         memset(fname, 0, sizeof(fname));
@@ -1446,13 +1460,19 @@ fans_monitor_timeout(void *cb_data)
             mlx_add_event_to_sel(sys->mc, IPMI_SENSOR_TYPE_FAN, 0 , 
                                  MLX_EVENT_ASSERTED, IPMI_EVENT_READING_TYPE_DISCRETE_DEVICE_ENABLE, MLX_DEVICE_DISABLED_EVENT);
             all_fans_failure = 1;
+            chassis_status |= all_fans_failure << MLX_FANS_FAILURE_SHIFT;
         }
     }
     else if (all_fans_failure == 1) {
         mlx_add_event_to_sel(sys->mc, IPMI_SENSOR_TYPE_FAN, 0 , 
                              MLX_EVENT_DEASSERTED, IPMI_EVENT_READING_TYPE_DISCRETE_DEVICE_ENABLE, MLX_DEVICE_DISABLED_EVENT);
         all_fans_failure = 0;
+        chassis_status &= MLX_FANS_FAILURE_CLEAR_MASK;
     }
+
+    memset(chassis_status_str, 0, sizeof(chassis_status_str));
+    if (sprintf(chassis_status_str,"echo %u > /bsp/environment/chassis_status", chassis_status))
+        system(chassis_status_str);
 
     /* Abnormal FAN speed monitoring */
     for (i = 1; i <= sys_devices.fan_number * sys_devices.fan_tacho_per_drw; ++i) {
@@ -1614,7 +1634,7 @@ bmc_get_chassis_control(lmc_data_t *mc, int op, unsigned char *val,
     return 0;
 }
 
-void sys_time_set(unsigned char* data)
+void mlx_set_sys_time(unsigned char* data)
 {
     struct tm *nowtm;
     char tmbuf[MLX_SYS_CMD_BUF_SIZE];
@@ -1634,6 +1654,20 @@ void sys_time_set(unsigned char* data)
     memset(tmbuf, 0, sizeof(tmbuf));
     strftime(tmbuf, sizeof(tmbuf), "timedatectl set-time %H:%M:%S", nowtm);
     system(tmbuf);
+}
+
+void mlx_get_chassis_status(unsigned char* data, unsigned int  *data_len)
+{
+    data[0] = 0;
+    data[1] = MLX_GET_BYTE(chassis_status, 0);
+    data[2] = MLX_GET_BYTE(chassis_status, 1);
+    data[3] = MLX_GET_BYTE(chassis_status, 2);
+    data[4] = MLX_GET_BYTE(chassis_status, 3);
+
+    if (data[4])
+        *data_len = 5;
+    else
+        *data_len = 4;
 }
 
 int
@@ -1660,6 +1694,8 @@ ipmi_sim_module_init(sys_data_t *sys, const char *initstr_i)
     unsigned int i;
     struct timeval tv;
     char fname[MLX_FILE_NAME_SIZE];
+    char status[MLX_READ_BUF_SIZE];
+    FILE *f_status;
 
     printf("IPMI Mellanox module");
 
@@ -1686,6 +1722,20 @@ ipmi_sim_module_init(sys_data_t *sys, const char *initstr_i)
             sys->log(sys, OS_ERROR, NULL,
                      "Unable to enable tacho for FAN%i: %s", i, strerror(rv));
         }
+    }
+
+    f_status = fopen("/bsp/environment/chassis_status", "r");
+    if (f_status) {
+        memset(status, 0, sizeof(status));
+        if (0 >= fread(status, 1, sizeof(status),f_status)) {
+            fclose(f_status);
+        }
+        chassis_status = strtoul(status, NULL, 0);
+    }
+    else {
+        /* assume that power is on */
+        chassis_status = MLX_CHASSIS_POWER_ON_BIT;
+        system("echo 1 > /bsp/environment/chassis_status");
     }
 
     rv = ipmi_emu_register_cmd_handler(IPMI_SENSOR_EVENT_NETFN, IPMI_OEM_MLX_SET_FAN_SPEED_CMD,
@@ -1854,7 +1904,8 @@ ipmi_sim_module_post_init(sys_data_t *sys)
         sys->start_timer(fans_monitor_timer, &tv);
     }
 
-    sys->mc->sys_time_set_func = sys_time_set;
+    sys->mc->sys_time_set_func = mlx_set_sys_time;
+    sys->mc->chassis_status_custom = mlx_get_chassis_status;
 
     return 0;
 }

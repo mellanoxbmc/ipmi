@@ -105,6 +105,13 @@
 #define MLX_SYS_BOOT_EVENT            0x1
 #define MLX_PSU_PRESENT_EVENT         0x0
 
+#define MLX_CHASSIS_POWER_ON_BIT      1
+#define MLX_CHASSIS_POWER_ON_CLEAR    0xFFFFFFFE
+#define MLX_FANS_FAILURE_SHIFT        19
+#define MLX_FANS_FAILURE_CLEAR_MASK   0x7FFFF
+
+#define MLX_GET_BYTE(val, num)      ((val >> 8*num) & 0xFF)
+
 void mlx_add_event_to_sel(lmc_data_t    *mc,
                           unsigned char sensor_type,
                           unsigned char sensor_num,

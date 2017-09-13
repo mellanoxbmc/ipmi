@@ -335,6 +335,7 @@ struct lmc_data_s
     struct timeval watchdog_expiry; /* Timeout time */
     ipmi_timer_t *watchdog_timer;
     void (*sys_time_set_func)(unsigned char* data);
+    void (*chassis_status_custom)(unsigned char* rdata, unsigned int  *rdata_len);
 };
 
 typedef struct atca_site_s

@@ -167,20 +167,24 @@ handle_get_chassis_status(lmc_data_t    *mc,
 			  unsigned int  *rdata_len,
 			  void          *cb_data)
 {
-    int rv;
+    if (mc->chassis_status_custom)
+	mc->chassis_status_custom(rdata, rdata_len);
+    else {
+	unsigned int rv;
 
-    rdata[0] = 0;
-    rv = ipmi_mc_is_power_on(mc);
-    if (rv < 0) {
-	rdata[0] = IPMI_UNKNOWN_ERR_CC;
-	*rdata_len = 1;
-	return;
-    } else {
-	rdata[0] = !!rv;
+	rdata[0] = 0;
+	rv = ipmi_mc_is_power_on(mc);
+	if (rv < 0) {
+	    rdata[0] = IPMI_UNKNOWN_ERR_CC;
+	    *rdata_len = 1;
+	    return;
+	} else {
+	    rdata[0] = !!rv;
+	}
+	rdata[2] = 0;
+	rdata[3] = 0;
+	*rdata_len = 4;
     }
-    rdata[2] = 0;
-    rdata[3] = 0;
-    *rdata_len = 4;
 }
 
 static void
