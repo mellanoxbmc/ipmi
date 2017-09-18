@@ -181,6 +181,19 @@ static ipmi_timer_t *overheat_monitor_timer = NULL;
 #define MLX_CPU_MAX_TEMP                      110000
 #define MLX_ASIC_MAX_TEMP                     82000
 
+/*
+ * This timer is called periodically for BMC watchdog monitoring
+ */
+static ipmi_timer_t *mlx_wd_monitor_timer = NULL;
+static unsigned char mlx_wd_status = 0;
+static unsigned char mlx_wd_control = 0;
+#define MLX_WD_MONITOR_TIMEOUT          10
+#define MLX_WD_TIMEOUT_CURRENT_STATUS_FILE    "/bsp/environment/bmcwd_current"
+#define MLX_WD_TIMEOUT_SAVED_STATUS_FILE      "/bsp/environment/bmcwd_saved"
+#define MLX_WD_CONTROL_CURRENT_STATUS_FILE    "/bsp/environment/bmcwd_control_curr"
+#define MLX_WD_CONTROL_SAVED_STATUS_FILE      "/bsp/environment/bmcwd_control"
+
+
 static unsigned char set_fan_enable(const char* fname)
 {
     FILE *f_en;
@@ -1623,6 +1636,92 @@ overheat_monitor_timeout(void *cb_data)
     sys->start_timer(overheat_monitor_timer, &tv);
 }
 
+static void
+mlx_wd_monitor_timeout(void *cb_data)
+{
+    sys_data_t *sys = cb_data;
+    struct timeval tv;
+    FILE *file;
+    long int timeout_status;
+    char cmd[MLX_SYS_CMD_BUF_SIZE];
+    char status_buf[MLX_READ_BUF_SIZE];
+    unsigned char data[MLX_EVENT_TO_SEL_BUF_SIZE];
+    unsigned char status;
+    unsigned int tmp;
+
+    memset(cmd, 0, sizeof(cmd));
+    sprintf(cmd,"devmem %s > %s", MLX_WD_TIMEOUT_STATUS_REG, MLX_WD_TIMEOUT_CURRENT_STATUS_FILE);
+    system(cmd);
+
+    file = fopen(MLX_WD_TIMEOUT_CURRENT_STATUS_FILE, "r");
+    if (!file)
+        goto control;
+
+    memset(status_buf, 0, sizeof(status_buf));
+    if (0 >= fread(status_buf, 1, sizeof(status_buf),file)) {
+        fclose(file);
+        goto out;
+    }
+
+    tmp = strtoul(status_buf, NULL, 0);
+    status = MLX_GET_BYTE(tmp,1) & 0xF;
+
+    if (status != mlx_wd_status) {
+        memset(data, 0, MLX_EVENT_TO_SEL_BUF_SIZE);
+        data[1] = MLX_WD_EXPIRED_EVENT;
+        mc_new_event(bmc_mc, MLX_OEM_SEL_RECORD_TYPE, data);
+
+        mlx_wd_status = status;
+        memset(cmd, 0, sizeof(cmd));
+        sprintf(cmd, "echo %u > %s", status, MLX_WD_TIMEOUT_SAVED_STATUS_FILE);
+        system(cmd);
+    }
+
+ control:
+    memset(cmd, 0, sizeof(cmd));
+    sprintf(cmd,"devmem %s > %s", MLX_WD_CONTROL_REG, MLX_WD_CONTROL_CURRENT_STATUS_FILE);
+    system(cmd);
+
+    file = fopen(MLX_WD_CONTROL_CURRENT_STATUS_FILE, "r");
+    if (!file)
+        goto out;
+
+    memset(status_buf, 0, sizeof(status_buf));
+    if (0 >= fread(status_buf, 1, sizeof(status_buf),file)) {
+        fclose(file);
+        goto out;
+    }
+
+    tmp = strtoul(status_buf, NULL, 0);
+    status = tmp & 1;
+
+    if (status && status != mlx_wd_control) {
+        memset(data, 0, MLX_EVENT_TO_SEL_BUF_SIZE);
+        data[1] = MLX_WD_STARTED_EVENT;
+        mc_new_event(bmc_mc, MLX_OEM_SEL_RECORD_TYPE, data);
+
+        mlx_wd_control = status;
+        memset(cmd, 0, sizeof(cmd));
+        sprintf(cmd, "echo %u > %s", status, MLX_WD_CONTROL_SAVED_STATUS_FILE);
+        system(cmd);
+    }
+    else if (!status && status != mlx_wd_control) {
+        memset(data, 0, MLX_EVENT_TO_SEL_BUF_SIZE);
+        data[1] = MLX_WD_STOPPED_EVENT;
+        mc_new_event(bmc_mc, MLX_OEM_SEL_RECORD_TYPE, data);
+
+        mlx_wd_control = status;
+        memset(cmd, 0, sizeof(cmd));
+        sprintf(cmd, "echo %u > %s", status, MLX_WD_CONTROL_SAVED_STATUS_FILE);
+        system(cmd);
+    }
+
+ out:
+    tv.tv_sec = MLX_WD_MONITOR_TIMEOUT;
+    tv.tv_usec = 0;
+    sys->start_timer(mlx_wd_monitor_timer, &tv);
+}
+
 /*
  * Chassis control get for the chassis.
  */
@@ -1738,6 +1837,20 @@ ipmi_sim_module_init(sys_data_t *sys, const char *initstr_i)
         system("echo 1 > /bsp/environment/chassis_status");
     }
 
+    f_status = fopen(MLX_WD_TIMEOUT_SAVED_STATUS_FILE, "r");
+    if (f_status) {
+        memset(status, 0, sizeof(status));
+        if (0 >= fread(status, 1, sizeof(status),f_status)) {
+            fclose(f_status);
+        }
+        mlx_wd_status = strtoul(status, NULL, 0);
+    }
+    else {
+        /* assume that timeout counter is 0 */
+        mlx_wd_status = 0;
+        system("echo 0 > /bsp/environment/bmcwd_saved");
+    }
+
     rv = ipmi_emu_register_cmd_handler(IPMI_SENSOR_EVENT_NETFN, IPMI_OEM_MLX_SET_FAN_SPEED_CMD,
                                        handle_set_fan_speed_cmd, sys);
 
@@ -1817,6 +1930,17 @@ ipmi_sim_module_init(sys_data_t *sys, const char *initstr_i)
         tv.tv_sec = MLX_OVERHEAT_MONITOR_TIMEOUT;
         tv.tv_usec = 0;
         sys->start_timer(overheat_monitor_timer, &tv);
+    }
+
+    rv = sys->alloc_timer(sys, mlx_wd_monitor_timeout, sys, &mlx_wd_monitor_timer);
+    if (rv) {
+        int errval = errno;
+        sys->log(sys, SETUP_ERROR, NULL, "Unable to create BMC watchdog monitoring timer");
+        return errval;
+    } else {
+        tv.tv_sec = MLX_WD_MONITOR_TIMEOUT;
+        tv.tv_usec = 0;
+        sys->start_timer(mlx_wd_monitor_timer, &tv);
     }
 
     /* set "Disabled" state at startup */

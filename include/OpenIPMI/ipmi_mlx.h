@@ -104,11 +104,17 @@
 #define MLX_OS_SHUTDOWN_EVENT         0x3
 #define MLX_SYS_BOOT_EVENT            0x1
 #define MLX_PSU_PRESENT_EVENT         0x0
+#define MLX_WD_STARTED_EVENT       0x8
+#define MLX_WD_STOPPED_EVENT       0x9
+#define MLX_WD_EXPIRED_EVENT       0xA
 
 #define MLX_CHASSIS_POWER_ON_BIT      1
 #define MLX_CHASSIS_POWER_ON_CLEAR    0xFFFFFFFE
 #define MLX_FANS_FAILURE_SHIFT        19
 #define MLX_FANS_FAILURE_CLEAR_MASK   0x7FFFF
+
+#define MLX_WD_TIMEOUT_STATUS_REG  "0x1e785050"
+#define MLX_WD_CONTROL_REG         "0x1e78504c"
 
 #define MLX_GET_BYTE(val, num)      ((val >> 8*num) & 0xFF)
 
