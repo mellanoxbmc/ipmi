@@ -336,6 +336,12 @@ struct lmc_data_s
     ipmi_timer_t *watchdog_timer;
     void (*sys_time_set_func)(unsigned char* data);
     void (*chassis_status_custom)(unsigned char* rdata, unsigned int  *rdata_len);
+    void (*status_led_control)(unsigned char num, unsigned char direction, unsigned char type);
+    void (*log_device_status)(int poll_status , sensor_t *sensor);
+    void (*pef_action_apply)(lmc_data_t *mc, unsigned char record_type, unsigned char event[13]);
+    void (*switch_console)(unsigned int instance, unsigned char state);
+    void (*ipmi_wd_timeout_custom)(unsigned char action);
+    void (*ipmi_wd_reset_custom)(lmc_data_t *mc, struct timeval tv);
 };
 
 typedef struct atca_site_s

@@ -30,6 +30,7 @@
  *  License along with this program; if not, write to the Free
  *  Software Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.  */
 
+#include "bmc.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -902,11 +903,10 @@ ipmi_sol_activate(lmc_data_t    *mc,
     ipmi_set_uint16(rdata + 11, 0xffff);
     *rdata_len = 13;
 
-#ifdef MLX_IPMID
-/*Uart to BMC*/
-	if (instance == 1)
-		system("echo 0 > /bsp/reset/uart_sel");
-#endif
+    if (mc->switch_console) {
+	/*Uart to BMC*/
+	mc->switch_console(instance, 0);
+   }
 }
 
 void
@@ -948,11 +948,10 @@ ipmi_sol_deactivate(lmc_data_t    *mc,
     rdata[0] = 0;
     *rdata_len = 1;
 
-#ifdef MLX_IPMID
-/*Uart to CPU*/
-	if (instance == 1)
-		system("echo 1 > /bsp/reset/uart_sel");
-#endif
+    if (mc->switch_console) {
+	/*Uart to CPU*/
+	mc->switch_console(instance, 1);
+    }
 }
 
 static void

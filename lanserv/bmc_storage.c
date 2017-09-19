@@ -280,83 +280,11 @@ mc_new_event(lmc_data_t *mc,
 	    chan->set_atn(chan, 1, IPMI_MC_EVBUF_FULL_INT_ENABLED(mc));
     }
 
-#ifdef MLX_IPMID
-    if (mc->pef.pef_control & 0x1)
-        mlx_mc_pef_apply(mc, record_type, event);
-#endif /* MLX_IPMID */
-}
-
-#ifdef MLX_IPMID
-void mlx_mc_pef_apply(lmc_data_t    *mc,
-                        unsigned char record_type,
-                        unsigned char event[13])
-{
-    unsigned int i;
-
-    for (i=1; i<MAX_EVENT_FILTERS; i++) {
-        if (!(mc->pef.event_filter_table[i][1] & 0x80))
-            continue;
-
-        if ((mc->pef.event_filter_table[i][5] != 0xff) 
-            && (mc->pef.event_filter_table[i][5] != event[4]))
-            continue;
-
-        if ((mc->pef.event_filter_table[i][6] != 0xff) 
-            && (mc->pef.event_filter_table[i][6] != event[5]))
-            continue;
-
-        if ((mc->pef.event_filter_table[i][7] != 0xff) 
-            && (mc->pef.event_filter_table[i][7] != event[7]))
-            continue;
-
-        if ((mc->pef.event_filter_table[i][8] != 0xff) 
-            && (mc->pef.event_filter_table[i][8] != event[8]))
-            continue;
-
-        if ((mc->pef.event_filter_table[i][9] != 0xff) 
-            && (mc->pef.event_filter_table[i][9] != event[12]))
-            continue;
-
-        if ((mc->pef.event_filter_table[i][2] & 0x10)
-            && (mc->pef.pef_action_global_control & 0x10)) /* OEM */
-            system("echo 3 > /bsp/leds/status/amber/trigger");
-
-        if ((mc->pef.event_filter_table[i][2] & 0x2)
-            && (mc->pef.pef_action_global_control & 0x2))  /* Power-off */
-            system("echo 0 > /bsp/reset/cpu_reset_hard");
-
-        if ((mc->pef.event_filter_table[i][2] & 0x4)
-            && (mc->pef.pef_action_global_control & 0x4))  /* Reset */
-            system("echo 0 > /bsp/reset/cpu_reset_soft");
-
-        if ((mc->pef.event_filter_table[i][2] & 0x8)
-            && (mc->pef.pef_action_global_control & 0x8)) { /* Power cycle */
-            system("echo 0 > /bsp/reset/cpu_reset_hard");
-            sleep(3);
-            system("echo 1 > /bsp/reset/cpu_reset_hard");
-        }
-
-        if ((mc->pef.event_filter_table[i][2] & 0x20)
-            && (mc->pef.pef_action_global_control & 0x20)) { /* Diagnostic interupt */
-
-            serserv_data_t *si = mc->channels[15]->chan_info;
-            unsigned int len = 2;
-            unsigned char c[2];
-            int rv = 0;
-
-            c[0] = 0x07;
-            c[1] = 0xA1;
-
-            si->send_out(si, c, len);
-        }
-
-        /* SNMP is not supported, thus skip Alert action */
-        if ((mc->pef.event_filter_table[i][2] & 0x1)
-            && (mc->pef.pef_action_global_control & 0x1))
-            continue;
+    if (mc->pef_action_apply) {
+	if (mc->pef.pef_control & 0x1)
+	    mc->pef_action_apply(mc, record_type, event);
     }
 }
-#endif /* MLX_IPMID */
 
 static void
 handle_get_sel_info(lmc_data_t    *mc,

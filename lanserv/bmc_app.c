@@ -168,36 +168,6 @@ handle_get_watchdog_timer(lmc_data_t    *mc,
     *rdata_len = 9;
 }
 
-#ifdef MLX_IPMID
-void
-mlx_add_event_to_sel(lmc_data_t    *mc,
-           unsigned char sensor_type,
-           unsigned char sensor_num,
-           unsigned char direction,
-           unsigned char event_type,
-           unsigned char offset)
-{
-    lmc_data_t    *dest_mc;
-    unsigned char data[MLX_EVENT_TO_SEL_BUF_SIZE];
-    int           rv;
-
-    rv = ipmi_emu_get_mc_by_addr(mc->emu, mc->event_receiver, &dest_mc);
-    if (rv)
-        return;
-
-    memset(data, 0, MLX_EVENT_TO_SEL_BUF_SIZE);
-
-    data[4] = mc->ipmb;
-    data[6] = 0x04; /* Event message revision for IPMI 1.5. */
-    data[7] = sensor_type;
-    data[8] = sensor_num;
-    data[9] = (direction << MLX_EVENT_DIRECTION_SHIFT) | event_type;
-    data[10] = offset;
-
-    mc_new_event(dest_mc, 0x02, data);
-}
-#endif
-
 void
 watchdog_timeout(void *cb_data)
 {
@@ -254,72 +224,44 @@ watchdog_timeout(void *cb_data)
     mc->watchdog_running = 0; /* Stop the watchdog on a timeout */
     mc->watchdog_expired |= (1 << IPMI_MC_WATCHDOG_GET_USE(mc));
 
-#ifdef MLX_IPMID
-    unsigned char status_led_run_str[32];
-    system("echo 1 > /bsp/leds/status/red/brightness");
-    system("echo 0 > /bsp/leds/status/green/brightness");
-    system("echo 0 > /bsp/leds/status/amber/brightness");
-
-    if (sprintf(status_led_run_str,"status_led.py 0x%02x %d 0x%02x\n", 180, 0, 0))
-           system(status_led_run_str);
-
-    /* set "IERR" if IPMI watchdog timeout expired */
-    system("echo 1 > /bsp/environment/cpu_status");
-#endif
-
     switch (IPMI_MC_WATCHDOG_GET_ACTION(mc)) {
     case IPMI_MC_WATCHDOG_ACTION_NONE:
-#ifdef MLX_IPMID
-        /*Uart to BMC*/
-        system("echo 0 > /bsp/reset/uart_sel");
-        mlx_add_event_to_sel(mc, IPMI_SENSOR_TYPE_WATCHDOG_1, 0 , MLX_EVENT_ASSERTED, 
-			     IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, MLX_WD_EXPIRED_EVENT);
-#else
-	set_sensor_bit(mc, sens, 0, 1, 0xc0, mc->watchdog_use & 0xf, 0xff, 1);
-#endif
+	if (mc->ipmi_wd_timeout_custom)
+	    mc->ipmi_wd_timeout_custom(IPMI_MC_WATCHDOG_ACTION_NONE);
+	else
+	    set_sensor_bit(mc, sens, 0, 1, 0xc0, mc->watchdog_use & 0xf, 0xff, 1);
 	break;
 
     case IPMI_MC_WATCHDOG_ACTION_RESET:
-#ifdef MLX_IPMID
-        /*CPU Reset*/
-        system("echo 0 > /bsp/reset/cpu_reset_soft");
-        mlx_add_event_to_sel(mc, IPMI_SENSOR_TYPE_WATCHDOG_1, 0 , MLX_EVENT_ASSERTED,
-			     IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, MLX_WD_OS_RESET_EVENT);
-#else
-	set_sensor_bit(mc, sens, 1, 1, 0xc1, mc->watchdog_use & 0xf, 0xff, 1);
-	bchan->hw_op(bchan, HW_OP_RESET);
-#endif
+	if (mc->ipmi_wd_timeout_custom)
+	    mc->ipmi_wd_timeout_custom(IPMI_MC_WATCHDOG_ACTION_RESET);
+	else {
+	    set_sensor_bit(mc, sens, 1, 1, 0xc1, mc->watchdog_use & 0xf, 0xff, 1);
+	    bchan->hw_op(bchan, HW_OP_RESET);
+	}
 	break;
 
     case IPMI_MC_WATCHDOG_ACTION_POWER_DOWN:
-#ifdef MLX_IPMID
-        /*CPU Power-off*/
-        system("echo 0 > /bsp/reset/cpu_reset_hard");
-        mlx_add_event_to_sel(mc, IPMI_SENSOR_TYPE_WATCHDOG_1, 0 , MLX_EVENT_ASSERTED, 
-			     IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, MLX_WD_PWR_DOWN_EVENT);
-#else
-	set_sensor_bit(mc, sens, 2, 1, 0xc2, mc->watchdog_use & 0xf, 0xff, 1);
-	bchan->hw_op(bchan, HW_OP_POWEROFF);
-	if (bchan->stop_cmd)
-	    bchan->stop_cmd(bchan, 0);
-#endif
+	if (mc->ipmi_wd_timeout_custom)
+	    mc->ipmi_wd_timeout_custom(IPMI_MC_WATCHDOG_ACTION_POWER_DOWN);
+	else {
+	    set_sensor_bit(mc, sens, 2, 1, 0xc2, mc->watchdog_use & 0xf, 0xff, 1);
+	    bchan->hw_op(bchan, HW_OP_POWEROFF);
+	    if (bchan->stop_cmd)
+		bchan->stop_cmd(bchan, 0);
+	}
 	break;
 
     case IPMI_MC_WATCHDOG_ACTION_POWER_CYCLE:
-#ifdef MLX_IPMID
-        /*CPU power cycle*/
-        system("echo 0 > /bsp/reset/cpu_reset_hard");
-        sleep(3);
-        system("echo 1 > /bsp/reset/cpu_reset_hard");
-        mlx_add_event_to_sel(mc, IPMI_SENSOR_TYPE_WATCHDOG_1, 0 , MLX_EVENT_ASSERTED, 
-			     IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, MLX_WD_PWR_CYCLE_EVENT);
-#else
-	set_sensor_bit(mc, sens, 3, 1, 0xc3, mc->watchdog_use & 0xf, 0xff, 1);
-	bchan->hw_op(bchan, HW_OP_POWEROFF);
-	if (bchan->stop_cmd)
-	    bchan->stop_cmd(bchan, 0);
-	start_poweron_timer(mc);
-#endif
+	if (mc->ipmi_wd_timeout_custom)
+	    mc->ipmi_wd_timeout_custom(IPMI_MC_WATCHDOG_ACTION_POWER_CYCLE);
+	else {
+	    set_sensor_bit(mc, sens, 3, 1, 0xc3, mc->watchdog_use & 0xf, 0xff, 1);
+	    bchan->hw_op(bchan, HW_OP_POWEROFF);
+	    if (bchan->stop_cmd)
+		bchan->stop_cmd(bchan, 0);
+	    start_poweron_timer(mc);
+	}
 	break;
     }
 
@@ -352,26 +294,13 @@ do_watchdog_reset(lmc_data_t *mc)
 	    tv.tv_usec = 0;
 	}
     }
-#ifdef MLX_IPMID
-    unsigned char status_led_run_str[32]; 
 
-    if (mc->watchdog_running != 1) {
-        if (sprintf(status_led_run_str,"status_led.py 0x%02x %d 0x%02x\n", 180, 1, 0))
-            system(status_led_run_str);
+    if (mc->ipmi_wd_reset_custom)
+	mc->ipmi_wd_reset_custom(mc, tv);
+    else {
+	mc->watchdog_running = 1;
+	mc->sysinfo->start_timer(mc->watchdog_timer, &tv);
     }
-    mc->sysinfo->stop_timer(mc->watchdog_timer);
-#endif
-    mc->watchdog_running = 1;
-#ifndef MLX_IPMID
-    mc->sysinfo->start_timer(mc->watchdog_timer, &tv);
-#else
-    if (mc->sysinfo->start_timer(mc->watchdog_timer, &tv))
-        mc->sysinfo->log(mc->sysinfo, OS_ERROR, NULL,
-                         "Failed to reset watchdog timer");
-
-    /* set "Presence detected" on IPMI watchdog start */
-    system("echo 128 > /bsp/environment/cpu_status");
-#endif
 }
 
 static void

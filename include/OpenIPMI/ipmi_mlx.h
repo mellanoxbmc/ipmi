@@ -93,10 +93,10 @@
 #define MLX_DEVICE_DISABLED_EVENT     0x0
 #define MLX_DEVICE_ENABLED_EVENT      0x1
 #define MLX_DEVICE_ABSENT_EVENT       0x0
-#define MLX_WD_OS_RESET_EVENT         0x1
-#define MLX_WD_PWR_DOWN_EVENT         0x3
-#define MLX_WD_PWR_CYCLE_EVENT        0x4
-#define MLX_WD_EXPIRED_EVENT          0x6 
+#define MLX_IPMI_WD_OS_RESET_EVENT    0x1
+#define MLX_IPMI_WD_PWR_DOWN_EVENT    0x3
+#define MLX_IPMI_WD_PWR_CYCLE_EVENT   0x4
+#define MLX_IPMI_WD_EXPIRED_EVENT     0x6 
 #define MLX_PWR_AC_LOST_EVENT         0x3
 #define MLX_PWR_AC_OUT_OF_RANGE_EVENT 0x4
 #define MLX_OS_WARM_RESET_EVENT       0x6
@@ -104,9 +104,9 @@
 #define MLX_OS_SHUTDOWN_EVENT         0x3
 #define MLX_SYS_BOOT_EVENT            0x1
 #define MLX_PSU_PRESENT_EVENT         0x0
-#define MLX_WD_STARTED_EVENT       0x8
-#define MLX_WD_STOPPED_EVENT       0x9
-#define MLX_WD_EXPIRED_EVENT       0xA
+#define MLX_WD_STARTED_EVENT          0x8
+#define MLX_WD_STOPPED_EVENT          0x9
+#define MLX_WD_EXPIRED_EVENT          0xA
 
 #define MLX_CHASSIS_POWER_ON_BIT      1
 #define MLX_CHASSIS_POWER_ON_CLEAR    0xFFFFFFFE
@@ -117,17 +117,6 @@
 #define MLX_WD_CONTROL_REG         "0x1e78504c"
 
 #define MLX_GET_BYTE(val, num)      ((val >> 8*num) & 0xFF)
-
-void mlx_add_event_to_sel(lmc_data_t    *mc,
-                          unsigned char sensor_type,
-                          unsigned char sensor_num,
-                          unsigned char direction,
-                          unsigned char event_type,
-                          unsigned char offset);
-
-void mlx_mc_pef_apply(lmc_data_t    *mc,
-                       unsigned char record_type,
-                       unsigned char event[13]);
 
 typedef unsigned int (*mlx_get_expected_fan_speed)(unsigned char tacho_num, unsigned char fan_pwm);
 

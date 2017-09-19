@@ -20,6 +20,7 @@
 #include <semaphore.h>
 #include <stdlib.h>
 
+#include <OpenIPMI/serserv.h>
 #include <OpenIPMI/ipmi_err.h>
 #include <OpenIPMI/ipmi_msgbits.h>
 #include <OpenIPMI/ipmi_bits.h>
@@ -34,8 +35,8 @@
 
 static lmc_data_t *bmc_mc;
 static unsigned char all_fans_failure = 0;
-static unsigned int fan_speed_front_profile1[] = {21000, 6300, 6300, 6300, 8400, 10500, 12700, 15000, 17000, 19500};
-static unsigned int fan_speed_rear_profile1[] = {18000, 5400, 5400, 5400, 7200, 9000, 10800, 12600, 14500, 16500};
+static unsigned int mlx_fan_speed_front_profile1[] = {21000, 6300, 6300, 6300, 8400, 10500, 12700, 15000, 17000, 19500};
+static unsigned int mlx_fan_speed_rear_profile1[] = {18000, 5400, 5400, 5400, 7200, 9000, 10800, 12600, 14500, 16500};
 
 /**************************************************************************
  *                  Mellanox custom commands codes                        *
@@ -71,17 +72,17 @@ static unsigned int fan_speed_rear_profile1[] = {18000, 5400, 5400, 5400, 7200, 
 #define MLX_FAN_PWM_ENABLE_FILE     "/bsp/fan/pwm_en"
 
 /**  LED FUNCTIONALITY DEFINES  **/
-#define LED_FAN_FILE "/bsp/leds/fan/"
-#define LED_STATUS_FILE "/bsp/leds/status/"
-#define LED_BRIGHTNESS "brightness"
-#define LED_TRIGGER    "trigger"
-#define LED_DELAY_OFF  "delay_off"
-#define LED_DELAY_ON   "delay_on"
-#define LED_TIMER      "timer"
+#define MLX_LED_FAN_FILE "/bsp/leds/fan/"
+#define MLX_LED_STATUS_FILE "/bsp/leds/status/"
+#define MLX_LED_BRIGHTNESS "brightness"
+#define MLX_LED_TRIGGER    "trigger"
+#define MLX_LED_DELAY_OFF  "delay_off"
+#define MLX_LED_DELAY_ON   "delay_on"
+#define MLX_LED_TIMER      "timer"
 
-#define LED_COLOR_RED    1
-#define LED_COLOR_GREEN  2
-#define LED_COLOR_AMBER  3
+#define MLX_LED_COLOR_RED    1
+#define MLX_LED_COLOR_GREEN  2
+#define MLX_LED_COLOR_AMBER  3
 
 #define MLX_LED_BLINK_OFF 0
 #define MLX_LED_BLINK_3HZ 3
@@ -162,19 +163,19 @@ static unsigned int chassis_status = 0;
 /*
  * This timer is called periodically to monitor the system reset cause.
  */
-static ipmi_timer_t *reset_monitor_timer = NULL;
+static ipmi_timer_t *mlx_reset_monitor_timer = NULL;
 #define MLX_RESET_MONITOR_TIMEOUT         10
 
 /*
  * This timer is called periodically to monitor the FANs
  */
-static ipmi_timer_t *fans_monitor_timer = NULL;
+static ipmi_timer_t *mlx_fans_monitor_timer = NULL;
 #define MLX_FANS_MONITOR_TIMEOUT          10
 
 /*
  * This timer is called periodically for overheat monitoring
  */
-static ipmi_timer_t *overheat_monitor_timer = NULL;
+static ipmi_timer_t *mlx_overheat_monitor_timer = NULL;
 #define MLX_OVERHEAT_MONITOR_TIMEOUT          5
 #define MLX_CPU_TEMPERATURE_FILE              "/bsp/thermal/cpu_temp"
 #define MLX_ASIC_TEMPERATURE_FILE             "/bsp/thermal/asic_temp"
@@ -193,8 +194,41 @@ static unsigned char mlx_wd_control = 0;
 #define MLX_WD_CONTROL_CURRENT_STATUS_FILE    "/bsp/environment/bmcwd_control_curr"
 #define MLX_WD_CONTROL_SAVED_STATUS_FILE      "/bsp/environment/bmcwd_control"
 
+#define MLX_CPU_STATUS_FILE                    "/bsp/environment/cpu_status"
+#define MLX_CPU_STATUS_NONE                    0
+#define MLX_CPU_STATUS_IERR                    1
+#define MLX_CPU_STATUS_PRESENCE_DETECTED       128
+#define MLX_CPU_STATUS_DISABLED                256
 
-static unsigned char set_fan_enable(const char* fname)
+static void
+mlx_add_event_to_sel(lmc_data_t    *mc,
+           unsigned char sensor_type,
+           unsigned char sensor_num,
+           unsigned char direction,
+           unsigned char event_type,
+           unsigned char offset)
+{
+    lmc_data_t    *dest_mc;
+    unsigned char data[MLX_EVENT_TO_SEL_BUF_SIZE];
+    int           rv;
+
+    rv = ipmi_emu_get_mc_by_addr(mc->emu, mc->event_receiver, &dest_mc);
+    if (rv)
+        return;
+
+    memset(data, 0, MLX_EVENT_TO_SEL_BUF_SIZE);
+
+    data[4] = mc->ipmb;
+    data[6] = 0x04; /* Event message revision for IPMI 1.5. */
+    data[7] = sensor_type;
+    data[8] = sensor_num;
+    data[9] = (direction << MLX_EVENT_DIRECTION_SHIFT) | event_type;
+    data[10] = offset;
+
+    mc_new_event(dest_mc, 0x02, data);
+}
+
+static unsigned char mlx_set_fan_enable(const char* fname)
 {
     FILE *f_en;
 
@@ -241,7 +275,7 @@ handle_set_fan_speed_cmd (lmc_data_t    *mc,
             *rdata_len = 1;
             return;
     } else {
-        if (IPMI_DESTINATION_UNAVAILABLE_CC == set_fan_enable(MLX_FAN_PWM_ENABLE_FILE)) {
+        if (IPMI_DESTINATION_UNAVAILABLE_CC == mlx_set_fan_enable(MLX_FAN_PWM_ENABLE_FILE)) {
             rdata[0] = IPMI_COULD_NOT_PROVIDE_RESPONSE_CC;
             *rdata_len = 1;
             return;
@@ -298,7 +332,8 @@ handle_get_fan_pwm_cmd(lmc_data_t    *mc,
     return;
 }
 
-static unsigned char set_led_command(unsigned char led,
+static unsigned char 
+mlx_set_led_command(unsigned char led,
                             unsigned char color,
                             unsigned char cmd)
 {
@@ -311,39 +346,39 @@ static unsigned char set_led_command(unsigned char led,
     memset(cmd_trigger, 0, sizeof(cmd_trigger));
 
     switch (color) {
-    case LED_COLOR_RED:
+    case MLX_LED_COLOR_RED:
         if (led <= sys_devices.status_led_number) {
             if (cmd)
-                sprintf(cmd_trigger,"echo timer > %sred/%s\n",LED_STATUS_FILE, LED_TRIGGER);
+                sprintf(cmd_trigger,"echo timer > %sred/%s\n",MLX_LED_STATUS_FILE, MLX_LED_TRIGGER);
 
-            sprintf(fname, "%sred/%s", LED_STATUS_FILE, LED_BRIGHTNESS);
+            sprintf(fname, "%sred/%s", MLX_LED_STATUS_FILE, MLX_LED_BRIGHTNESS);
         }
         else {
             if (cmd)
-                sprintf(cmd_trigger,"echo timer > %sred/%u/%s\n",LED_FAN_FILE, led - sys_devices.status_led_number, LED_TRIGGER);
+                sprintf(cmd_trigger,"echo timer > %sred/%u/%s\n",MLX_LED_FAN_FILE, led - sys_devices.status_led_number, MLX_LED_TRIGGER);
 
-            sprintf(fname, "%sred/%u/%s", LED_FAN_FILE, led - sys_devices.status_led_number, LED_BRIGHTNESS);
+            sprintf(fname, "%sred/%u/%s", MLX_LED_FAN_FILE, led - sys_devices.status_led_number, MLX_LED_BRIGHTNESS);
         }
         break;
-    case LED_COLOR_GREEN:
+    case MLX_LED_COLOR_GREEN:
         if (led <= sys_devices.status_led_number) {
             if (cmd)
-                sprintf(cmd_trigger,"echo timer > %sgreen/%s\n",LED_STATUS_FILE, LED_TRIGGER);
+                sprintf(cmd_trigger,"echo timer > %sgreen/%s\n",MLX_LED_STATUS_FILE, MLX_LED_TRIGGER);
 
-            sprintf(fname, "%sgreen/%s", LED_STATUS_FILE, LED_BRIGHTNESS);
+            sprintf(fname, "%sgreen/%s", MLX_LED_STATUS_FILE, MLX_LED_BRIGHTNESS);
         }
         else {
             if (cmd)
-                sprintf(cmd_trigger,"echo timer > %sgreen/%u/%s\n",LED_FAN_FILE, led - sys_devices.status_led_number, LED_TRIGGER);
+                sprintf(cmd_trigger,"echo timer > %sgreen/%u/%s\n",MLX_LED_FAN_FILE, led - sys_devices.status_led_number, MLX_LED_TRIGGER);
 
-            sprintf(fname, "%sgreen/%u/%s", LED_FAN_FILE, led - sys_devices.status_led_number, LED_BRIGHTNESS);
+            sprintf(fname, "%sgreen/%u/%s", MLX_LED_FAN_FILE, led - sys_devices.status_led_number, MLX_LED_BRIGHTNESS);
         }
         break;
-    case LED_COLOR_AMBER:
+    case MLX_LED_COLOR_AMBER:
         if (cmd)
-            sprintf(cmd_trigger,"echo timer > %samber/%s\n",LED_STATUS_FILE, LED_TRIGGER);
+            sprintf(cmd_trigger,"echo timer > %samber/%s\n",MLX_LED_STATUS_FILE, MLX_LED_TRIGGER);
 
-        sprintf(fname, "%samber/%s", LED_STATUS_FILE, LED_BRIGHTNESS);
+        sprintf(fname, "%samber/%s", MLX_LED_STATUS_FILE, MLX_LED_BRIGHTNESS);
         break;
     default:
         break;
@@ -400,51 +435,51 @@ handle_set_led_state(lmc_data_t    *mc,
     }
 
     color = msg->data[1];
-    if (color <  LED_COLOR_RED || color > LED_COLOR_AMBER) {
+    if (color <  MLX_LED_COLOR_RED || color > MLX_LED_COLOR_AMBER) {
         rdata[0] = IPMI_INVALID_DATA_FIELD_CC;
         *rdata_len = 1;
         return;
     }
 
     switch (color) {
-    case LED_COLOR_AMBER:
+    case MLX_LED_COLOR_AMBER:
         if (led > sys_devices.status_led_number) {
             rv = IPMI_INVALID_DATA_FIELD_CC;
             goto out;
         }
-        rv = set_led_command(led, LED_COLOR_RED, 0);
+        rv = mlx_set_led_command(led, MLX_LED_COLOR_RED, 0);
         if (rv)
             goto out;
-        rv = set_led_command(led, LED_COLOR_GREEN, 0);
+        rv = mlx_set_led_command(led, MLX_LED_COLOR_GREEN, 0);
         if (rv)
             goto out;
-        rv = set_led_command(led, LED_COLOR_AMBER, 1);
+        rv = mlx_set_led_command(led, MLX_LED_COLOR_AMBER, 1);
         if (rv)
             goto out;
         break;
-    case LED_COLOR_RED:
+    case MLX_LED_COLOR_RED:
         if (led <= sys_devices.status_led_number){
-            rv = set_led_command(led, LED_COLOR_AMBER, 0);
+            rv = mlx_set_led_command(led, MLX_LED_COLOR_AMBER, 0);
             if (rv)
                 goto out;
         }
-        rv = set_led_command(led, LED_COLOR_GREEN, 0);
+        rv = mlx_set_led_command(led, MLX_LED_COLOR_GREEN, 0);
         if (rv)
             goto out;
-        rv = set_led_command(led, LED_COLOR_RED, 1);
+        rv = mlx_set_led_command(led, MLX_LED_COLOR_RED, 1);
         if (rv)
             goto out;
         break;
-    case LED_COLOR_GREEN:
+    case MLX_LED_COLOR_GREEN:
         if (led <= sys_devices.status_led_number) {
-            rv = set_led_command(led, LED_COLOR_AMBER, 0);
+            rv = mlx_set_led_command(led, MLX_LED_COLOR_AMBER, 0);
             if (rv)
                 goto out;
         }
-        rv = set_led_command(led, LED_COLOR_RED, 0);
+        rv = mlx_set_led_command(led, MLX_LED_COLOR_RED, 0);
         if (rv)
             goto out;
-        rv = set_led_command(led, LED_COLOR_GREEN, 1);
+        rv = mlx_set_led_command(led, MLX_LED_COLOR_GREEN, 1);
         if (rv)
             goto out;
         break;
@@ -501,8 +536,8 @@ handle_set_led_blinking (lmc_data_t    *mc,
     time = msg->data[2];
     if (led == 0 ||
         led > sys_devices.status_led_number + sys_devices.fan_led_number || 
-        color > LED_COLOR_AMBER ||
-        color < LED_COLOR_RED ||
+        color > MLX_LED_COLOR_AMBER ||
+        color < MLX_LED_COLOR_RED ||
         (time != MLX_LED_BLINK_OFF && 
          time != MLX_LED_BLINK_3HZ && 
          time != MLX_LED_BLINK_6HZ)) {
@@ -513,28 +548,28 @@ handle_set_led_blinking (lmc_data_t    *mc,
 
     if (led <= sys_devices.status_led_number) {
         switch (color) {
-        case LED_COLOR_RED:
+        case MLX_LED_COLOR_RED:
             memset(fname, 0, sizeof(fname));
-            sprintf(fname, "%sred/%s", LED_STATUS_FILE, LED_DELAY_OFF);
+            sprintf(fname, "%sred/%s", MLX_LED_STATUS_FILE, MLX_LED_DELAY_OFF);
             f_delayoff = fopen(fname, "w");
             memset(fname, 0, sizeof(fname));
-            sprintf(fname, "%sred/%s", LED_STATUS_FILE,LED_DELAY_ON);
+            sprintf(fname, "%sred/%s", MLX_LED_STATUS_FILE,MLX_LED_DELAY_ON);
             f_delayon = fopen(fname, "w");
             break;
-        case LED_COLOR_GREEN:
+        case MLX_LED_COLOR_GREEN:
             memset(fname, 0, sizeof(fname));
-            sprintf(fname, "%sgreen/%s", LED_STATUS_FILE, LED_DELAY_OFF);
+            sprintf(fname, "%sgreen/%s", MLX_LED_STATUS_FILE, MLX_LED_DELAY_OFF);
             f_delayoff = fopen(fname, "w");
             memset(fname, 0, sizeof(fname));
-            sprintf(fname, "%sgreen/%s", LED_STATUS_FILE,LED_DELAY_ON);
+            sprintf(fname, "%sgreen/%s", MLX_LED_STATUS_FILE,MLX_LED_DELAY_ON);
             f_delayon = fopen(fname, "w");
             break;
-        case LED_COLOR_AMBER:
+        case MLX_LED_COLOR_AMBER:
             memset(fname, 0, sizeof(fname));
-            sprintf(fname, "%samber/%s", LED_STATUS_FILE, LED_DELAY_OFF);
+            sprintf(fname, "%samber/%s", MLX_LED_STATUS_FILE, MLX_LED_DELAY_OFF);
             f_delayoff = fopen(fname, "w");
             memset(fname, 0, sizeof(fname));
-            sprintf(fname, "%samber/%s", LED_STATUS_FILE,LED_DELAY_ON);
+            sprintf(fname, "%samber/%s", MLX_LED_STATUS_FILE,MLX_LED_DELAY_ON);
             f_delayon = fopen(fname, "w");
             break;
         default:
@@ -544,20 +579,20 @@ handle_set_led_blinking (lmc_data_t    *mc,
     else if (led > sys_devices.status_led_number && 
              led < sys_devices.status_led_number + sys_devices.fan_led_number) {
         switch (color) {
-        case LED_COLOR_RED:
+        case MLX_LED_COLOR_RED:
             memset(fname, 0, sizeof(fname));
-            sprintf(fname, "%sred/%u/%s", LED_FAN_FILE, led - sys_devices.status_led_number, LED_DELAY_OFF);
+            sprintf(fname, "%sred/%u/%s", MLX_LED_FAN_FILE, led - sys_devices.status_led_number, MLX_LED_DELAY_OFF);
             f_delayoff = fopen(fname, "w");
             memset(fname, 0, sizeof(fname));
-            sprintf(fname, "%sred/%s", LED_FAN_FILE, led - sys_devices.status_led_number,LED_DELAY_ON);
+            sprintf(fname, "%sred/%s", MLX_LED_FAN_FILE, led - sys_devices.status_led_number,MLX_LED_DELAY_ON);
             f_delayon = fopen(fname, "w");
             break;
-        case LED_COLOR_GREEN:
+        case MLX_LED_COLOR_GREEN:
             memset(fname, 0, sizeof(fname));
-            sprintf(fname, "%sgreen/%u/%s", LED_FAN_FILE, led - sys_devices.status_led_number, LED_DELAY_OFF);
+            sprintf(fname, "%sgreen/%u/%s", MLX_LED_FAN_FILE, led - sys_devices.status_led_number, MLX_LED_DELAY_OFF);
             f_delayoff = fopen(fname, "w");
             memset(fname, 0, sizeof(fname));
-            sprintf(fname, "%sgreen/%u/%s", LED_FAN_FILE, led - sys_devices.status_led_number,LED_DELAY_ON);
+            sprintf(fname, "%sgreen/%u/%s", MLX_LED_FAN_FILE, led - sys_devices.status_led_number,MLX_LED_DELAY_ON);
             f_delayon = fopen(fname, "w");
             break;
         default:
@@ -601,7 +636,7 @@ handle_set_led_blinking (lmc_data_t    *mc,
 }
 
 
-static unsigned char get_led_color(unsigned int led, unsigned char *color)
+static unsigned char mlx_get_led_color(unsigned int led, unsigned char *color)
 {
     FILE *f_green;
     FILE *f_red;
@@ -614,7 +649,7 @@ static unsigned char get_led_color(unsigned int led, unsigned char *color)
 
     if (led <= sys_devices.status_led_number) {
         memset(fname, 0, sizeof(fname));
-        sprintf(fname, "%samber/%s", LED_STATUS_FILE, LED_BRIGHTNESS);
+        sprintf(fname, "%samber/%s", MLX_LED_STATUS_FILE, MLX_LED_BRIGHTNESS);
 
         f_amber = fopen(fname, "r");
         if (!f_amber) {
@@ -630,20 +665,20 @@ static unsigned char get_led_color(unsigned int led, unsigned char *color)
         amber = strtoul(line_amber, NULL, 0);
 
         memset(fname, 0, sizeof(fname));
-        sprintf(fname, "%sgreen/%s", LED_STATUS_FILE, LED_BRIGHTNESS);
+        sprintf(fname, "%sgreen/%s", MLX_LED_STATUS_FILE, MLX_LED_BRIGHTNESS);
         f_green = fopen(fname, "r");
 
         memset(fname, 0, sizeof(fname));
-        sprintf(fname, "%sred/%s", LED_STATUS_FILE, LED_BRIGHTNESS);
+        sprintf(fname, "%sred/%s", MLX_LED_STATUS_FILE, MLX_LED_BRIGHTNESS);
         f_red = fopen(fname, "r");
     }
     else {
         memset(fname, 0, sizeof(fname));
-        sprintf(fname, "%sgreen/%u/%s", LED_FAN_FILE, led - sys_devices.status_led_number, LED_BRIGHTNESS);
+        sprintf(fname, "%sgreen/%u/%s", MLX_LED_FAN_FILE, led - sys_devices.status_led_number, MLX_LED_BRIGHTNESS);
         f_green = fopen(fname, "r");
 
         memset(fname, 0, sizeof(fname));
-        sprintf(fname, "%sred/%u/%s", LED_FAN_FILE, led - sys_devices.status_led_number, LED_BRIGHTNESS);
+        sprintf(fname, "%sred/%u/%s", MLX_LED_FAN_FILE, led - sys_devices.status_led_number, MLX_LED_BRIGHTNESS);
         f_red = fopen(fname, "r");
     }
 
@@ -674,19 +709,19 @@ static unsigned char get_led_color(unsigned int led, unsigned char *color)
 
     if (led <= sys_devices.status_led_number) {
         if (amber && !green && !red)
-            *color = LED_COLOR_AMBER;
+            *color = MLX_LED_COLOR_AMBER;
         else if (!amber && green && !red)
-            *color = LED_COLOR_GREEN;
+            *color = MLX_LED_COLOR_GREEN;
         else
-            *color = LED_COLOR_RED;
+            *color = MLX_LED_COLOR_RED;
 
         fclose(f_amber);
     }
     else {
         if (!red && green)
-            *color = LED_COLOR_GREEN;
+            *color = MLX_LED_COLOR_GREEN;
         else
-            *color = LED_COLOR_RED;
+            *color = MLX_LED_COLOR_RED;
     }
 
     fclose(f_green);
@@ -715,7 +750,7 @@ handle_get_led_state(lmc_data_t    *mc,
                      void          *cb_data)
 {
     unsigned int led;
-    unsigned char color = LED_COLOR_RED;
+    unsigned char color = MLX_LED_COLOR_RED;
     unsigned char rv = 0;
 
     if (check_msg_length(msg, 1, rdata, rdata_len))
@@ -731,7 +766,7 @@ handle_get_led_state(lmc_data_t    *mc,
     rdata[0] = 0;
     rdata[1] = 0;
 
-    rv = get_led_color(led, &color);
+    rv = mlx_get_led_color(led, &color);
 
     if (rv) {
         rdata[0] = rv;
@@ -770,8 +805,8 @@ handle_bmc_cold_reset(lmc_data_t    *mc,
         mlx_add_event_to_sel(mc, IPMI_SENSOR_TYPE_SYSTEM_BOOT_INITIATED, mc->ipmb, 
                              MLX_EVENT_ASSERTED, IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, MLX_OS_WARM_RESET_EVENT);
 
-        if (reset_monitor_timer)
-            sys->free_timer(reset_monitor_timer);
+        if (mlx_reset_monitor_timer)
+            sys->free_timer(mlx_reset_monitor_timer);
 
         fprintf(freset, "%u", 0);
     }
@@ -818,11 +853,15 @@ handle_cpu_ready_event(lmc_data_t    *mc,
 
     if (ready) {
         /* set "Presence detected" if CPU started successfully */
-        system("echo 128 > /bsp/environment/cpu_status");
+        memset(status_led_run_str, 0, sizeof(status_led_run_str));
+        if (sprintf(status_led_run_str,"echo %u > %s", MLX_CPU_STATUS_PRESENCE_DETECTED, MLX_CPU_STATUS_FILE))
+            system(status_led_run_str);
     }
     else {
         /* set "IERR" in case something goes wrong on CPU sturtup */
-        system("echo 1 > /bsp/environment/cpu_status");
+        memset(status_led_run_str, 0, sizeof(status_led_run_str));
+        if (sprintf(status_led_run_str,"echo %u > %s", MLX_CPU_STATUS_IERR, MLX_CPU_STATUS_FILE))
+            system(status_led_run_str);
     }
     rdata[0] = 0;
     *rdata_len = 1;
@@ -928,10 +967,12 @@ handle_cpu_soft_reset(lmc_data_t    *mc,
         fprintf(freset, "%u", 0);
 
         /* sel status LED to green to enable delay_off/delay_on */
-        set_led_command(1, LED_COLOR_GREEN, 1);
+        mlx_set_led_command(1, MLX_LED_COLOR_GREEN, 1);
 
        /* set 0 state at CPU reboot */
-        system("echo 0 > /bsp/environment/cpu_status");
+        memset(trigger, 0, sizeof(trigger));
+        if (sprintf(trigger,"echo %u > %s", MLX_CPU_STATUS_NONE, MLX_CPU_STATUS_FILE))
+            system(trigger);
 
         /* set LED blinking on CPU restart */
         memset(trigger, 0, sizeof(trigger));
@@ -1166,7 +1207,7 @@ static void handle_get_last_processed_event(lmc_data_t    *mc,
     *rdata_len = count + 5;
 }
 
-static unsigned char chassis_power_on_off(unsigned char val)
+static unsigned char mlx_chassis_power_on_off(unsigned char val)
 {
     FILE *file;
     unsigned char chassis_status_str[MLX_SYS_CMD_BUF_SIZE];
@@ -1207,14 +1248,14 @@ static unsigned char chassis_power_on_off(unsigned char val)
  * Chassis control for the chassis
  */
 static int
-bmc_set_chassis_control(lmc_data_t *mc, int op, unsigned char *val,
+mlx_set_chassis_control(lmc_data_t *mc, int op, unsigned char *val,
                         void *cb_data)
 {
     FILE *freset;
 
     switch (op) {
     case CHASSIS_CONTROL_POWER:
-        chassis_power_on_off(*val);
+        mlx_chassis_power_on_off(*val);
         break;
     case CHASSIS_CONTROL_BOOT_INFO_ACK:
     case CHASSIS_CONTROL_BOOT:
@@ -1367,7 +1408,7 @@ handle_log_to_sel(lmc_data_t    *mc,
 }
 
 static void
-reset_monitor_timeout(void *cb_data)
+mlx_reset_monitor_timeout(void *cb_data)
 {
     sys_data_t *sys = cb_data;
     int i;
@@ -1429,7 +1470,7 @@ reset_monitor_timeout(void *cb_data)
 
     tv.tv_sec = MLX_RESET_MONITOR_TIMEOUT;
     tv.tv_usec = 0;
-    sys->start_timer(reset_monitor_timer, &tv);
+    sys->start_timer(mlx_reset_monitor_timer, &tv);
 }
 
 static unsigned int 
@@ -1450,7 +1491,7 @@ get_expected_fan_speed(unsigned char tacho_num,
 }
 
 static void
-fans_monitor_timeout(void *cb_data)
+mlx_fans_monitor_timeout(void *cb_data)
 {
     sys_data_t *sys = cb_data;
     struct timeval tv;
@@ -1556,11 +1597,11 @@ fans_monitor_timeout(void *cb_data)
 
     tv.tv_sec = MLX_FANS_MONITOR_TIMEOUT;
     tv.tv_usec = 0;
-    sys->start_timer(fans_monitor_timer, &tv);
+    sys->start_timer(mlx_fans_monitor_timer, &tv);
 }
 
 static void
-overheat_monitor_timeout(void *cb_data)
+mlx_overheat_monitor_timeout(void *cb_data)
 {
     sys_data_t *sys = cb_data;
     struct timeval tv;
@@ -1623,7 +1664,7 @@ overheat_monitor_timeout(void *cb_data)
     fclose(file);
 
     if (asic_temp > MLX_ASIC_MAX_TEMP) {
-        chassis_power_on_off(0);
+        mlx_chassis_power_on_off(0);
         memset(data, 0, MLX_EVENT_TO_SEL_BUF_SIZE);
         data[1] = MLX_ASIC_OVERHEAT_EVENT;
         data[2] = asic_temp;
@@ -1633,7 +1674,7 @@ overheat_monitor_timeout(void *cb_data)
  out:
     tv.tv_sec = MLX_OVERHEAT_MONITOR_TIMEOUT;
     tv.tv_usec = 0;
-    sys->start_timer(overheat_monitor_timer, &tv);
+    sys->start_timer(mlx_overheat_monitor_timer, &tv);
 }
 
 static void
@@ -1726,7 +1767,7 @@ mlx_wd_monitor_timeout(void *cb_data)
  * Chassis control get for the chassis.
  */
 static int
-bmc_get_chassis_control(lmc_data_t *mc, int op, unsigned char *val,
+mlx_get_chassis_control(lmc_data_t *mc, int op, unsigned char *val,
 			void *cb_data)
 {
     *val = 1;
@@ -1769,6 +1810,359 @@ void mlx_get_chassis_status(unsigned char* data, unsigned int  *data_len)
         *data_len = 4;
 }
 
+void 
+mlx_status_led_control(unsigned char num,
+                       unsigned char direction,
+                       unsigned char type)
+{
+    unsigned char status_led_run_str[MLX_SYS_CMD_BUF_SIZE];
+    FILE *fstatus;
+    unsigned long int status;
+    char line_status[MLX_READ_BUF_SIZE];
+
+    memset(status_led_run_str, 0, sizeof(status_led_run_str));
+
+    switch (type) {
+    case IPMI_SENSOR_TYPE_TEMPERATURE:
+        switch (num) {
+        case MLX_AMBIENT_CARRIER_TEMP_SENSOR_NUM:
+        case MLX_AMBIENT_SWITCH_TEMP_SENSOR_NUM:
+            if (sprintf(status_led_run_str,"status_led.py 0x%02x %d 0x%02x\n",num, direction, type))
+                 system(status_led_run_str);
+            break;
+        case MLX_ASIC_TEMP_SENSOR_NUM:
+
+            fstatus = fopen(MLX_CPU_STATUS_FILE, "r");
+
+            if (!fstatus)
+                return;
+
+            if (0 >= fread(line_status, 1, sizeof(line_status),fstatus)) {
+                fclose(fstatus);
+                return;
+            }
+
+            status = strtoul(line_status, NULL, 0);
+            if (status) {
+                if (sprintf(status_led_run_str,"status_led.py 0x%02x %d 0x%02x\n",num, direction, type))
+                     system(status_led_run_str);
+            }
+            fclose(fstatus);
+            break;
+        default:
+            break;
+        }
+        break;
+    case IPMI_SENSOR_TYPE_VOLTAGE:
+        switch (num) {
+        case MLX_UCD_3_3V_SENSOR_NUM:
+        case MLX_UCD_1_2V_SENSOR_NUM:
+        case MLX_UCD_VCORE_SENSOR_NUM:
+        case MLX_PSU1_VIN_SENSOR_NUM:
+        case MLX_PSU2_VIN_SENSOR_NUM:
+        case MLX_A2D_1_8V_SENSOR_NUM:
+            if (sprintf(status_led_run_str,"status_led.py 0x%02x %d 0x%02x\n",num, direction, type))
+                 system(status_led_run_str);
+            break;
+        default:
+            break;
+        }
+        break;
+    case IPMI_SENSOR_TYPE_CURRENT:
+        switch (num) {
+        case MLX_VCORE_UCD_CURR_SENSOR_NUM:
+        case MLX_UCD_3_3V_SEN_CURR_SENSOR_NUM:
+        case MLX_UCD_1_2V_CURR_SENSOR_NUM:
+            if (sprintf(status_led_run_str,"status_led.py 0x%02x %d 0x%02x\n",num, direction, type))
+                 system(status_led_run_str);
+            break;
+        default:
+            break;
+        }
+        break;
+    case IPMI_SENSOR_TYPE_FAN:
+        switch (num) {
+        case MLX_FAN1_1_SENSOR_NUM:
+        case MLX_FAN1_2_SENSOR_NUM:
+        case MLX_FAN2_1_SENSOR_NUM:
+        case MLX_FAN2_2_SENSOR_NUM:
+        case MLX_FAN3_1_SENSOR_NUM:
+        case MLX_FAN3_2_SENSOR_NUM:
+        case MLX_FAN4_1_SENSOR_NUM:
+        case MLX_FAN4_2_SENSOR_NUM:
+            if (sprintf(status_led_run_str,"status_led.py 0x%02x %d 0x%02x\n",num, direction, type))
+                 system(status_led_run_str);
+            break;
+        default:
+            break;
+        }
+        break;
+    default:
+        break;
+    }
+}
+
+void
+mlx_log_device_status(int poll_status , sensor_t *sensor)
+{
+    if (poll_status) {
+        if (sensor->enabled) {
+            mlx_status_led_control(sensor->num, 0, sensor->sensor_type);
+            sensor->enabled = 0;
+            /* In case PSU1 or PSU2 is power-off/plugged-out add msg to the SEL */
+            switch (sensor->num) {
+            case MLX_PSU1_PIN_SENSOR_NUM:
+            if (access("/bsp/fru/psu1_eeprom", F_OK) == 0) /* AC lost or out-of-range */
+                mlx_add_event_to_sel(sensor->mc, sensor->sensor_type, sensor->num, MLX_EVENT_ASSERTED, 
+                 IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, MLX_PWR_AC_OUT_OF_RANGE_EVENT);
+            else /* Power Supply AC lost */
+                mlx_add_event_to_sel(sensor->mc, sensor->sensor_type, sensor->num, MLX_EVENT_ASSERTED, 
+                 IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, MLX_PWR_AC_LOST_EVENT);
+            break;
+            case MLX_PSU2_PIN_SENSOR_NUM:
+            if (access("/bsp/fru/psu1_eeprom", F_OK) == 0)  /* AC lost or out-of-range */
+                mlx_add_event_to_sel(sensor->mc, sensor->sensor_type, sensor->num, MLX_EVENT_ASSERTED, 
+                 IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, MLX_PWR_AC_OUT_OF_RANGE_EVENT);
+            else  /* Power Supply AC lost */
+                mlx_add_event_to_sel(sensor->mc, sensor->sensor_type, sensor->num, MLX_EVENT_ASSERTED, 
+                 IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, MLX_PWR_AC_LOST_EVENT);
+            break;
+                /* In case any FAN is plugged-out sensor can't be read add msg to the SEL */
+            case MLX_FAN1_1_SENSOR_NUM:
+            case MLX_FAN1_2_SENSOR_NUM:
+            if (access("/bsp/fru/fan1_eeprom", F_OK) == 0) /* "Availability State",  "Device Disabled" */
+                mlx_add_event_to_sel(sensor->mc, sensor->sensor_type, sensor->num, MLX_EVENT_ASSERTED, 
+                 IPMI_EVENT_READING_TYPE_DISCRETE_DEVICE_ENABLE, MLX_DEVICE_DISABLED_EVENT);
+            else /* "Availability State",  "Device Absent" */
+                mlx_add_event_to_sel(sensor->mc, sensor->sensor_type, sensor->num, MLX_EVENT_ASSERTED, 
+                 IPMI_EVENT_READING_TYPE_DISCRETE_DEVICE_PRESENCE, MLX_DEVICE_ABSENT_EVENT);
+            break;
+            case MLX_FAN2_1_SENSOR_NUM:
+            case MLX_FAN2_2_SENSOR_NUM:
+            if (access("/bsp/fru/fan2_eeprom", F_OK) == 0)  /* "Availability State",  "Device Disabled" */
+                mlx_add_event_to_sel(sensor->mc, sensor->sensor_type, sensor->num, MLX_EVENT_ASSERTED, 
+                 IPMI_EVENT_READING_TYPE_DISCRETE_DEVICE_ENABLE, MLX_DEVICE_DISABLED_EVENT);
+            else  /* "Availability State",  "Device Absent" */
+                mlx_add_event_to_sel(sensor->mc, sensor->sensor_type, sensor->num, MLX_EVENT_ASSERTED, 
+                 IPMI_EVENT_READING_TYPE_DISCRETE_DEVICE_PRESENCE, MLX_DEVICE_ABSENT_EVENT);
+            break;
+            case MLX_FAN3_1_SENSOR_NUM:
+            case MLX_FAN3_2_SENSOR_NUM:
+            if (access("/bsp/fru/fan3_eeprom", F_OK) == 0) /* "Availability State",  "Device Disabled" */
+                mlx_add_event_to_sel(sensor->mc, sensor->sensor_type, sensor->num, MLX_EVENT_ASSERTED, 
+                 IPMI_EVENT_READING_TYPE_DISCRETE_DEVICE_ENABLE, MLX_DEVICE_DISABLED_EVENT);
+            else /* "Availability State",  "Device Absent" */
+                mlx_add_event_to_sel(sensor->mc, sensor->sensor_type, sensor->num, MLX_EVENT_ASSERTED, 
+                 IPMI_EVENT_READING_TYPE_DISCRETE_DEVICE_PRESENCE, MLX_DEVICE_ABSENT_EVENT);
+            break;
+            case MLX_FAN4_1_SENSOR_NUM:
+            case MLX_FAN4_2_SENSOR_NUM:
+            if (access("/bsp/fru/fan4_eeprom", F_OK) == 0) /* "Availability State",  "Device Disabled" */
+                mlx_add_event_to_sel(sensor->mc, sensor->sensor_type, sensor->num, MLX_EVENT_ASSERTED, 
+                 IPMI_EVENT_READING_TYPE_DISCRETE_DEVICE_ENABLE, MLX_DEVICE_DISABLED_EVENT);
+            else /* "Availability State",  "Device Absent" */
+                mlx_add_event_to_sel(sensor->mc, sensor->sensor_type, sensor->num, MLX_EVENT_ASSERTED, 
+                 IPMI_EVENT_READING_TYPE_DISCRETE_DEVICE_PRESENCE, MLX_DEVICE_ABSENT_EVENT);
+            break;
+            default:
+                break;
+            }
+        }
+    } else {
+        if (!sensor->enabled) {
+            mlx_status_led_control(sensor->num, 1, sensor->sensor_type);
+            sensor->enabled = 1;
+            switch (sensor->num) {
+            /* In case PSU1 or PSU2 is power-on add msg to the SEL */
+            case MLX_PSU1_PIN_SENSOR_NUM:
+            case MLX_PSU2_PIN_SENSOR_NUM:
+                mlx_add_event_to_sel(sensor->mc, sensor->sensor_type, sensor->num, MLX_EVENT_ASSERTED, 
+                 IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, MLX_PSU_PRESENT_EVENT);
+            break;
+            /* In case FAN is plugged-in add msg to the SEL */
+            case MLX_FAN1_1_SENSOR_NUM:
+            case MLX_FAN1_2_SENSOR_NUM:
+            case MLX_FAN2_1_SENSOR_NUM:
+            case MLX_FAN2_2_SENSOR_NUM:
+            case MLX_FAN3_1_SENSOR_NUM:
+            case MLX_FAN3_2_SENSOR_NUM:
+            case MLX_FAN4_1_SENSOR_NUM:
+            case MLX_FAN4_2_SENSOR_NUM:
+                mlx_add_event_to_sel(sensor->mc, sensor->sensor_type, sensor->num, MLX_EVENT_ASSERTED, 
+                 IPMI_EVENT_READING_TYPE_DISCRETE_DEVICE_ENABLE, MLX_DEVICE_ENABLED_EVENT);
+            break;
+            default:
+                break;
+            }
+        }
+    }
+}
+
+void mlx_pef_action_apply(lmc_data_t    *mc,
+                        unsigned char record_type,
+                        unsigned char event[13])
+{
+    unsigned int i;
+
+    for (i=1; i<MAX_EVENT_FILTERS; i++) {
+        if (!(mc->pef.event_filter_table[i][1] & 0x80))
+            continue;
+
+        if ((mc->pef.event_filter_table[i][5] != 0xff) 
+            && (mc->pef.event_filter_table[i][5] != event[4]))
+            continue;
+
+        if ((mc->pef.event_filter_table[i][6] != 0xff) 
+            && (mc->pef.event_filter_table[i][6] != event[5]))
+            continue;
+
+        if ((mc->pef.event_filter_table[i][7] != 0xff) 
+            && (mc->pef.event_filter_table[i][7] != event[7]))
+            continue;
+
+        if ((mc->pef.event_filter_table[i][8] != 0xff) 
+            && (mc->pef.event_filter_table[i][8] != event[8]))
+            continue;
+
+        if ((mc->pef.event_filter_table[i][9] != 0xff) 
+            && (mc->pef.event_filter_table[i][9] != event[12]))
+            continue;
+
+        if ((mc->pef.event_filter_table[i][2] & 0x10)
+            && (mc->pef.pef_action_global_control & 0x10)) /* OEM */
+            system("echo 3 > /bsp/leds/status/amber/trigger");
+
+        if ((mc->pef.event_filter_table[i][2] & 0x2)
+            && (mc->pef.pef_action_global_control & 0x2))  /* Power-off */
+            system("echo 0 > /bsp/reset/cpu_reset_hard");
+
+        if ((mc->pef.event_filter_table[i][2] & 0x4)
+            && (mc->pef.pef_action_global_control & 0x4))  /* Reset */
+            system("echo 0 > /bsp/reset/cpu_reset_soft");
+
+        if ((mc->pef.event_filter_table[i][2] & 0x8)
+            && (mc->pef.pef_action_global_control & 0x8)) { /* Power cycle */
+            system("echo 0 > /bsp/reset/cpu_reset_hard");
+            sleep(3);
+            system("echo 1 > /bsp/reset/cpu_reset_hard");
+        }
+
+        if ((mc->pef.event_filter_table[i][2] & 0x20)
+            && (mc->pef.pef_action_global_control & 0x20)) { /* Diagnostic interupt */
+
+            serserv_data_t *si = mc->channels[15]->chan_info;
+            unsigned int len = 2;
+            unsigned char c[2];
+            int rv = 0;
+
+            c[0] = 0x07;
+            c[1] = 0xA1;
+
+            si->send_out(si, c, len);
+        }
+
+        /* SNMP is not supported, thus skip Alert action */
+        if ((mc->pef.event_filter_table[i][2] & 0x1)
+            && (mc->pef.pef_action_global_control & 0x1))
+            continue;
+    }
+}
+
+void
+mlx_switch_console(unsigned int instance, unsigned char state)
+{
+    char cmd[MLX_SYS_CMD_BUF_SIZE];
+    if (instance == 1) {
+        memset(cmd, 0, sizeof(cmd));
+        sprintf(cmd, "echo %u > %s", state, MLX_UART_TO_BMC);
+        system(cmd);
+    }
+}
+
+void
+mlx_ipmi_wd_timeout(unsigned char action)
+{
+    char cmd[MLX_SYS_CMD_BUF_SIZE];
+
+    char status_led_run_str[MLX_SYS_CMD_BUF_SIZE];
+    mlx_set_led_command(1, MLX_LED_COLOR_GREEN, 0);
+    mlx_set_led_command(1, MLX_LED_COLOR_AMBER, 0);
+    mlx_set_led_command(1, MLX_LED_COLOR_RED, 1);
+
+    if (sprintf(cmd,"status_led.py 0x%02x %d 0x%02x\n", MLX_IPMIWD_LOG_NUM, MLX_EVENT_ASSERTED, 0))
+        system(cmd);
+
+    /* set "IERR" if IPMI watchdog timeout expired */
+    memset(cmd, 0, sizeof(status_led_run_str));
+    if (sprintf(cmd,"echo %u > %s", MLX_CPU_STATUS_IERR, MLX_CPU_STATUS_FILE))
+        system(cmd);
+
+    switch(action) {
+    case IPMI_MC_WATCHDOG_ACTION_NONE:
+        /*Uart to BMC*/
+        memset(cmd, 0, sizeof(cmd));
+        sprintf(cmd, "echo 0 > %s", MLX_UART_TO_BMC);
+        system(cmd);
+        mlx_add_event_to_sel(bmc_mc, IPMI_SENSOR_TYPE_WATCHDOG_1, 0 , MLX_EVENT_ASSERTED, 
+                             IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, MLX_IPMI_WD_EXPIRED_EVENT);
+        break;
+    case IPMI_MC_WATCHDOG_ACTION_RESET:
+        /*CPU Reset*/
+        memset(cmd, 0, sizeof(cmd));
+        sprintf(cmd, "echo 0 > %s", MLX_CPU_SOFT_RESET);
+        system(cmd);
+        mlx_add_event_to_sel(bmc_mc, IPMI_SENSOR_TYPE_WATCHDOG_1, 0 , MLX_EVENT_ASSERTED,
+                             IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, MLX_IPMI_WD_OS_RESET_EVENT);
+        break;
+    case IPMI_MC_WATCHDOG_ACTION_POWER_DOWN:
+        /*CPU Power-off*/
+        memset(cmd, 0, sizeof(cmd));
+        sprintf(cmd, "echo 0 > %s", MLX_CPU_HARD_RESET);
+        system(cmd);
+        mlx_add_event_to_sel(bmc_mc, IPMI_SENSOR_TYPE_WATCHDOG_1, 0 , MLX_EVENT_ASSERTED, 
+                             IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, MLX_IPMI_WD_PWR_DOWN_EVENT);
+        break;
+    case IPMI_MC_WATCHDOG_ACTION_POWER_CYCLE:
+        /*CPU power cycle*/
+        memset(cmd, 0, sizeof(cmd));
+        sprintf(cmd, "echo 0 > %s", MLX_CPU_HARD_RESET);
+        system(cmd);
+        sleep(3);
+        memset(cmd, 0, sizeof(cmd));
+        sprintf(cmd, "echo 1 > %s", MLX_CPU_HARD_RESET);
+        system(cmd);
+        mlx_add_event_to_sel(bmc_mc, IPMI_SENSOR_TYPE_WATCHDOG_1, 0 , MLX_EVENT_ASSERTED, 
+                             IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, MLX_IPMI_WD_PWR_CYCLE_EVENT);
+        break;
+    default:
+        break;
+    }
+}
+
+void
+mlx_ipmi_wd_reset(lmc_data_t *mc, struct timeval tv)
+{
+    unsigned char cmd[MLX_SYS_CMD_BUF_SIZE]; 
+
+    if (mc->watchdog_running != 1) {
+        memset(cmd, 0, sizeof(cmd));
+        if (sprintf(cmd,"status_led.py 0x%02x %d 0x%02x\n", MLX_IPMIWD_LOG_NUM, MLX_EVENT_DEASSERTED, 0))
+            system(cmd);
+    }
+    mc->sysinfo->stop_timer(mc->watchdog_timer);
+
+    mc->watchdog_running = 1;
+
+    if (mc->sysinfo->start_timer(mc->watchdog_timer, &tv))
+        mc->sysinfo->log(mc->sysinfo, OS_ERROR, NULL,
+                         "Failed to reset watchdog timer");
+
+    /* set "Presence detected" on IPMI watchdog start */
+    memset(cmd, 0, sizeof(cmd));
+    if (sprintf(cmd,"echo %u > %s\n", MLX_CPU_STATUS_PRESENCE_DETECTED, MLX_CPU_STATUS_FILE))
+        system(cmd);
+}
+
 int
 ipmi_sim_module_print_version(sys_data_t *sys, char *initstr)
 {
@@ -1794,6 +2188,7 @@ ipmi_sim_module_init(sys_data_t *sys, const char *initstr_i)
     struct timeval tv;
     char fname[MLX_FILE_NAME_SIZE];
     char status[MLX_READ_BUF_SIZE];
+    char cmd[MLX_SYS_CMD_BUF_SIZE];
     FILE *f_status;
 
     printf("IPMI Mellanox module");
@@ -1805,7 +2200,7 @@ ipmi_sim_module_init(sys_data_t *sys, const char *initstr_i)
 	return rv;
     }
 
-    rv = set_fan_enable(MLX_FAN_PWM_ENABLE_FILE);
+    rv = mlx_set_fan_enable(MLX_FAN_PWM_ENABLE_FILE);
 
     if (rv) {
         sys->log(sys, OS_ERROR, NULL,
@@ -1815,7 +2210,7 @@ ipmi_sim_module_init(sys_data_t *sys, const char *initstr_i)
     for (i = 1; i <= sys_devices.fan_number * sys_devices.fan_tacho_per_drw; ++i) {
         memset(fname, 0, sizeof(fname));
         sprintf(fname, "%s%i_en", MLX_FAN_TACHO_FILE, i);
-        rv = set_fan_enable(fname);
+        rv = mlx_set_fan_enable(fname);
 
         if (rv) {
             sys->log(sys, OS_ERROR, NULL,
@@ -1902,15 +2297,15 @@ ipmi_sim_module_init(sys_data_t *sys, const char *initstr_i)
     rv = ipmi_emu_register_cmd_handler(IPMI_APP_NETFN, IPMI_OEM_MLX_LOG_TO_SEL_CMD,
                                        handle_log_to_sel, sys);
 
-    ipmi_mc_set_chassis_control_func(bmc_mc, bmc_set_chassis_control,
-                                     bmc_get_chassis_control, sys);
+    ipmi_mc_set_chassis_control_func(bmc_mc, mlx_set_chassis_control,
+                                     mlx_get_chassis_control, sys);
 
     if (rv) {
 	sys->log(sys, OS_ERROR, NULL,
 		 "Unable to register NEW handler: %s", strerror(rv));
     }
 
-    rv = sys->alloc_timer(sys, reset_monitor_timeout, sys, &reset_monitor_timer);
+    rv = sys->alloc_timer(sys, mlx_reset_monitor_timeout, sys, &mlx_reset_monitor_timer);
     if (rv) {
         int errval = errno;
         sys->log(sys, SETUP_ERROR, NULL, "Unable to create reset monitoring timer");
@@ -1918,10 +2313,10 @@ ipmi_sim_module_init(sys_data_t *sys, const char *initstr_i)
     } else {
         tv.tv_sec = MLX_RESET_MONITOR_TIMEOUT;
         tv.tv_usec = 0;
-        sys->start_timer(reset_monitor_timer, &tv);
+        sys->start_timer(mlx_reset_monitor_timer, &tv);
     }
 
-    rv = sys->alloc_timer(sys, overheat_monitor_timeout, sys, &overheat_monitor_timer);
+    rv = sys->alloc_timer(sys, mlx_overheat_monitor_timeout, sys, &mlx_overheat_monitor_timer);
     if (rv) {
         int errval = errno;
         sys->log(sys, SETUP_ERROR, NULL, "Unable to create overheat monitoring timer");
@@ -1929,7 +2324,7 @@ ipmi_sim_module_init(sys_data_t *sys, const char *initstr_i)
     } else {
         tv.tv_sec = MLX_OVERHEAT_MONITOR_TIMEOUT;
         tv.tv_usec = 0;
-        sys->start_timer(overheat_monitor_timer, &tv);
+        sys->start_timer(mlx_overheat_monitor_timer, &tv);
     }
 
     rv = sys->alloc_timer(sys, mlx_wd_monitor_timeout, sys, &mlx_wd_monitor_timer);
@@ -1944,7 +2339,9 @@ ipmi_sim_module_init(sys_data_t *sys, const char *initstr_i)
     }
 
     /* set "Disabled" state at startup */
-    system("echo 256 > /bsp/environment/cpu_status");
+    memset(cmd, 0, sizeof(cmd));
+    if (sprintf(cmd,"echo %u > %s", MLX_CPU_STATUS_DISABLED, MLX_CPU_STATUS_FILE))
+        system(cmd);
 
     return 0;
 }
@@ -2009,14 +2406,14 @@ ipmi_sim_module_post_init(sys_data_t *sys)
         sys_devices.fan_led_number = 4;
         sys_devices.fan_speed_deviation = 0.15;
         sys_devices.get_fan_speed = get_expected_fan_speed;
-        sys_devices.fan_speed_front = fan_speed_front_profile1;
-        sys_devices.fan_speed_rear = fan_speed_rear_profile1;
+        sys_devices.fan_speed_front = mlx_fan_speed_front_profile1;
+        sys_devices.fan_speed_rear = mlx_fan_speed_rear_profile1;
         break;
     default:
         break;
     }
 
-    rv = sys->alloc_timer(sys, fans_monitor_timeout, sys, &fans_monitor_timer);
+    rv = sys->alloc_timer(sys, mlx_fans_monitor_timeout, sys, &mlx_fans_monitor_timer);
     if (rv) {
         int errval = errno;
         sys->log(sys, SETUP_ERROR, NULL, "Unable to create FANs monitoring timer");
@@ -2025,11 +2422,17 @@ ipmi_sim_module_post_init(sys_data_t *sys)
     else {
         tv.tv_sec = MLX_FANS_MONITOR_TIMEOUT;
         tv.tv_usec = 0;
-        sys->start_timer(fans_monitor_timer, &tv);
+        sys->start_timer(mlx_fans_monitor_timer, &tv);
     }
 
     sys->mc->sys_time_set_func = mlx_set_sys_time;
     sys->mc->chassis_status_custom = mlx_get_chassis_status;
+    sys->mc->status_led_control = mlx_status_led_control;
+    sys->mc->log_device_status = mlx_log_device_status;
+    sys->mc->pef_action_apply = mlx_pef_action_apply;
+    sys->mc->switch_console = mlx_switch_console;
+    sys->mc->ipmi_wd_timeout_custom = mlx_ipmi_wd_timeout;
+    sys->mc->ipmi_wd_reset_custom = mlx_ipmi_wd_reset;
 
     return 0;
 }
