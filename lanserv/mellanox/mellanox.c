@@ -278,6 +278,7 @@ handle_set_fan_speed_cmd (lmc_data_t    *mc,
         if (IPMI_DESTINATION_UNAVAILABLE_CC == mlx_set_fan_enable(MLX_FAN_PWM_ENABLE_FILE)) {
             rdata[0] = IPMI_COULD_NOT_PROVIDE_RESPONSE_CC;
             *rdata_len = 1;
+            fclose(f_pwm);
             return;
     } else
         fprintf(f_pwm, "%u", pwm);
@@ -387,7 +388,6 @@ mlx_set_led_command(unsigned char led,
     fbrightness = fopen(fname, "w");
 
     if (!fbrightness) {
-        fclose(fbrightness);
         return IPMI_COULD_NOT_PROVIDE_RESPONSE_CC;
     }
 
@@ -1704,6 +1704,7 @@ mlx_wd_monitor_timeout(void *cb_data)
         goto out;
     }
 
+    fclose(file);
     tmp = strtoul(status_buf, NULL, 0);
     status = MLX_GET_BYTE(tmp,1) & 0xF;
 
@@ -1733,6 +1734,7 @@ mlx_wd_monitor_timeout(void *cb_data)
         goto out;
     }
 
+    fclose(file);
     tmp = strtoul(status_buf, NULL, 0);
     status = tmp & 1;
 
@@ -2225,6 +2227,7 @@ ipmi_sim_module_init(sys_data_t *sys, const char *initstr_i)
             fclose(f_status);
         }
         chassis_status = strtoul(status, NULL, 0);
+        fclose(f_status);
     }
     else {
         /* assume that power is on */
@@ -2239,6 +2242,7 @@ ipmi_sim_module_init(sys_data_t *sys, const char *initstr_i)
             fclose(f_status);
         }
         mlx_wd_status = strtoul(status, NULL, 0);
+        fclose(f_status);
     }
     else {
         /* assume that timeout counter is 0 */
