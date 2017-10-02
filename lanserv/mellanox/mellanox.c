@@ -18,7 +18,6 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <semaphore.h>
-#include <stdlib.h>
 
 #include <OpenIPMI/serserv.h>
 #include <OpenIPMI/ipmi_err.h>
@@ -194,11 +193,42 @@ static unsigned char mlx_wd_control = 0;
 #define MLX_WD_CONTROL_CURRENT_STATUS_FILE    "/bsp/environment/bmcwd_control_curr"
 #define MLX_WD_CONTROL_SAVED_STATUS_FILE      "/bsp/environment/bmcwd_control"
 
+#define MLX_SYTEM_CONSOLE_DEVICE               "/dev/ttyS4"
 #define MLX_CPU_STATUS_FILE                    "/bsp/environment/cpu_status"
 #define MLX_CPU_STATUS_NONE                    0
 #define MLX_CPU_STATUS_IERR                    1
 #define MLX_CPU_STATUS_PRESENCE_DETECTED       128
 #define MLX_CPU_STATUS_DISABLED                256
+#define MLX_CPU_STATUS_MONITOR_TIMEOUT         300
+static ipmi_timer_t *mlx_cpu_status_monitor_timer = NULL;
+
+static void
+mlx_cpu_status_monitor_timeout(void *cb_data)
+{
+    sys_data_t *sys = cb_data;
+    FILE *fd;
+    char cmd[MLX_SYS_CMD_BUF_SIZE];
+
+    /* set LED to red */
+    memset(cmd, 0, sizeof(cmd));
+    if (sprintf(cmd,"status_led.py 0x%02x %d 0x%02x\n", MLX_CPU_FAULT_LOG_NUM, MLX_EVENT_ASSERTED, 0))
+        system(cmd);
+    else
+        sys->log(sys, OS_ERROR, NULL,"Unable to set status LED to red");
+
+    /*Uart to BMC*/
+    memset(cmd, 0, sizeof(cmd));
+    sprintf(cmd, "echo 0 > %s", MLX_UART_TO_BMC);
+    system(cmd);
+
+    /* Printing the warning message */
+    fd = fopen(MLX_SYTEM_CONSOLE_DEVICE, "w");
+    fprintf(fd, "WARNING:\n The system console ownership has been taken by BMC \n "
+            "due to timeout expiration.\n In order to return the system console ownership to CPU, \n"
+            "Please enter the following command: cons2cpu \n");
+    fclose(fd);
+
+}
 
 static void
 mlx_add_event_to_sel(lmc_data_t    *mc,
@@ -828,6 +858,7 @@ handle_cpu_ready_event(lmc_data_t    *mc,
 			  unsigned int  *rdata_len,
 			  void          *cb_data)
 {
+    sys_data_t *sys = cb_data;
     unsigned char status_led_run_str[MLX_SYS_CMD_BUF_SIZE];
     unsigned int ready;
 
@@ -850,6 +881,14 @@ handle_cpu_ready_event(lmc_data_t    *mc,
     memset(status_led_run_str, 0, sizeof(status_led_run_str));
     if (sprintf(status_led_run_str,"status_led.py 0x%02x %d 0x%02x\n",MLX_CPU_READY_LOG_NUM, ready, IPMI_SENSOR_TYPE_PROCESSOR))
         system(status_led_run_str);
+
+    /* CPU started - deasert the CPU fault */
+    memset(status_led_run_str, 0, sizeof(status_led_run_str));
+    if (sprintf(status_led_run_str,"status_led.py 0x%02x %d 0x%02x\n", MLX_CPU_FAULT_LOG_NUM, MLX_EVENT_DEASSERTED, 0))
+        system(status_led_run_str);
+
+    /* Stop monitorring the cpu status*/
+    sys->stop_timer(mlx_cpu_status_monitor_timer);
 
     if (ready) {
         /* set "Presence detected" if CPU started successfully */
@@ -946,6 +985,8 @@ handle_cpu_soft_reset(lmc_data_t    *mc,
     char trigger[MLX_SYS_CMD_BUF_SIZE];
     FILE *ftrigger;
     sys_data_t *sys = cb_data;
+    struct timeval tv;
+    int rv;
 
     if (!check_msg_length(msg, 1, rdata, rdata_len)) {
         cpu_reboot_cmd = msg->data[0];
@@ -991,6 +1032,10 @@ handle_cpu_soft_reset(lmc_data_t    *mc,
     else
         mlx_add_event_to_sel(mc, IPMI_SENSOR_TYPE_SYSTEM_BOOT_INITIATED, 0, 
                              MLX_EVENT_ASSERTED, IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, MLX_SYS_RESTART_EVENT); 
+
+    tv.tv_sec = MLX_CPU_STATUS_MONITOR_TIMEOUT;
+    tv.tv_usec = 0;
+    sys->start_timer(mlx_cpu_status_monitor_timer, &tv);
 
     rdata[0] = 0;
     *rdata_len = 1;
@@ -2150,6 +2195,9 @@ mlx_ipmi_wd_reset(lmc_data_t *mc, struct timeval tv)
         memset(cmd, 0, sizeof(cmd));
         if (sprintf(cmd,"status_led.py 0x%02x %d 0x%02x\n", MLX_IPMIWD_LOG_NUM, MLX_EVENT_DEASSERTED, 0))
             system(cmd);
+
+        /* Stop monitorring the cpu status */
+        mc->sysinfo->stop_timer(mlx_cpu_status_monitor_timer);
     }
     mc->sysinfo->stop_timer(mc->watchdog_timer);
 
@@ -2340,6 +2388,17 @@ ipmi_sim_module_init(sys_data_t *sys, const char *initstr_i)
         tv.tv_sec = MLX_WD_MONITOR_TIMEOUT;
         tv.tv_usec = 0;
         sys->start_timer(mlx_wd_monitor_timer, &tv);
+    }
+
+    rv = sys->alloc_timer(sys, mlx_cpu_status_monitor_timeout, sys, &mlx_cpu_status_monitor_timer);
+    if (rv) {
+        int errval = errno;
+        sys->log(sys, SETUP_ERROR, NULL, "Unable to create CPU status monitoring timer");
+        return errval;
+    } else {
+        tv.tv_sec = MLX_CPU_STATUS_MONITOR_TIMEOUT;
+        tv.tv_usec = 0;
+        sys->start_timer(mlx_cpu_status_monitor_timer, &tv);
     }
 
     /* set "Disabled" state at startup */

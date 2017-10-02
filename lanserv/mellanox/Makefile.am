@@ -19,7 +19,8 @@ install-data-local:
 	$(INSTALL) -m 775 $(srcdir)/50-mlx-hwmon-4-10-events.rules "$(DESTDIR)$(localstatedir)/mlx_ipmid/mellanox/"; \
 	$(INSTALL) -m 775 $(srcdir)/mlx-hw-events.sh "$(DESTDIR)$(bindir)"; \
 	$(INSTALL) -m 775 $(srcdir)/status_led.py "$(DESTDIR)$(bindir)"; \
-	$(INSTALL) -m 644 $(srcdir)/status_led.json "$(DESTDIR)$(sysconfdir)";
+	$(INSTALL) -m 644 $(srcdir)/status_led.json "$(DESTDIR)$(sysconfdir)"; \
+	$(INSTALL) -m 775 $(srcdir)/cons2cpu "$(DESTDIR)$(bindir)";
 
 uninstall-local:
 	-rm -f "$(DESTDIR)$(sysconfdir)/ipmi/mellanox.lan.conf"

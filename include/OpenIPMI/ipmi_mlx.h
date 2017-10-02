@@ -65,6 +65,7 @@
 #define MLX_FAN3_DRW_LOG_NUM                0xb9
 #define MLX_FAN4_DRW_LOG_NUM                0xba
 #define MLX_CPU_READY_LOG_NUM               0xbb
+#define MLX_CPU_FAULT_LOG_NUM               0xbd
 #define MLX_CPU_REBOOT_LOG_NUM              0xbc
 
 #define MLX_EVENT_TO_SEL_BUF_SIZE           13

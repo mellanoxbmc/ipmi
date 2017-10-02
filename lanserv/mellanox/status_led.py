@@ -31,6 +31,7 @@ Sensor number (1-st param):
     FAN4 drw              0xba
     CPU ready             0xbb
     CPU reboot            0xbc
+    CPU fault             0xbd
 
 Sensor Types (3-rd param):
     Temperature           0x01
