@@ -1841,6 +1841,8 @@ void mlx_set_sys_time(unsigned char* data)
     memset(tmbuf, 0, sizeof(tmbuf));
     strftime(tmbuf, sizeof(tmbuf), "timedatectl set-time %H:%M:%S", nowtm);
     system(tmbuf);
+
+    system("timedatectl set-local-rtc 1");
 }
 
 void mlx_get_chassis_status(unsigned char* data, unsigned int  *data_len)
@@ -2496,6 +2498,11 @@ ipmi_sim_module_post_init(sys_data_t *sys)
     sys->mc->switch_console = mlx_switch_console;
     sys->mc->ipmi_wd_timeout_custom = mlx_ipmi_wd_timeout;
     sys->mc->ipmi_wd_reset_custom = mlx_ipmi_wd_reset;
+
+    system("hwclock -s");
+
+    gettimeofday(&tv, NULL);
+    sys->mc->sel.time_offset = tv.tv_sec;
 
     return 0;
 }
