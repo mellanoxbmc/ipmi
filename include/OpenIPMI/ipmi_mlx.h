@@ -74,6 +74,7 @@
 #define MLX_READ_BUF_SIZE                   10
 #define MLX_FILE_NAME_SIZE                  50
 #define MLX_SYS_CMD_BUF_SIZE                100
+#define MLX_TIMEZONE_BUF_SIZE               50
 
 /* Mlx OEM SEL event description */
 #define MLX_OEM_SEL_RECORD_TYPE      0xE0

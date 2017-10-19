@@ -18,7 +18,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <semaphore.h>
-
+#include <time.h>
 #include <OpenIPMI/serserv.h>
 #include <OpenIPMI/ipmi_err.h>
 #include <OpenIPMI/ipmi_msgbits.h>
@@ -58,6 +58,9 @@ static unsigned int mlx_fan_speed_rear_profile1[] = {18000, 5400, 5400, 5400, 72
 #define IPMI_OEM_MLX_THERMAL_ALGORITHM_CMD  0x62
 #define IPMI_OEM_MLX_BMC_UPTIME_GET_CMD     0x63
 #define IPMI_OEM_MLX_LOG_TO_SEL_CMD         0x64
+
+#define IPMI_OEM_MLX_TZ_NETFUNC             0x32
+#define IPMI_OEM_MLX_TZ_SET_CMD             0xa5
 
 #define IPMI_OEM_MLX_SEL_LOG_SIZE_MIN       0x40
 #define IPMI_OEM_MLX_SEL_LOG_SIZE_MAX       0x0fff
@@ -256,6 +259,15 @@ mlx_add_event_to_sel(lmc_data_t    *mc,
     data[10] = offset;
 
     mc_new_event(dest_mc, 0x02, data);
+}
+
+static void mlx_sel_time_update(lmc_data_t    *mc)
+{
+    struct timespec ts;
+
+    clock_gettime(CLOCK_REALTIME, &ts);
+
+    mc->sel.time_offset = ts.tv_sec;
 }
 
 static unsigned char mlx_set_fan_enable(const char* fname)
@@ -1452,6 +1464,53 @@ handle_log_to_sel(lmc_data_t    *mc,
     return;
 }
 
+/**
+ *
+ * ipmitool raw 0x32 0xa5 <timezone>
+ *
+**/
+static void
+handle_set_timezone(lmc_data_t    *mc,
+                  msg_t         *msg,
+                  unsigned char *rdata,
+                  unsigned int  *rdata_len,
+                  void          *cb_data)
+{
+    char tz[MLX_TIMEZONE_BUF_SIZE];
+    char cmd[MLX_SYS_CMD_BUF_SIZE];
+
+    system("timedatectl set-ntp 0");
+
+    memset(tz, 0, sizeof(tz));
+    strncpy(tz, msg->data, msg->len);
+
+    memset(cmd, 0, sizeof(cmd));
+    sprintf(cmd, "timedatectl set-timezone %s", tz);
+    if (system(cmd))
+    {
+        rdata[0] = IPMI_INVALID_DATA_FIELD_CC;
+        *rdata_len = 1;
+        return;
+    }
+
+    memset(cmd, 0, sizeof(cmd));
+    sprintf(cmd, "ln -sf /usr/share/zoneinfo/%s /etc/localtime", tz);
+    system(cmd);
+
+    memset(cmd, 0, sizeof(cmd));
+    sprintf(cmd, "echo %s > /etc/timezone");
+    system(cmd);
+
+    system("timedatectl set-local-rtc 1");
+    system("hwclock -s");
+
+    mlx_sel_time_update(mc);
+
+    rdata[0] = 0;
+    *rdata_len = 1;
+    return;
+}
+
 static void
 mlx_reset_monitor_timeout(void *cb_data)
 {
@@ -1826,9 +1885,6 @@ void mlx_set_sys_time(unsigned char* data)
     struct tm *nowtm;
     char tmbuf[MLX_SYS_CMD_BUF_SIZE];
     uint32_t timeval = ipmi_get_uint32(data);
-
-    system("systemctl stop systemd-timesyncd");
-    system("systemctl disable systemd-timesyncd");
 
     time_t nowtime = *((time_t*)&timeval);
     nowtm = localtime(&nowtime);
@@ -2351,6 +2407,9 @@ ipmi_sim_module_init(sys_data_t *sys, const char *initstr_i)
     rv = ipmi_emu_register_cmd_handler(IPMI_APP_NETFN, IPMI_OEM_MLX_LOG_TO_SEL_CMD,
                                        handle_log_to_sel, sys);
 
+    rv = ipmi_emu_register_cmd_handler(IPMI_OEM_MLX_TZ_NETFUNC , IPMI_OEM_MLX_TZ_SET_CMD,
+                                       handle_set_timezone, sys);
+
     ipmi_mc_set_chassis_control_func(bmc_mc, mlx_set_chassis_control,
                                      mlx_get_chassis_control, sys);
 
@@ -2407,6 +2466,9 @@ ipmi_sim_module_init(sys_data_t *sys, const char *initstr_i)
     memset(cmd, 0, sizeof(cmd));
     if (sprintf(cmd,"echo %u > %s", MLX_CPU_STATUS_DISABLED, MLX_CPU_STATUS_FILE))
         system(cmd);
+
+    if (!system("mlx_deftimezone.sh"))
+        system("rm /usr/bin/mlx_deftimezone.sh");
 
     return 0;
 }
@@ -2501,8 +2563,7 @@ ipmi_sim_module_post_init(sys_data_t *sys)
 
     system("hwclock -s");
 
-    gettimeofday(&tv, NULL);
-    sys->mc->sel.time_offset = tv.tv_sec;
+    mlx_sel_time_update(sys->mc);
 
     return 0;
 }
