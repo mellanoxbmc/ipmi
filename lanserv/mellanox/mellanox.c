@@ -1817,8 +1817,8 @@ static int
 mlx_get_chassis_control(lmc_data_t *mc, int op, unsigned char *val,
 			void *cb_data)
 {
-    *val = 1;
-    return 0;
+    *val = 0;
+    return IPMI_COULD_NOT_PROVIDE_RESPONSE_CC;
 }
 
 void mlx_set_sys_time(unsigned char* data)
