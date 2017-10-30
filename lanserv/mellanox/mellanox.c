@@ -1720,10 +1720,12 @@ mlx_overheat_monitor_timeout(void *cb_data)
     if (!file)
         goto asic_monitor;
 
+    memset(line, 0, sizeof(line));
     if (0 >= fread(line, 1, sizeof(line),file)) {
         fclose(file);
         goto asic_monitor;
     }
+
     errno =0;
     cpu_temp = strtol(line, NULL, 0);
     if (errno == ERANGE)
@@ -1745,7 +1747,7 @@ mlx_overheat_monitor_timeout(void *cb_data)
 
             memset(data, 0, MLX_EVENT_TO_SEL_BUF_SIZE);
             data[1] = MLX_CPU_OVERHEAT_EVENT;
-            data[2] = cpu_temp;
+            data[2] = cpu_temp/1000;
             mc_new_event(bmc_mc, MLX_OEM_SEL_RECORD_TYPE, data);
 
         }
@@ -1759,6 +1761,7 @@ mlx_overheat_monitor_timeout(void *cb_data)
     if (!file)
         goto out;
 
+    memset(line, 0, sizeof(line));
     if (0 >= fread(line, 1, sizeof(line),file)) {
         fclose(file);
         goto out;
@@ -1771,7 +1774,7 @@ mlx_overheat_monitor_timeout(void *cb_data)
         mlx_chassis_power_on_off(0);
         memset(data, 0, MLX_EVENT_TO_SEL_BUF_SIZE);
         data[1] = MLX_ASIC_OVERHEAT_EVENT;
-        data[2] = asic_temp;
+        data[2] = asic_temp/1000;
         mc_new_event(bmc_mc, MLX_OEM_SEL_RECORD_TYPE, data);
     }
 
