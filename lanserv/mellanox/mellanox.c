@@ -2432,17 +2432,6 @@ ipmi_sim_module_init(sys_data_t *sys, const char *initstr_i)
         sys->start_timer(mlx_reset_monitor_timer, &tv);
     }
 
-    rv = sys->alloc_timer(sys, mlx_overheat_monitor_timeout, sys, &mlx_overheat_monitor_timer);
-    if (rv) {
-        int errval = errno;
-        sys->log(sys, SETUP_ERROR, NULL, "Unable to create overheat monitoring timer");
-        return errval;
-    } else {
-        tv.tv_sec = MLX_OVERHEAT_MONITOR_TIMEOUT;
-        tv.tv_usec = 0;
-        sys->start_timer(mlx_overheat_monitor_timer, &tv);
-    }
-
     rv = sys->alloc_timer(sys, mlx_wd_monitor_timeout, sys, &mlx_wd_monitor_timer);
     if (rv) {
         int errval = errno;
@@ -2553,6 +2542,17 @@ ipmi_sim_module_post_init(sys_data_t *sys)
         tv.tv_sec = MLX_FANS_MONITOR_TIMEOUT;
         tv.tv_usec = 0;
         sys->start_timer(mlx_fans_monitor_timer, &tv);
+    }
+
+    rv = sys->alloc_timer(sys, mlx_overheat_monitor_timeout, sys, &mlx_overheat_monitor_timer);
+    if (rv) {
+        int errval = errno;
+        sys->log(sys, SETUP_ERROR, NULL, "Unable to create overheat monitoring timer");
+        return errval;
+    } else {
+        tv.tv_sec = MLX_OVERHEAT_MONITOR_TIMEOUT;
+        tv.tv_usec = 0;
+        sys->start_timer(mlx_overheat_monitor_timer, &tv);
     }
 
     sys->mc->sys_time_set_func = mlx_set_sys_time;
