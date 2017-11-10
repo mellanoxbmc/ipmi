@@ -2028,7 +2028,7 @@ mlx_log_device_status(int poll_status , sensor_t *sensor)
                  IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, MLX_PWR_AC_LOST_EVENT);
             break;
             case MLX_PSU2_PIN_SENSOR_NUM:
-            if (access("/bsp/fru/psu1_eeprom", F_OK) == 0)  /* AC lost or out-of-range */
+            if (access("/bsp/fru/psu2_eeprom", F_OK) == 0)  /* AC lost or out-of-range */
                 mlx_add_event_to_sel(sensor->mc, sensor->sensor_type, sensor->num, MLX_EVENT_ASSERTED, 
                  IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, MLX_PWR_AC_OUT_OF_RANGE_EVENT);
             else  /* Power Supply AC lost */
