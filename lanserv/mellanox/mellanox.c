@@ -2274,6 +2274,19 @@ mlx_ipmi_wd_reset(lmc_data_t *mc, struct timeval tv)
         system(cmd);
 }
 
+void
+mlx_panic_event_handler(lmc_data_t *mc)
+{
+    char cmd[MLX_SYS_CMD_BUF_SIZE];
+
+    /* set LED to red */
+    memset(cmd, 0, sizeof(cmd));
+    if (sprintf(cmd,"status_led.py 0x%02x %d 0x%02x\n", MLX_CPU_FAULT_LOG_NUM, MLX_EVENT_ASSERTED, 0))
+        system(cmd);
+    else
+        mc->sysinfo->log(mc->sysinfo, OS_ERROR, NULL,"Unable to set status LED to red");
+}
+
 int
 ipmi_sim_module_print_version(sys_data_t *sys, char *initstr)
 {
@@ -2563,6 +2576,7 @@ ipmi_sim_module_post_init(sys_data_t *sys)
     sys->mc->switch_console = mlx_switch_console;
     sys->mc->ipmi_wd_timeout_custom = mlx_ipmi_wd_timeout;
     sys->mc->ipmi_wd_reset_custom = mlx_ipmi_wd_reset;
+    sys->mc->panic_event_handler_custom = mlx_panic_event_handler;
 
     system("hwclock -s");
 

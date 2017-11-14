@@ -209,6 +209,10 @@ ipmi_mc_add_to_sel(lmc_data_t    *mc,
     if (!e)
 	return ENOMEM;
 
+    if (record_type == 0xf0)
+	if (mc->panic_event_handler_custom)
+	    mc->panic_event_handler_custom(mc);
+
     /* FIXME - this is inefficient, but simple */
     e->record_id = mc->sel.next_entry;
     mc->sel.next_entry++;

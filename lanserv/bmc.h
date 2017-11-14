@@ -342,6 +342,7 @@ struct lmc_data_s
     void (*switch_console)(unsigned int instance, unsigned char state);
     void (*ipmi_wd_timeout_custom)(unsigned char action);
     void (*ipmi_wd_reset_custom)(lmc_data_t *mc, struct timeval tv);
+    void (*panic_event_handler_custom)(lmc_data_t *mc);
 };
 
 typedef struct atca_site_s
