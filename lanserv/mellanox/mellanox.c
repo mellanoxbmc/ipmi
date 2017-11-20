@@ -161,6 +161,7 @@ static const char* reset_cause[MLX_RESET_CAUSE_MAX] =
 
 static unsigned int reset_logged = 0;
 static unsigned int chassis_status = 0;
+static unsigned int poh_start_point = 0;
 
 /*
  * This timer is called periodically to monitor the system reset cause.
@@ -231,6 +232,28 @@ mlx_cpu_status_monitor_timeout(void *cb_data)
             "Please enter the following command: cons2cpu \n");
     fclose(fd);
 
+}
+
+static void 
+set_poh_start_point()
+{
+    char uptime[MLX_READ_BUF_SIZE];
+    unsigned int val = 0;
+    FILE *fuptime;
+
+    memset(uptime, 0, sizeof(uptime));
+    fuptime = fopen(MLX_UPTIME_FILE, "r");
+
+    if (!fuptime) {
+        poh_start_point = 0;
+        return;
+    }
+
+    fscanf(fuptime, "%s", uptime);
+    fclose(fuptime);
+    val = strtoul(uptime, NULL, 0);
+
+    poh_start_point = val;
 }
 
 static void
@@ -907,6 +930,9 @@ handle_cpu_ready_event(lmc_data_t    *mc,
         memset(status_led_run_str, 0, sizeof(status_led_run_str));
         if (sprintf(status_led_run_str,"echo %u > %s", MLX_CPU_STATUS_PRESENCE_DETECTED, MLX_CPU_STATUS_FILE))
             system(status_led_run_str);
+
+        /* Set the poh_start_point */
+        set_poh_start_point();
     }
     else {
         /* set "IERR" in case something goes wrong on CPU sturtup */
@@ -1267,7 +1293,7 @@ static void handle_get_last_processed_event(lmc_data_t    *mc,
 static unsigned char mlx_chassis_power_on_off(unsigned char val)
 {
     FILE *file;
-    unsigned char chassis_status_str[MLX_SYS_CMD_BUF_SIZE];
+    char cmd[MLX_SYS_CMD_BUF_SIZE];
 
     file = fopen(MLX_PS1_ON, "w");
 
@@ -1286,6 +1312,11 @@ static unsigned char mlx_chassis_power_on_off(unsigned char val)
     fprintf(file, "%u", !val);
     fclose(file);
 
+    /* set "Disabled" state on power-off */
+    memset(cmd, 0, sizeof(cmd));
+    if (sprintf(cmd, "echo %u > %s", MLX_CPU_STATUS_DISABLED, MLX_CPU_STATUS_FILE))
+        system(cmd);
+
  out:
     if (val) 
         chassis_status |= val;
@@ -1294,9 +1325,9 @@ static unsigned char mlx_chassis_power_on_off(unsigned char val)
         chassis_status &= MLX_CHASSIS_POWER_ON_CLEAR;
     }
 
-    memset(chassis_status_str, 0, sizeof(chassis_status_str));
-    if (sprintf(chassis_status_str,"echo %u > /bsp/environment/chassis_status", chassis_status))
-        system(chassis_status_str);
+    memset(cmd, 0, sizeof(cmd));
+    if (sprintf(cmd, "echo %u > /bsp/environment/chassis_status", chassis_status))
+        system(cmd);
 
     return 0;
 }
@@ -1461,6 +1492,70 @@ handle_log_to_sel(lmc_data_t    *mc,
 
     rdata[0] = 0;
     *rdata_len = 1;
+    return;
+}
+
+/**
+ *
+ * ipmitool chassis poh
+ *
+**/
+static void
+handle_get_poh_counter_cmd(lmc_data_t    *mc,
+                           msg_t         *msg,
+                           unsigned char *rdata,
+                           unsigned int  *rdata_len,
+                           void          *cb_data)
+{
+    char uptime[MLX_READ_BUF_SIZE];
+    char line_status[MLX_READ_BUF_SIZE];
+    unsigned long long int val = 0;
+    unsigned long int status = 0;
+    FILE *fuptime;
+    FILE *fstatus;
+    sys_data_t *sys = cb_data;
+
+    fstatus = fopen(MLX_CPU_STATUS_FILE, "r");
+
+    if (!fstatus)
+        return;
+
+    if (0 >= fread(line_status, 1, sizeof(line_status),fstatus)) {
+        fclose(fstatus);
+        return;
+    }
+
+    status = strtoul(line_status, NULL, 0);
+
+    if (status != MLX_CPU_STATUS_PRESENCE_DETECTED) {
+        memset(rdata, 0, 6);
+        *rdata_len = 6;
+        fclose(fstatus);
+        return;
+    }
+
+    memset(uptime, 0, sizeof(uptime));
+    fuptime = fopen(MLX_UPTIME_FILE, "r");
+
+    if (!fuptime) {
+        sys->log(sys, OS_ERROR, NULL,"Unable to open  uptime file");
+        rdata[0] = IPMI_COULD_NOT_PROVIDE_RESPONSE_CC;
+        *rdata_len = 1;
+        return;
+    }
+
+    fscanf(fuptime, "%s", uptime);
+    fclose(fuptime);
+    val = (strtouq(uptime, NULL, 0) - poh_start_point)/60;
+
+    rdata[0] = 0;
+    rdata[1] = 1;
+    rdata[2] = MLX_GET_BYTE(val, 0);
+    rdata[3] = MLX_GET_BYTE(val, 1);
+    rdata[4] = MLX_GET_BYTE(val, 2);
+    rdata[5] = MLX_GET_BYTE(val, 3);
+
+    *rdata_len = 6;
     return;
 }
 
@@ -2197,7 +2292,7 @@ mlx_ipmi_wd_timeout(unsigned char action)
     mlx_set_led_command(1, MLX_LED_COLOR_AMBER, 0);
     mlx_set_led_command(1, MLX_LED_COLOR_RED, 1);
 
-    if (sprintf(cmd,"status_led.py 0x%02x %d 0x%02x\n", MLX_IPMIWD_LOG_NUM, MLX_EVENT_ASSERTED, 0))
+    if (sprintf(cmd, "status_led.py 0x%02x %d 0x%02x\n", MLX_IPMIWD_LOG_NUM, MLX_EVENT_ASSERTED, 0))
         system(cmd);
 
     /* set "IERR" if IPMI watchdog timeout expired */
@@ -2285,6 +2380,11 @@ mlx_panic_event_handler(lmc_data_t *mc)
         system(cmd);
     else
         mc->sysinfo->log(mc->sysinfo, OS_ERROR, NULL,"Unable to set status LED to red");
+
+    /* set "IERR" CPU state */
+    memset(cmd, 0, sizeof(cmd));
+    if (sprintf(cmd, "echo %u > %s", MLX_CPU_STATUS_IERR, MLX_CPU_STATUS_FILE))
+        system(cmd);
 }
 
 int
@@ -2422,6 +2522,9 @@ ipmi_sim_module_init(sys_data_t *sys, const char *initstr_i)
 
     rv = ipmi_emu_register_cmd_handler(IPMI_APP_NETFN, IPMI_OEM_MLX_LOG_TO_SEL_CMD,
                                        handle_log_to_sel, sys);
+
+    rv = ipmi_emu_register_cmd_handler(IPMI_CHASSIS_NETFN, IPMI_GET_POH_COUNTER_CMD,
+                                       handle_get_poh_counter_cmd, sys);
 
     rv = ipmi_emu_register_cmd_handler(IPMI_OEM_MLX_TZ_NETFUNC , IPMI_OEM_MLX_TZ_SET_CMD,
                                        handle_set_timezone, sys);
@@ -2581,6 +2684,8 @@ ipmi_sim_module_post_init(sys_data_t *sys)
     system("hwclock -s");
 
     mlx_sel_time_update(sys->mc);
+
+    poh_start_point = 0;
 
     return 0;
 }
