@@ -174,7 +174,7 @@ sensor_add 0x20 0 162 1 1\
 #A2D 3.3V SEN SWB sensor (max scale 247(3.96V) -> 255 k=0.9706)
 sensor_add 0x20 0 163 1 1\
         poll 5000 \
-        file "/bsp/environment/A2D_swb_3_3v_sen" div=17 mult=20
+        file "/bsp/environment/A2D_swb_3_3v_sen" div=33 mult=34
 
 
 #ADC Voltage

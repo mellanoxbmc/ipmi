@@ -10,8 +10,8 @@
 # (at your option) any later version.
 #
 
-SUBSYSTEM=="iio", KERNEL=="iio:device0", ACTION=="add", RUN+="/usr/bin/mlx-hw-events.sh add A2D %S %p"
-SUBSYSTEM=="iio", KERNEL=="iio:device0", ACTION=="remove", RUN+="/usr/bin/mlx-hw-events.sh rm A2D %S %p"
+SUBSYSTEM=="iio", KERNEL=="iio:device1", ACTION=="add", RUN+="/usr/bin/mlx-hw-events.sh add A2D %S %p"
+SUBSYSTEM=="iio", KERNEL=="iio:device1", ACTION=="remove", RUN+="/usr/bin/mlx-hw-events.sh rm A2D %S %p"
 
 SUBSYSTEM=="platform", KERNEL=="1e6e9000.adc", ACTION=="add", RUN+="/usr/bin/mlx-hw-events.sh add ADC %S %p"
 SUBSYSTEM=="platform", KERNEL=="1e6e9000.adc", ACTION=="rm", RUN+="/usr/bin/mlx-hw-events.sh add ADC %S %p"
