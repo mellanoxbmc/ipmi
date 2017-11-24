@@ -1844,7 +1844,7 @@ mlx_overheat_monitor_timeout(void *cb_data)
             data[1] = MLX_CPU_OVERHEAT_EVENT;
             data[2] = cpu_temp/1000;
             mc_new_event(bmc_mc, MLX_OEM_SEL_RECORD_TYPE, data);
-
+            goto out;
         }
     } else {
         syslog(LOG_ERR, "MLX_CPU_TEMPERATURE_FILE read neagtive value: %d", cpu_temp);
