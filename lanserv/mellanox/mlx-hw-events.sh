@@ -203,6 +203,7 @@ if [ "$1" == "add" ]; then
     mkdir -p /bsp/leds/fan/green/1/
     ln -sf $3$4/brightness /bsp/leds/fan/green/1/brightness
     ln -sf $3$4/trigger /bsp/leds/fan/green/1/trigger
+    echo 1 > /bsp/leds/fan/green/1/brightness
     echo timer > /bsp/leds/fan/green/1/trigger
     ln -sf $3$4/delay_on  /bsp/leds/fan/green/1/delay_on
     ln -sf $3$4/delay_off /bsp/leds/fan/green/1/delay_off
@@ -215,11 +216,13 @@ if [ "$1" == "add" ]; then
     echo timer > /bsp/leds/fan/red/1/trigger
     ln -sf $3$4/delay_on  /bsp/leds/fan/red/1/delay_on
     ln -sf $3$4/delay_off /bsp/leds/fan/red/1/delay_off
+    echo timer > /bsp/leds/fan/green/1/trigger
   fi
   if [ "$2" == "fan2_green" ]; then
     mkdir -p /bsp/leds/fan/green/2/
     ln -sf $3$4/brightness /bsp/leds/fan/green/2/brightness
     ln -sf $3$4/trigger /bsp/leds/fan/green/2/trigger
+    echo 1 > /bsp/leds/fan/green/2/brightness
     echo timer > /bsp/leds/fan/green/2/trigger
     ln -sf $3$4/delay_on  /bsp/leds/fan/green/2/delay_on
     ln -sf $3$4/delay_off /bsp/leds/fan/green/2/delay_off
@@ -232,11 +235,13 @@ if [ "$1" == "add" ]; then
     echo timer > /bsp/leds/fan/red/2/trigger
     ln -sf $3$4/delay_on  /bsp/leds/fan/red/2/delay_on
     ln -sf $3$4/delay_off /bsp/leds/fan/red/2/delay_off
+    echo 1 > /bsp/leds/fan/green/2/brightness
   fi
   if [ "$2" == "fan3_green" ]; then
     mkdir -p /bsp/leds/fan/green/3/
     ln -sf $3$4/brightness /bsp/leds/fan/green/3/brightness
     ln -sf $3$4/trigger /bsp/leds/fan/green/3/trigger
+    echo 1 > /bsp/leds/fan/green/3/brightness
     echo timer > /bsp/leds/fan/green/3/trigger
     ln -sf $3$4/delay_on  /bsp/leds/fan/green/3/delay_on
     ln -sf $3$4/delay_off /bsp/leds/fan/green/3/delay_off
@@ -249,11 +254,13 @@ if [ "$1" == "add" ]; then
     echo timer > /bsp/leds/fan/red/3/trigger
     ln -sf $3$4/delay_on  /bsp/leds/fan/red/3/delay_on
     ln -sf $3$4/delay_off /bsp/leds/fan/red/3/delay_off
+    echo 1 > /bsp/leds/fan/green/3/brightness
   fi
   if [ "$2" == "fan4_green" ]; then
     mkdir -p /bsp/leds/fan/green/4/
     ln -sf $3$4/brightness /bsp/leds/fan/green/4/brightness
     ln -sf $3$4/trigger /bsp/leds/fan/green/4/trigger
+    echo 1 > /bsp/leds/fan/green/4/brightness
     echo timer > /bsp/leds/fan/green/4/trigger
     ln -sf $3$4/delay_on  /bsp/leds/fan/green/4/delay_on
     ln -sf $3$4/delay_off /bsp/leds/fan/green/4/delay_off
@@ -266,6 +273,7 @@ if [ "$1" == "add" ]; then
     echo timer > /bsp/leds/fan/red/4/trigger
     ln -sf $3$4/delay_on  /bsp/leds/fan/red/4/delay_on
     ln -sf $3$4/delay_off /bsp/leds/fan/red/4/delay_off
+    echo 1 > /bsp/leds/fan/green/4/brightness
   fi
   if [ "$2" == "status_green" ]; then
     mkdir -p /bsp/leds/status/green/
