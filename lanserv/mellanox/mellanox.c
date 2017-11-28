@@ -1809,7 +1809,9 @@ mlx_overheat_monitor_timeout(void *cb_data)
     unsigned long int asic_temp;
     char line[MLX_READ_BUF_SIZE];
     unsigned char data[MLX_EVENT_TO_SEL_BUF_SIZE];
+    int cpu_temp_retry_cntr = 0;
 
+ cpu_temp_retry:
     file = fopen(MLX_CPU_TEMPERATURE_FILE, "r");
 
     if (!file)
@@ -1831,6 +1833,10 @@ mlx_overheat_monitor_timeout(void *cb_data)
     fclose(file);
     if(cpu_temp > 0) {
         if (cpu_temp > MLX_CPU_MAX_TEMP) {
+
+            if (!cpu_temp_retry_cntr++)
+                goto cpu_temp_retry;
+
             file = fopen(MLX_CPU_HARD_RESET, "w");
 
             if (!file) {
