@@ -2393,6 +2393,18 @@ mlx_panic_event_handler(lmc_data_t *mc)
         system(cmd);
 }
 
+void
+mlx_sel_list_full_handler(lmc_data_t *mc)
+{
+    sel_entry_t *rm_e = mc->sel.entries;
+    sel_entry_t *tmp = mc->sel.entries->next;
+
+    mc->sel.entries = tmp;
+    free(rm_e);
+
+    mc->sel.count--;
+}
+
 int
 ipmi_sim_module_print_version(sys_data_t *sys, char *initstr)
 {
@@ -2686,6 +2698,7 @@ ipmi_sim_module_post_init(sys_data_t *sys)
     sys->mc->ipmi_wd_timeout_custom = mlx_ipmi_wd_timeout;
     sys->mc->ipmi_wd_reset_custom = mlx_ipmi_wd_reset;
     sys->mc->panic_event_handler_custom = mlx_panic_event_handler;
+    sys->mc->sel_list_full_handler = mlx_sel_list_full_handler;
 
     system("hwclock -s");
 

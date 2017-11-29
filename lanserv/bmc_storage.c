@@ -201,8 +201,12 @@ ipmi_mc_add_to_sel(lmc_data_t    *mc,
 	return ENOTSUP;
 
     if (mc->sel.count >= mc->sel.max_count) {
-	mc->sel.flags |= 0x80;
-	return EAGAIN;
+	if (mc->sel_list_full_handler)
+	    mc->sel_list_full_handler(mc);
+	else {
+	    mc->sel.flags |= 0x80;
+	    return EAGAIN;
+	}
     }
 
     e = malloc(sizeof(*e));
