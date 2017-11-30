@@ -316,7 +316,7 @@ sensor_add 0x20 0 40 7 0x6f\
 
 #############EEPROM############
 mc_add_fru_data 0x20 0 1024 \
-  file 0 "/bsp/fru/sys_fru_eeprom"
+  file 0 "/bsp/fru/sys_eeprom"
 
 mc_add_fru_data 0x20 1 1024 \
   file 0 "/bsp/fru/swboard_eeprom"

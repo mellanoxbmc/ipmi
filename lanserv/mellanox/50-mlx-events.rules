@@ -34,6 +34,9 @@ SUBSYSTEM=="i2c", KERNEL=="16-0050", ACTION=="remove", RUN+="/usr/bin/mlx-hw-eve
 SUBSYSTEM=="i2c", KERNEL=="17-0050", ACTION=="add", RUN+="/usr/bin/mlx-hw-events.sh add eeprom_fan4 %S %p"
 SUBSYSTEM=="i2c", KERNEL=="17-0050", ACTION=="remove", RUN+="/usr/bin/mlx-hw-events.sh rm eeprom_fan4 %S %p"
 
+SUBSYSTEM=="i2c", KERNEL=="6-0051", ACTION=="add", RUN+="/usr/bin/mlx-hw-events.sh add sys_eeprom %S %p"
+SUBSYSTEM=="i2c", KERNEL=="6-0051", ACTION=="remove", RUN+="/usr/bin/mlx-hw-events.sh rm sys_eeprom %S %p"
+
 SUBSYSTEM=="leds", KERNEL=="mlnxcpld_ctrl:fan1:green", ACTION=="add", RUN+="/usr/bin/mlx-hw-events.sh add fan1_green %S %p"
 SUBSYSTEM=="leds", KERNEL=="mlnxcpld_ctrl:fan1:green", ACTION=="remove", RUN+="/usr/bin/mlx-hw-events.sh rm fan1_green %S %p"
 

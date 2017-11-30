@@ -102,6 +102,7 @@ if [ "$1" == "add" ]; then
     ln -sf $3$4/sys_pwr_cycle /bsp/reset/sys_pwr_cycle
     ln -sf $3$4/cpu_rst /bsp/reset/cpu_rst
     ln -sf $3$4/psu_pwrok_fail /bsp/reset/psu_pwrok_fail
+    ln -sf $3$4/sw_reset_cause /bsp/reset/sw_reset_cause
   fi
   if [ "$2" == "phy_reset" ]; then
     mkdir -p /bsp/reset/
@@ -321,6 +322,10 @@ if [ "$1" == "add" ]; then
     mkdir -p /bsp/environment/
     ln -sf $3$4/in2_input /bsp/environment/$2
   fi
+  if [ "$2" == "sys_eeprom" ]; then
+    mkdir -p /bsp/fru/
+    ln -sf $3$4/eeprom /bsp/fru/$2
+  fi
 elif [ "$1" == "change" ]; then
   if [ "$2" == "reset" ]; then
     unlink /bsp/reset/bmc_reset_soft
@@ -343,6 +348,7 @@ elif [ "$1" == "change" ]; then
     unlink /bsp/reset/sys_pwr_cycle
     unlink /bsp/reset/cpu_rst
     unlink /bsp/reset/psu_pwrok_fail
+    unlink /bsp/reset/sw_reset_cause
 
     ln -sf $3$4/bmc_reset_soft /bsp/reset/bmc_reset_soft
     ln -sf $3$4/cpu_reset_hard /bsp/reset/cpu_reset_hard
@@ -364,6 +370,7 @@ elif [ "$1" == "change" ]; then
     ln -sf $3$4/sys_pwr_cycle /bsp/reset/sys_pwr_cycle
     ln -sf $3$4/cpu_rst /bsp/reset/cpu_rst
     ln -sf $3$4/psu_pwrok_fail /bsp/reset/psu_pwrok_fail
+    ln -sf $3$4/sw_reset_cause /bsp/reset/sw_reset_cause
   fi
   if [ "$2" == "phy_reset" ]; then
     unlink /bsp/reset/reset_phy
@@ -442,6 +449,7 @@ else
     unlink /bsp/reset/sys_pwr_cycle
     unlink /bsp/reset/cpu_rst
     unlink /bsp/reset/psu_pwrok_fail
+    unlink /bsp/reset/sw_reset_cause
   fi
   if [ "$2" == "phy_reset" ]; then
     unlink /bsp/reset/reset_phy
@@ -594,5 +602,8 @@ else
   fi
   if [ "$2" == "comex" ]; then
     unlink /bsp/thermal/$2_ambient_temp
+  fi
+  if [ "$2" == "sys_eeprom" ]; then
+    unlink /bsp/fru/$2
   fi
 fi
