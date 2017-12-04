@@ -183,7 +183,7 @@ static ipmi_timer_t *mlx_overheat_monitor_timer = NULL;
 #define MLX_CPU_TEMPERATURE_FILE              "/bsp/thermal/cpu_temp"
 #define MLX_ASIC_TEMPERATURE_FILE             "/bsp/thermal/asic_temp"
 #define MLX_CPU_MAX_TEMP                      110000
-#define MLX_ASIC_MAX_TEMP                     82000
+#define MLX_ASIC_MAX_TEMP                     120000
 
 /*
  * This timer is called periodically for BMC watchdog monitoring

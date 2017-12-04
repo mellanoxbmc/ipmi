@@ -298,18 +298,14 @@ sdr type 1
         analog_data_format      unsigned
         linearization           linear
         sensor_direction        input
-        nominal_specified       true
-        nominal_reading         153
-        sensor_maximum          248
-        sensor_minimum          78
         m                       1
-        b                       -128
+        b                       0
         r_exp                   0
         b_exp                   0
-        lc_fthresh              -22
-        lnc_fthresh             1
-        unc_fthresh             60
-        uc_fthresh              82
+        lc_fthresh              0
+        lnc_fthresh             10
+        unc_fthresh             100
+        uc_fthresh              110
         positive_hysteresis     1
         negative_hysteresis     1
         id_string               "asic temp"

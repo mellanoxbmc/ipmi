@@ -58,7 +58,7 @@ sensor_add 0x20  0    4     1     1 \
 # asic Temp
 sensor_add 0x20  0    5     1     1 \
         poll 5000 \
-        file "/bsp/thermal/asic_temp" sub=-128000 div=1000
+        file "/bsp/thermal/asic_temp" div=1000
 
 # CPU Temp
 sensor_add 0x20  0    6     1     1 \
