@@ -97,6 +97,7 @@ static unsigned int mlx_fan_speed_rear_profile1[] = {18000, 5400, 5400, 5400, 72
 #define MLX_SYS_HARD_RESET   "/bsp/reset/system_reset_hard"
 #define MLX_PS1_ON           "/bsp/reset/ps1_on"
 #define MLX_PS2_ON           "/bsp/reset/ps2_on"
+#define MLX_SYS_POWER_CYCLE  "/bsp/reset/sys_power_cycle"
 #define MLX_RESET_PHY        "/bsp/reset/reset_phy"
 
 #define MLX_UART_TO_BMC      "/bsp/reset/uart_sel"
@@ -2381,6 +2382,24 @@ mlx_sel_list_full_handler(lmc_data_t *mc)
 }
 
 int
+mlx_chassis_power_cycle()
+{
+    FILE *freset;
+    freset = fopen(MLX_SYS_POWER_CYCLE, "w");
+
+    if (!freset) {
+        return ETXTBSY;
+    } else {
+        fprintf(freset, "%u", 0);
+        usleep(100);
+        fprintf(freset, "%u", 1);
+    }
+
+    fclose(freset);
+    return 0;
+}
+
+int
 ipmi_sim_module_print_version(sys_data_t *sys, char *initstr)
 {
     printf("IPMI Simulator Mellanox module version 0.1\n");
@@ -2674,6 +2693,7 @@ ipmi_sim_module_post_init(sys_data_t *sys)
     sys->mc->ipmi_wd_reset_custom = mlx_ipmi_wd_reset;
     sys->mc->panic_event_handler_custom = mlx_panic_event_handler;
     sys->mc->sel_list_full_handler = mlx_sel_list_full_handler;
+    sys->mc->chasis_power_cycle_handler = mlx_chassis_power_cycle;
 
     system("hwclock -s");
 

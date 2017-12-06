@@ -229,19 +229,30 @@ handle_chassis_control(lmc_data_t    *mc,
 	break;
 
     case 2: /* power cycle */
-	rv = set_power(mc, 0);
-	if (rv == ENOTSUP)
-	    goto no_support;
-	else if (rv) {
-	    rdata[0] = IPMI_UNKNOWN_ERR_CC;
+	if (mc->chasis_power_cycle_handler) {
+	    rv = mc->chasis_power_cycle_handler();
+	    if (rv) 
+		rdata[0] = IPMI_COULD_NOT_PROVIDE_RESPONSE_CC;
+	    else
+		rdata[0] = 0;
 	    *rdata_len = 1;
 	    return;
 	}
-	rv = start_poweron_timer(mc);
-	if (rv) {
-	    rdata[0] = IPMI_UNKNOWN_ERR_CC;
-	    *rdata_len = 1;
-	    return;
+	else {
+	    rv = set_power(mc, 0);
+	    if (rv == ENOTSUP)
+		goto no_support;
+	    else if (rv) {
+		rdata[0] = IPMI_UNKNOWN_ERR_CC;
+		*rdata_len = 1;
+		return;
+	    }
+	    rv = start_poweron_timer(mc);
+	    if (rv) {
+		rdata[0] = IPMI_UNKNOWN_ERR_CC;
+		*rdata_len = 1;
+		return;
+	    }
 	}
 	break;
 

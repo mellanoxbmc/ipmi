@@ -100,6 +100,7 @@ if [ "$1" == "add" ]; then
     ln -sf $3$4/cpu_sleep_or_fail /bsp/reset/cpu_sleep_or_fail
     ln -sf $3$4/rst_from_cpu /bsp/reset/rst_from_cpu
     ln -sf $3$4/sys_pwr_cycle /bsp/reset/sys_pwr_cycle
+    ln -sf $3$4/sys_power_cycle /bsp/reset/sys_power_cycle
     ln -sf $3$4/cpu_rst /bsp/reset/cpu_rst
     ln -sf $3$4/psu_pwrok_fail /bsp/reset/psu_pwrok_fail
     ln -sf $3$4/sw_reset_cause /bsp/reset/sw_reset_cause
@@ -346,6 +347,7 @@ elif [ "$1" == "change" ]; then
     unlink /bsp/reset/rst_from_cpu
     unlink /bsp/reset/bmc_soft_rst
     unlink /bsp/reset/sys_pwr_cycle
+    unlink /bsp/reset/sys_power_cycle
     unlink /bsp/reset/cpu_rst
     unlink /bsp/reset/psu_pwrok_fail
     unlink /bsp/reset/sw_reset_cause
@@ -368,6 +370,7 @@ elif [ "$1" == "change" ]; then
     ln -sf $3$4/rst_from_cpu /bsp/reset/rst_from_cpu
     ln -sf $3$4/bmc_soft_rst /bsp/reset/bmc_soft_rst
     ln -sf $3$4/sys_pwr_cycle /bsp/reset/sys_pwr_cycle
+    ln -sf $3$4/sys_power_cycle /bsp/reset/sys_power_cycle
     ln -sf $3$4/cpu_rst /bsp/reset/cpu_rst
     ln -sf $3$4/psu_pwrok_fail /bsp/reset/psu_pwrok_fail
     ln -sf $3$4/sw_reset_cause /bsp/reset/sw_reset_cause
@@ -447,6 +450,7 @@ else
     unlink /bsp/reset/rst_from_cpu
     unlink /bsp/reset/bmc_soft_rst
     unlink /bsp/reset/sys_pwr_cycle
+    unlink /bsp/reset/sys_power_cycle
     unlink /bsp/reset/cpu_rst
     unlink /bsp/reset/psu_pwrok_fail
     unlink /bsp/reset/sw_reset_cause

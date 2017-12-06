@@ -344,6 +344,7 @@ struct lmc_data_s
     void (*ipmi_wd_reset_custom)(lmc_data_t *mc, struct timeval tv);
     void (*panic_event_handler_custom)(lmc_data_t *mc);
     void (*sel_list_full_handler)(lmc_data_t *mc);
+    int (*chasis_power_cycle_handler)();
 };
 
 typedef struct atca_site_s
