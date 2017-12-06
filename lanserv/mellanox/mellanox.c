@@ -204,7 +204,7 @@ static unsigned char mlx_wd_control = 0;
 #define MLX_CPU_STATUS_IERR                    1
 #define MLX_CPU_STATUS_PRESENCE_DETECTED       128
 #define MLX_CPU_STATUS_DISABLED                256
-#define MLX_CPU_STATUS_MONITOR_TIMEOUT         300
+#define MLX_CPU_STATUS_MONITOR_TIMEOUT         600
 static ipmi_timer_t *mlx_cpu_status_monitor_timer = NULL;
 
 static void
@@ -2286,10 +2286,7 @@ mlx_ipmi_wd_timeout(unsigned char action)
 
     switch(action) {
     case IPMI_MC_WATCHDOG_ACTION_NONE:
-        /*Uart to BMC*/
-        memset(cmd, 0, sizeof(cmd));
-        sprintf(cmd, "echo 0 > %s", MLX_UART_TO_BMC);
-        system(cmd);
+        /* Log to SEL */
         mlx_add_event_to_sel(bmc_mc, IPMI_SENSOR_TYPE_WATCHDOG_1, 0 , MLX_EVENT_ASSERTED, 
                              IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, MLX_IPMI_WD_EXPIRED_EVENT);
         break;
