@@ -25,7 +25,7 @@ mc_setbmc 0x20
 #      IPMB DevID DevSDRs?       Rev   Maj   Min   Dev   MFG      Prod
 #                                      FW    FW    Sup   ID       Id
 #                                      Rev   Rev
-mc_add 0x20 1 no-device-sdrs  0x01  0x00  0x00  0x9f  0x00500f 0x0001 persist_sdr
+mc_add 0x20 1 no-device-sdrs  0x01  0x00  0x00  0x9f  0x008119 0x0061 persist_sdr
 
 #Enable SEL device
 sel_enable 0x20 1000 0x0a
