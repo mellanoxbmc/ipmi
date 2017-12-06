@@ -180,6 +180,7 @@ static ipmi_timer_t *mlx_fans_monitor_timer = NULL;
  */
 static ipmi_timer_t *mlx_overheat_monitor_timer = NULL;
 #define MLX_OVERHEAT_MONITOR_TIMEOUT          5
+#define MLX_CPU_TEMP_CHECK_RETRY_CNTR         3
 #define MLX_CPU_TEMPERATURE_FILE              "/bsp/thermal/cpu_temp"
 #define MLX_ASIC_TEMPERATURE_FILE             "/bsp/thermal/asic_temp"
 #define MLX_CPU_MAX_TEMP                      110000
@@ -1815,12 +1816,12 @@ mlx_overheat_monitor_timeout(void *cb_data)
     file = fopen(MLX_CPU_TEMPERATURE_FILE, "r");
 
     if (!file)
-        goto asic_monitor;
+        goto out;
 
     memset(line, 0, sizeof(line));
     if (0 >= fread(line, 1, sizeof(line),file)) {
         fclose(file);
-        goto asic_monitor;
+        goto out;
     }
 
     errno =0;
@@ -1834,7 +1835,7 @@ mlx_overheat_monitor_timeout(void *cb_data)
     if(cpu_temp > 0) {
         if (cpu_temp > MLX_CPU_MAX_TEMP) {
 
-            if (!cpu_temp_retry_cntr++)
+            if (cpu_temp_retry_cntr++ < MLX_CPU_TEMP_CHECK_RETRY_CNTR)
                 goto cpu_temp_retry;
 
             file = fopen(MLX_CPU_HARD_RESET, "w");
@@ -1854,29 +1855,6 @@ mlx_overheat_monitor_timeout(void *cb_data)
         }
     } else {
         syslog(LOG_ERR, "MLX_CPU_TEMPERATURE_FILE read neagtive value: %d", cpu_temp);
-    }
-
- asic_monitor:
-    file = fopen(MLX_ASIC_TEMPERATURE_FILE, "r");
-
-    if (!file)
-        goto out;
-
-    memset(line, 0, sizeof(line));
-    if (0 >= fread(line, 1, sizeof(line),file)) {
-        fclose(file);
-        goto out;
-    }
-
-    asic_temp = strtoul(line, NULL, 0);
-    fclose(file);
-
-    if (asic_temp > MLX_ASIC_MAX_TEMP) {
-        mlx_chassis_power_on_off(0);
-        memset(data, 0, MLX_EVENT_TO_SEL_BUF_SIZE);
-        data[1] = MLX_ASIC_OVERHEAT_EVENT;
-        data[2] = asic_temp/1000;
-        mc_new_event(bmc_mc, MLX_OEM_SEL_RECORD_TYPE, data);
     }
 
  out:
