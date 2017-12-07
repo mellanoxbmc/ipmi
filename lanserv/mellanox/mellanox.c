@@ -37,6 +37,8 @@ static unsigned char all_fans_failure = 0;
 static unsigned int mlx_fan_speed_front_profile1[] = {21000, 6300, 6300, 6300, 8400, 10500, 12700, 15000, 17000, 19500};
 static unsigned int mlx_fan_speed_rear_profile1[] = {18000, 5400, 5400, 5400, 7200, 9000, 10800, 12600, 14500, 16500};
 
+#define MLX_BAIDU_PRODUCT_ID               0x61
+
 /**************************************************************************
  *                  Mellanox custom commands codes                        *
  *************************************************************************/
@@ -2643,7 +2645,7 @@ ipmi_sim_module_post_init(sys_data_t *sys)
 
     productId = (sys->mc->product_id[1] << 8) | sys->mc->product_id[0];
     switch (productId) {
-    case 1: /* Baidu BMC */
+    case MLX_BAIDU_PRODUCT_ID:
         sys_devices.fan_number = 4;
         sys_devices.fan_tacho_per_drw = 2;
         sys_devices.fan_pwm_max = 9;
