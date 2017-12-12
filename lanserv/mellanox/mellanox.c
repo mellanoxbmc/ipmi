@@ -217,6 +217,9 @@ static unsigned char mlx_wd_control = 0;
 #define MLX_CPU_STATUS_MONITOR_TIMEOUT         600
 static ipmi_timer_t *mlx_cpu_status_monitor_timer = NULL;
 
+#define MLX_SYSTEM_RESET_TIMEOUT               1
+static ipmi_timer_t *mlx_system_reset_timer = NULL;
+
 static void
 mlx_cpu_status_monitor_timeout(void *cb_data)
 {
@@ -1343,6 +1346,25 @@ static unsigned char mlx_chassis_power_on_off(unsigned char val)
     return 0;
 }
 
+static void
+mlx_system_reset_timeout(void *cb_data)
+{
+    sys_data_t *sys = cb_data;
+    FILE *freset;
+
+    freset = fopen(MLX_SYS_HARD_RESET, "w");
+
+    if (!freset)
+        sys->log(sys, SETUP_ERROR, NULL, "Unable to open %s file", MLX_SYS_HARD_RESET);
+    else{
+        mlx_add_event_to_sel(sys->mc, IPMI_SENSOR_TYPE_SYSTEM_EVENT, 0 , 
+                             MLX_EVENT_ASSERTED, IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, MLX_SYS_BOOT_EVENT);
+        fprintf(freset, "%u", 0);
+    }
+
+    fclose(freset);
+}
+
 /*
  * Chassis control for the chassis
  */
@@ -1350,7 +1372,7 @@ static int
 mlx_set_chassis_control(lmc_data_t *mc, int op, unsigned char *val,
                         void *cb_data)
 {
-    FILE *freset;
+    struct timeval tv;
 
     switch (op) {
     case CHASSIS_CONTROL_POWER:
@@ -1361,17 +1383,9 @@ mlx_set_chassis_control(lmc_data_t *mc, int op, unsigned char *val,
     case CHASSIS_CONTROL_GRACEFUL_SHUTDOWN:
         break;
     case CHASSIS_CONTROL_RESET:
-        freset = fopen(MLX_SYS_HARD_RESET, "w");
-
-        if (!freset) {
-                return ETXTBSY;
-        } else {
-            mlx_add_event_to_sel(mc, IPMI_SENSOR_TYPE_SYSTEM_EVENT, 0 , 
-                                 MLX_EVENT_ASSERTED, IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, MLX_SYS_BOOT_EVENT);
-            fprintf(freset, "%u", 0);
-        }
-
-        fclose(freset);
+        tv.tv_sec = MLX_SYSTEM_RESET_TIMEOUT;
+        tv.tv_usec = 0;
+        mc->sysinfo->start_timer(mlx_system_reset_timer, &tv);
         break;
     default:
         return EINVAL;
@@ -2629,6 +2643,13 @@ ipmi_sim_module_init(sys_data_t *sys, const char *initstr_i)
         tv.tv_sec = MLX_CPU_STATUS_MONITOR_TIMEOUT;
         tv.tv_usec = 0;
         sys->start_timer(mlx_cpu_status_monitor_timer, &tv);
+    }
+
+    rv = sys->alloc_timer(sys, mlx_system_reset_timeout, sys, &mlx_system_reset_timer);
+    if (rv) {
+        int errval = errno;
+        sys->log(sys, SETUP_ERROR, NULL, "Unable to create system reset timer");
+        return errval;
     }
 
     /* set "Disabled" state at startup */
