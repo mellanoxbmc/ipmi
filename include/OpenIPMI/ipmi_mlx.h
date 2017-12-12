@@ -86,6 +86,11 @@
 #define MLX_AC_PWR_CYCLE_EVENT       0x5
 #define MLX_DC_PWR_CYCLE_EVENT       0x6
 #define MLX_CPU_PWR_DOWN_EVENT       0x7
+#define MLX_WD_STARTED_EVENT         0x8
+#define MLX_WD_STOPPED_EVENT         0x9
+#define MLX_WD_EXPIRED_EVENT         0xA
+#define MLX_BMC_RESET_SW_UPGRADE     0xB
+#define MLX_BMC_RESET_COLD           0xC
 
 /* Event directions */
 #define MLX_EVENT_ASSERTED           0x0
@@ -106,9 +111,6 @@
 #define MLX_OS_SHUTDOWN_EVENT         0x3
 #define MLX_SYS_BOOT_EVENT            0x1
 #define MLX_PSU_PRESENT_EVENT         0x0
-#define MLX_WD_STARTED_EVENT          0x8
-#define MLX_WD_STOPPED_EVENT          0x9
-#define MLX_WD_EXPIRED_EVENT          0xA
 
 #define MLX_CHASSIS_POWER_ON_BIT      1
 #define MLX_CHASSIS_POWER_ON_CLEAR    0xFFFFFFFE

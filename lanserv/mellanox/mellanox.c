@@ -114,7 +114,8 @@ static unsigned int mlx_fan_speed_rear_profile1[] = {18000, 5400, 5400, 5400, 72
 #define MLX_UPTIME_FILE      "/proc/uptime"
 
 enum reset_cause_e {
-    MLX_RESET_CAUSE_AC_POWER_CYCLE = 0,
+    MLX_RESET_CAUSE_SW_RESET_CAUSE = 0,
+    MLX_RESET_CAUSE_AC_POWER_CYCLE,
     MLX_RESET_CAUSE_DC_POWER_CYCLE,
     MLX_RESET_CAUSE_PLATFORM_RST,
     MLX_RESET_CAUSE_THERMAL_OR_SWB_FAIL,
@@ -140,6 +141,7 @@ enum reset_cause_e {
 
 static const char* reset_cause[MLX_RESET_CAUSE_MAX] =
 {
+    "/bsp/reset/sw_reset_cause",
     "/bsp/reset/ac_power_cycle",
     "/bsp/reset/dc_power_cycle",
     "/bsp/reset/platform_rst",
@@ -161,6 +163,10 @@ static const char* reset_cause[MLX_RESET_CAUSE_MAX] =
     "/bsp/reset/cpu_rst_by_wd",
     "/bsp/reset/power_ok_assert"
 };
+
+#define MLX_SW_RESET_CAUSE_NONE             0
+#define MLX_SW_RESET_CAUSE_BMC_UPGRADE      1
+#define MLX_SW_RESET_CAUSE_IPMI_RESET_COLD  2
 
 static unsigned int reset_logged = 0;
 static unsigned int chassis_status = 0;
@@ -205,6 +211,7 @@ static unsigned char mlx_wd_control = 0;
 #define MLX_CPU_STATUS_FILE                    "/bsp/environment/cpu_status"
 #define MLX_CPU_STATUS_NONE                    0
 #define MLX_CPU_STATUS_IERR                    1
+#define MLX_CPU_STATUS_THERMAL_TRIP            2
 #define MLX_CPU_STATUS_PRESENCE_DETECTED       128
 #define MLX_CPU_STATUS_DISABLED                256
 #define MLX_CPU_STATUS_MONITOR_TIMEOUT         600
@@ -1619,6 +1626,7 @@ mlx_reset_monitor_timeout(void *cb_data)
     int fd;
     int rv;
     unsigned char data[MLX_EVENT_TO_SEL_BUF_SIZE];
+    char cmd[MLX_SYS_CMD_BUF_SIZE];
 
     for (i = 0; i < MLX_RESET_CAUSE_MAX; ++i) {
         unsigned char c = 0;
@@ -1633,6 +1641,38 @@ mlx_reset_monitor_timeout(void *cb_data)
         }
         active = atoi(&c);
         switch (i) {
+        case MLX_RESET_CAUSE_SW_RESET_CAUSE:
+            memset(data, 0, MLX_EVENT_TO_SEL_BUF_SIZE);
+            if (active) {
+                switch (active) {
+                case MLX_SW_RESET_CAUSE_BMC_UPGRADE:
+                    data[1] = MLX_BMC_RESET_SW_UPGRADE;
+                    mc_new_event(bmc_mc, MLX_OEM_SEL_RECORD_TYPE, data);
+                    break;
+                case MLX_SW_RESET_CAUSE_IPMI_RESET_COLD:
+                    data[1] = MLX_BMC_RESET_COLD;
+                    mc_new_event(bmc_mc, MLX_OEM_SEL_RECORD_TYPE, data);
+                    break;
+                default:
+                    break;
+                }
+                memset(cmd, 0, sizeof(cmd));
+                sprintf(cmd, "echo %i > %s", MLX_SW_RESET_CAUSE_NONE, reset_cause[MLX_RESET_CAUSE_SW_RESET_CAUSE]);
+                system(cmd);
+            }
+            break;
+
+        case MLX_RESET_CAUSE_THERMAL_OR_SWB_FAIL:
+            if (active && !(reset_logged & (1 << MLX_RESET_CAUSE_THERMAL_OR_SWB_FAIL))) {
+                memset(data, 0, MLX_EVENT_TO_SEL_BUF_SIZE);
+                data[1] = MLX_ASIC_OVERHEAT_EVENT;
+                mc_new_event(bmc_mc, MLX_OEM_SEL_RECORD_TYPE, data);
+                reset_logged |= 1 << MLX_RESET_CAUSE_THERMAL_OR_SWB_FAIL;
+            }
+            else if (!active && (reset_logged & (1 << MLX_RESET_CAUSE_THERMAL_OR_SWB_FAIL)))
+                reset_logged ^= 1 << MLX_RESET_CAUSE_THERMAL_OR_SWB_FAIL;
+            break;
+
         case MLX_RESET_CAUSE_AC_POWER_CYCLE:
             if (active && !(reset_logged & (1 << MLX_RESET_CAUSE_AC_POWER_CYCLE))) {
                 memset(data, 0, MLX_EVENT_TO_SEL_BUF_SIZE);
@@ -1813,6 +1853,7 @@ mlx_overheat_monitor_timeout(void *cb_data)
     unsigned long int asic_temp;
     char line[MLX_READ_BUF_SIZE];
     unsigned char data[MLX_EVENT_TO_SEL_BUF_SIZE];
+    char cmd[MLX_SYS_CMD_BUF_SIZE];
     int cpu_temp_retry_cntr = 0;
 
  cpu_temp_retry:
@@ -1854,6 +1895,12 @@ mlx_overheat_monitor_timeout(void *cb_data)
             data[1] = MLX_CPU_OVERHEAT_EVENT;
             data[2] = cpu_temp/1000;
             mc_new_event(bmc_mc, MLX_OEM_SEL_RECORD_TYPE, data);
+
+            /* set "Thermal Trip" */
+            memset(cmd, 0, sizeof(cmd));
+            if (sprintf(cmd,"echo %u > %s\n", MLX_CPU_STATUS_THERMAL_TRIP, MLX_CPU_STATUS_FILE))
+                system(cmd);
+
             goto out;
         }
     } else {
