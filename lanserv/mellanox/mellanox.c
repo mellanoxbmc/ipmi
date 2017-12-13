@@ -1676,17 +1676,6 @@ mlx_reset_monitor_timeout(void *cb_data)
             }
             break;
 
-        case MLX_RESET_CAUSE_THERMAL_OR_SWB_FAIL:
-            if (active && !(reset_logged & (1 << MLX_RESET_CAUSE_THERMAL_OR_SWB_FAIL))) {
-                memset(data, 0, MLX_EVENT_TO_SEL_BUF_SIZE);
-                data[1] = MLX_ASIC_OVERHEAT_EVENT;
-                mc_new_event(bmc_mc, MLX_OEM_SEL_RECORD_TYPE, data);
-                reset_logged |= 1 << MLX_RESET_CAUSE_THERMAL_OR_SWB_FAIL;
-            }
-            else if (!active && (reset_logged & (1 << MLX_RESET_CAUSE_THERMAL_OR_SWB_FAIL)))
-                reset_logged ^= 1 << MLX_RESET_CAUSE_THERMAL_OR_SWB_FAIL;
-            break;
-
         case MLX_RESET_CAUSE_AC_POWER_CYCLE:
             if (active && !(reset_logged & (1 << MLX_RESET_CAUSE_AC_POWER_CYCLE))) {
                 memset(data, 0, MLX_EVENT_TO_SEL_BUF_SIZE);
@@ -1857,6 +1846,18 @@ mlx_fans_monitor_timeout(void *cb_data)
     sys->start_timer(mlx_fans_monitor_timer, &tv);
 }
 
+static void mlx_thermal_hist_set(uint8_t type, long int curr_temp)
+{
+    if (sys_devices.thermal_history[type].last_temp == curr_temp)
+        sys_devices.thermal_history[type].last_trend = MLX_TEMP_KEEP;
+    else if (sys_devices.thermal_history[type].last_temp < curr_temp)
+        sys_devices.thermal_history[type].last_trend = MLX_TEMP_UP;
+    else
+        sys_devices.thermal_history[type].last_trend = MLX_TEMP_DOWN;
+
+    sys_devices.thermal_history[type].last_temp = curr_temp;
+}
+
 static void
 mlx_overheat_monitor_timeout(void *cb_data)
 {
@@ -1864,7 +1865,7 @@ mlx_overheat_monitor_timeout(void *cb_data)
     struct timeval tv;
     FILE *file;
     long int cpu_temp;
-    unsigned long int asic_temp;
+    long int asic_temp;
     char line[MLX_READ_BUF_SIZE];
     unsigned char data[MLX_EVENT_TO_SEL_BUF_SIZE];
     char cmd[MLX_SYS_CMD_BUF_SIZE];
@@ -1873,28 +1874,33 @@ mlx_overheat_monitor_timeout(void *cb_data)
  cpu_temp_retry:
     file = fopen(MLX_CPU_TEMPERATURE_FILE, "r");
 
-    if (!file)
+    if (!file) { 
+        sys_devices.thermal_history[MLX_CPU_HISTORY].last_temp = 0;
+        sys_devices.thermal_history[MLX_CPU_HISTORY].last_trend = MLX_TEMP_DISCONNECT;
         goto out;
+    }
 
     memset(line, 0, sizeof(line));
-    if (0 >= fread(line, 1, sizeof(line),file)) {
+    if (0 >= fread(line, 1, sizeof(line), file)) {
         fclose(file);
         goto out;
     }
 
-    errno =0;
+    errno = 0;
     cpu_temp = strtol(line, NULL, 0);
-    if (errno == ERANGE)
-    {
+    if (errno == ERANGE) {
         syslog(LOG_ERR, "MLX_CPU_TEMPERATURE_FILE read out of range.");
         cpu_temp = 0;
     }
     fclose(file);
+
     if(cpu_temp > 0) {
         if (cpu_temp > MLX_CPU_MAX_TEMP) {
 
             if (cpu_temp_retry_cntr++ < MLX_CPU_TEMP_CHECK_RETRY_CNTR)
                 goto cpu_temp_retry;
+
+            mlx_thermal_hist_set(MLX_CPU_HISTORY, cpu_temp);
 
             file = fopen(MLX_CPU_HARD_RESET, "w");
 
@@ -1917,8 +1923,46 @@ mlx_overheat_monitor_timeout(void *cb_data)
 
             goto out;
         }
+        mlx_thermal_hist_set(MLX_CPU_HISTORY, cpu_temp);
     } else {
         syslog(LOG_ERR, "MLX_CPU_TEMPERATURE_FILE read neagtive value: %d", cpu_temp);
+    }
+
+    /* asic temp monitoring */
+    file = fopen(MLX_ASIC_TEMPERATURE_FILE, "r");
+
+    if (!file) {
+        if (sys_devices.thermal_history[MLX_ASIC_HISTORY].last_temp >= MLX_ASIC_HIGH_TEMP
+            && sys_devices.thermal_history[MLX_ASIC_HISTORY].last_trend == MLX_TEMP_UP) {
+            memset(data, 0, MLX_EVENT_TO_SEL_BUF_SIZE);
+            data[1] = MLX_ASIC_OVERHEAT_EVENT;
+            data[2] = sys_devices.thermal_history[MLX_ASIC_HISTORY].last_temp/1000;
+            mc_new_event(bmc_mc, MLX_OEM_SEL_RECORD_TYPE, data);
+        }
+
+        sys_devices.thermal_history[MLX_ASIC_HISTORY].last_temp = 0;
+        sys_devices.thermal_history[MLX_ASIC_HISTORY].last_trend = MLX_TEMP_DISCONNECT;
+        goto out;
+    }
+
+    memset(line, 0, sizeof(line));
+    if (0 >= fread(line, 1, sizeof(line),file)) {
+        fclose(file);
+        goto out;
+    }
+
+    errno = 0;
+    asic_temp = strtol(line, NULL, 0);
+    if (errno == ERANGE)
+    {
+        syslog(LOG_ERR, "MLX_ASIC_TEMPERATURE_FILE read out of range.");
+        asic_temp = 0;
+    }
+    fclose(file);
+    if(asic_temp > 0) {
+        mlx_thermal_hist_set(MLX_ASIC_HISTORY, asic_temp);
+    } else {
+        syslog(LOG_ERR, "MLX_ASIC_TEMPERATURE_FILE read negative value: %d", asic_temp);
     }
 
  out:
@@ -2725,6 +2769,10 @@ ipmi_sim_module_post_init(sys_data_t *sys)
         sys_devices.get_fan_speed = get_expected_fan_speed;
         sys_devices.fan_speed_front = mlx_fan_speed_front_profile1;
         sys_devices.fan_speed_rear = mlx_fan_speed_rear_profile1;
+        sys_devices.thermal_history[MLX_CPU_HISTORY].last_temp = 0;
+        sys_devices.thermal_history[MLX_CPU_HISTORY].last_trend = MLX_TEMP_KEEP;
+        sys_devices.thermal_history[MLX_ASIC_HISTORY].last_temp = 0;
+        sys_devices.thermal_history[MLX_ASIC_HISTORY].last_trend = MLX_TEMP_KEEP;
         break;
     default:
         break;

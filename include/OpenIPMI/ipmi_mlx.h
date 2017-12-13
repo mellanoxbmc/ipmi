@@ -91,6 +91,7 @@
 #define MLX_WD_EXPIRED_EVENT         0xA
 #define MLX_BMC_RESET_SW_UPGRADE     0xB
 #define MLX_BMC_RESET_COLD           0xC
+#define MLX_THERMAL_OR_SWB_FAIL      0xD
 
 /* Event directions */
 #define MLX_EVENT_ASSERTED           0x0
@@ -124,6 +125,27 @@
 
 typedef unsigned int (*mlx_get_expected_fan_speed)(unsigned char tacho_num, unsigned char fan_pwm);
 
+#define MLX_ASIC_HIGH_TEMP         115000
+#define MLX_ASIC_GOOD_HELTH        2
+
+enum mlx_thermal_hist_types {
+    MLX_ASIC_HISTORY,
+    MLX_CPU_HISTORY,
+    MLX_THERMAL_HISTORY_MAX
+};
+
+enum mlx_thermal_hist_trends {
+    MLX_TEMP_KEEP,
+    MLX_TEMP_UP,
+    MLX_TEMP_DOWN,
+    MLX_TEMP_DISCONNECT
+};
+
+typedef struct mlx_thermal_hist_data_s {
+    uint32_t last_temp;
+    uint8_t  last_trend;
+}mlx_thermal_hist_data_t;
+
 struct mlx_devices_data {
     unsigned char fan_number;
     unsigned char fan_tacho_per_drw;
@@ -136,6 +158,7 @@ struct mlx_devices_data {
     mlx_get_expected_fan_speed get_fan_speed;
     unsigned int *fan_speed_front;
     unsigned int *fan_speed_rear;
+    mlx_thermal_hist_data_t thermal_history[MLX_THERMAL_HISTORY_MAX];
 };
 
 struct mlx_devices_data sys_devices;
