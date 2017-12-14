@@ -115,8 +115,6 @@ static unsigned int mlx_fan_speed_rear_profile1[] = {18000, 5400, 5400, 5400, 72
 
 enum reset_cause_e {
     MLX_RESET_CAUSE_SW_RESET_CAUSE = 0,
-    MLX_RESET_CAUSE_AC_POWER_CYCLE,
-    MLX_RESET_CAUSE_DC_POWER_CYCLE,
     MLX_RESET_CAUSE_PLATFORM_RST,
     MLX_RESET_CAUSE_THERMAL_OR_SWB_FAIL,
     MLX_RESET_CAUSE_CPU_POWER_DOWN,
@@ -142,8 +140,6 @@ enum reset_cause_e {
 static const char* reset_cause[MLX_RESET_CAUSE_MAX] =
 {
     "/bsp/reset/sw_reset_cause",
-    "/bsp/reset/ac_power_cycle",
-    "/bsp/reset/dc_power_cycle",
     "/bsp/reset/platform_rst",
     "/bsp/reset/thermal_or_swb_fail",
     "/bsp/reset/cpu_power_down",
@@ -192,6 +188,9 @@ static ipmi_timer_t *mlx_overheat_monitor_timer = NULL;
 #define MLX_CPU_TEMP_CHECK_RETRY_CNTR         3
 #define MLX_CPU_TEMPERATURE_FILE              "/bsp/thermal/cpu_temp"
 #define MLX_ASIC_TEMPERATURE_FILE             "/bsp/thermal/asic_temp"
+#define MLX_ASIC_TEMP_SHUTDOWN_FILE           "/bsp/reset/asic_temp_shutdown"
+#define MLX_ASIC_TEMP_WARN_FILE               "/bsp/reset/asic_temp_warn"
+#define MLX_ASIC_HEALTH_FILE                  "/bsp/reset/asic1"
 #define MLX_CPU_MAX_TEMP                      110000
 #define MLX_ASIC_MAX_TEMP                     120000
 
@@ -1676,28 +1675,16 @@ mlx_reset_monitor_timeout(void *cb_data)
             }
             break;
 
-        case MLX_RESET_CAUSE_AC_POWER_CYCLE:
-            if (active && !(reset_logged & (1 << MLX_RESET_CAUSE_AC_POWER_CYCLE))) {
+        case MLX_RESET_CAUSE_PSU_PWROK_FAIL:
+            if (active && !(reset_logged & (1 << MLX_RESET_CAUSE_PSU_PWROK_FAIL))) {
                 memset(data, 0, MLX_EVENT_TO_SEL_BUF_SIZE);
                 data[1] = MLX_AC_PWR_CYCLE_EVENT;
                 mc_new_event(bmc_mc, MLX_OEM_SEL_RECORD_TYPE, data);
-                reset_logged |= 1 << MLX_RESET_CAUSE_AC_POWER_CYCLE;
+                reset_logged |= 1 << MLX_RESET_CAUSE_PSU_PWROK_FAIL;
             }
-            else if (!active && (reset_logged & (1 << MLX_RESET_CAUSE_AC_POWER_CYCLE)))
-                reset_logged ^= 1 << MLX_RESET_CAUSE_AC_POWER_CYCLE;
+            else if (!active && (reset_logged & (1 << MLX_RESET_CAUSE_PSU_PWROK_FAIL)))
+                reset_logged ^= 1 << MLX_RESET_CAUSE_PSU_PWROK_FAIL;
             break;
-
-        case MLX_RESET_CAUSE_DC_POWER_CYCLE:
-            if (active && !(reset_logged & (1 << MLX_RESET_CAUSE_DC_POWER_CYCLE))) {
-                memset(data, 0, MLX_EVENT_TO_SEL_BUF_SIZE);
-                data[1] = MLX_DC_PWR_CYCLE_EVENT;
-                mc_new_event(bmc_mc, MLX_OEM_SEL_RECORD_TYPE, data);
-                reset_logged |= 1 << MLX_RESET_CAUSE_DC_POWER_CYCLE;
-            }
-            else if (!active && (reset_logged & (1 << MLX_RESET_CAUSE_DC_POWER_CYCLE)))
-                reset_logged ^= 1 << MLX_RESET_CAUSE_DC_POWER_CYCLE;
-            break;
-
 
         case MLX_RESET_CAUSE_CPU_POWER_DOWN:
             if (active && !(reset_logged & (1 << MLX_RESET_CAUSE_CPU_POWER_DOWN))) {
@@ -1866,6 +1853,7 @@ mlx_overheat_monitor_timeout(void *cb_data)
     FILE *file;
     long int cpu_temp;
     long int asic_temp;
+    int temp_shutdown = 0;
     char line[MLX_READ_BUF_SIZE];
     unsigned char data[MLX_EVENT_TO_SEL_BUF_SIZE];
     char cmd[MLX_SYS_CMD_BUF_SIZE];
@@ -1932,8 +1920,22 @@ mlx_overheat_monitor_timeout(void *cb_data)
     file = fopen(MLX_ASIC_TEMPERATURE_FILE, "r");
 
     if (!file) {
-        if (sys_devices.thermal_history[MLX_ASIC_HISTORY].last_temp >= MLX_ASIC_HIGH_TEMP
-            && sys_devices.thermal_history[MLX_ASIC_HISTORY].last_trend == MLX_TEMP_UP) {
+        file = fopen(MLX_ASIC_TEMP_SHUTDOWN_FILE, "r");
+        if (file) {
+            memset(line, 0, sizeof(line));
+            if (0 >= fread(line, 1, sizeof(line),file)) {
+                fclose(file);
+            }
+            fclose(file);
+        }
+        errno = 0;
+        temp_shutdown = strtol(line, NULL, 0);
+        if (errno == ERANGE)
+            temp_shutdown = 0;
+
+        if ((sys_devices.thermal_history[MLX_ASIC_HISTORY].last_temp >= MLX_ASIC_HIGH_TEMP
+            && sys_devices.thermal_history[MLX_ASIC_HISTORY].last_trend == MLX_TEMP_UP)
+            || temp_shutdown == 1) {
             memset(data, 0, MLX_EVENT_TO_SEL_BUF_SIZE);
             data[1] = MLX_ASIC_OVERHEAT_EVENT;
             data[2] = sys_devices.thermal_history[MLX_ASIC_HISTORY].last_temp/1000;

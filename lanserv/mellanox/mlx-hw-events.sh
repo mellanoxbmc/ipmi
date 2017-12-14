@@ -90,8 +90,6 @@ if [ "$1" == "add" ]; then
     ln -sf $3$4/bmc_uart_en /bsp/reset/bmc_uart_en
     ln -sf $3$4/uart_sel /bsp/reset/uart_sel
 
-    ln -sf $3$4/ac_power_cycle /bsp/reset/ac_power_cycle
-    ln -sf $3$4/dc_power_cycle /bsp/reset/dc_power_cycle
     ln -sf $3$4/bmc_soft_rst /bsp/reset/bmc_soft_rst
     ln -sf $3$4/platform_rst /bsp/reset/platform_rst
     ln -sf $3$4/thermal_or_swb_fail /bsp/reset/thermal_or_swb_fail
@@ -108,6 +106,9 @@ if [ "$1" == "add" ]; then
   if [ "$2" == "phy_reset" ]; then
     mkdir -p /bsp/reset/
     ln -sf $3$4/phy_reset /bsp/reset/reset_phy
+    ln -sf $3$4/asic1 /bsp/reset/asic1
+    ln -sf $3$4/asic_temp_warn /bsp/reset/asic_temp_warn
+    ln -sf $3$4/asic_temp_shutdown /bsp/reset/asic_temp_shutdown
   fi
   if [ "$2" == "cpu_reset" ]; then
     mkdir -p /bsp/reset/
@@ -337,8 +338,6 @@ elif [ "$1" == "change" ]; then
     unlink /bsp/reset/ps2_on
     unlink /bsp/reset/bmc_uart_en
     unlink /bsp/reset/uart_sel
-    unlink /bsp/reset/ac_power_cycle
-    unlink /bsp/reset/dc_power_cycle
     unlink /bsp/reset/platform_rst
     unlink /bsp/reset/thermal_or_swb_fail
     unlink /bsp/reset/cpu_power_down
@@ -360,8 +359,6 @@ elif [ "$1" == "change" ]; then
     ln -sf $3$4/ps2_on /bsp/reset/ps2_on
     ln -sf $3$4/bmc_uart_en /bsp/reset/bmc_uart_en
     ln -sf $3$4/uart_sel /bsp/reset/uart_sel
-    ln -sf $3$4/ac_power_cycle /bsp/reset/ac_power_cycle
-    ln -sf $3$4/dc_power_cycle /bsp/reset/dc_power_cycle
     ln -sf $3$4/platform_rst /bsp/reset/platform_rst
     ln -sf $3$4/thermal_or_swb_fail /bsp/reset/thermal_or_swb_fail
     ln -sf $3$4/cpu_power_down /bsp/reset/cpu_power_down
@@ -377,7 +374,13 @@ elif [ "$1" == "change" ]; then
   fi
   if [ "$2" == "phy_reset" ]; then
     unlink /bsp/reset/reset_phy
+    unlink /bsp/reset/asic1
+    unlink /bsp/reset/asic_temp_warn
+    unlink /bsp/reset/asic_temp_shutdow
     ln -sf $3$4/phy_reset /bsp/reset/reset_phy
+    ln -sf $3$4/asic1 /bsp/reset/asic1
+    ln -sf $3$4/asic_temp_warn /bsp/reset/asic_temp_warn
+    ln -sf $3$4/asic_temp_shutdown /bsp/reset/asic_temp_shutdown
   fi
 else
   if [ "$2" == "amb_current" ] || [ "$2" == "amb_switch" ]; then
@@ -440,8 +443,6 @@ else
     unlink /bsp/reset/reset_phy
     unlink /bsp/reset/bmc_uart_en
     unlink /bsp/reset/uart_sel
-    unlink /bsp/reset/ac_power_cycle
-    unlink /bsp/reset/dc_power_cycle
     unlink /bsp/reset/platform_rst
     unlink /bsp/reset/thermal_or_swb_fail
     unlink /bsp/reset/cpu_power_down
@@ -457,6 +458,9 @@ else
   fi
   if [ "$2" == "phy_reset" ]; then
     unlink /bsp/reset/reset_phy
+    unlink /bsp/reset/asic1
+    unlink /bsp/reset/asic_temp_warn
+    unlink /bsp/reset/asic_temp_shutdown
   fi
   if [ "$2" == "cpu_reset" ]; then
     unlink /bsp/reset/sw_cmd
