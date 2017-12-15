@@ -1077,6 +1077,7 @@ handle_cpu_soft_reset(lmc_data_t    *mc,
     fclose(freset);
 
     if (cpu_reboot_cmd) {
+    /* TODO: remove this */
         mlx_add_event_to_sel(mc, IPMI_SENSOR_TYPE_SYSTEM_BOOT_INITIATED, MLX_CPU_STATUS_SENSOR_NUM, 
                              MLX_EVENT_ASSERTED, IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, MLX_SYS_RESTART_EVENT); 
     }
@@ -1695,6 +1696,18 @@ mlx_reset_monitor_timeout(void *cb_data)
            }
             else if (!active && (reset_logged & (1 << MLX_RESET_CAUSE_CPU_POWER_DOWN)))
                 reset_logged ^= 1 << MLX_RESET_CAUSE_CPU_POWER_DOWN;
+
+            break;
+
+        case MLX_RESET_CAUSE_RESET_FROM_CPU:
+            if (active && !(reset_logged & (1 << MLX_RESET_CAUSE_RESET_FROM_CPU))) {
+                mlx_add_event_to_sel(sys->mc, IPMI_SENSOR_TYPE_SYSTEM_BOOT_INITIATED, 
+                                     MLX_CPU_STATUS_SENSOR_NUM, MLX_EVENT_ASSERTED, 
+                                     IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, MLX_SYS_RESTART_EVENT); 
+                reset_logged |= 1 << MLX_RESET_CAUSE_RESET_FROM_CPU;
+           }
+            else if (!active && (reset_logged & (1 << MLX_RESET_CAUSE_RESET_FROM_CPU)))
+                reset_logged ^= 1 << MLX_RESET_CAUSE_RESET_FROM_CPU;
 
             break;
         }
