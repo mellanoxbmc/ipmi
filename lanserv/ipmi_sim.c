@@ -92,6 +92,7 @@
 #include <OpenIPMI/serserv.h>
 #ifdef MLX_IPMID
 #include <OpenIPMI/ipmi_types.h>
+#include <OpenIPMI/ipmi_mlx.h>
 #endif
 #include "emu.h"
 #include <OpenIPMI/persist.h>
@@ -1480,6 +1481,9 @@ main(int argc, const char *argv[])
     os_hnd_fd_id_t *conid;
     lmc_data_t *mc;
     int print_version = 0;
+#ifdef MLX_IPMID
+    char cmd[MLX_SYS_CMD_BUF_SIZE];
+#endif
 
     poptCtx = poptGetContext(argv[0], argc, argv, poptOpts, 0);
     while ((i = poptGetNextOpt(poptCtx)) >= 0) {
@@ -1758,10 +1762,14 @@ main(int argc, const char *argv[])
 
 #ifdef MLX_IPMID
 /*Uart to CPU*/
-    system("echo 1 > /bsp/reset/uart_sel");
+    memset(cmd, 0, sizeof(cmd));
+    sprintf(cmd, "echo %i > %s", MLX_UART_SELECT_HOST, MLX_UART_TO_BMC);
+    system(cmd);
 
 /*CPU go*/
-    system("(sleep 10;echo 1 > /bsp/reset/cpu_reset_hard)&");
+    memset(cmd, 0, sizeof(cmd));
+    sprintf(cmd, "(sleep %i;echo %i > %s)&", MLX_DELAY_HARD_RESET_CPU, MLX_HARD_RESET_CPU_ON, MLX_CPU_HARD_RESET);
+    system(cmd);
 #endif
 
     data.os_hnd->operation_loop(data.os_hnd);

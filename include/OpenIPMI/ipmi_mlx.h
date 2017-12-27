@@ -123,6 +123,13 @@
 
 #define MLX_GET_BYTE(val, num)      ((val >> 8*num) & 0xFF)
 
+#define MLX_CPU_HARD_RESET       "/bsp/reset/cpu_reset_hard"
+#define MLX_UART_TO_BMC          "/bsp/reset/uart_sel"
+#define MLX_UART_SELECT_HOST     1
+#define MLX_DELAY_HARD_RESET_CPU 10
+#define MLX_HARD_RESET_CPU_ON    1
+#define MLX_HARD_RESET_CPU_OFF   0
+
 typedef unsigned int (*mlx_get_expected_fan_speed)(unsigned char tacho_num, unsigned char fan_pwm);
 
 #define MLX_ASIC_HIGH_TEMP         115000
