@@ -91,7 +91,8 @@
 #define MLX_WD_EXPIRED_EVENT         0xA
 #define MLX_BMC_RESET_SW_UPGRADE     0xB
 #define MLX_BMC_RESET_COLD           0xC
-#define MLX_THERMAL_OR_SWB_FAIL      0xD
+#define MLX_CPU_HARD_RESET_OPEN_ERR  0xD
+#define MLX_CPU_HARD_RESET_WRITE_ERR 0xE
 
 /* Event directions */
 #define MLX_EVENT_ASSERTED           0x0

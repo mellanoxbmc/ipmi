@@ -260,13 +260,35 @@ static int
 mlx_set_cpu_reset_hard(unsigned char state)
 {
     FILE *freset;
-    freset = fopen(MLX_CPU_HARD_RESET, "w");
+    freset = fopen(MLX_CPU_HARD_RESET, "rw");
+    char line[MLX_READ_BUF_SIZE];
+    unsigned char data[MLX_EVENT_TO_SEL_BUF_SIZE];
+    int val = !state;
+    int rv;
 
     if (!freset) {
-            printf("\nUnable to open CPU hard reset file");
+            memset(data, 0, MLX_EVENT_TO_SEL_BUF_SIZE);
+            data[1] = MLX_CPU_HARD_RESET_OPEN_ERR;
+            mc_new_event(bmc_mc, MLX_OEM_SEL_RECORD_TYPE, data);
             return IPMI_COULD_NOT_PROVIDE_RESPONSE_CC;
-    } else {
-        fprintf(freset, "%u", state);
+    }
+
+    fprintf(freset, "%u", state);
+
+    memset(line, 0, sizeof(line));
+    rv = fread(line, 1, sizeof(line), freset);
+    if (rv > 0 ) {
+        errno = 0;
+        val = strtol(line, NULL, 0);
+        if (errno == ERANGE) {
+            val = !state;
+        }
+    }
+
+    if(val != state) {
+        memset(data, 0, MLX_EVENT_TO_SEL_BUF_SIZE);
+        data[1] = MLX_CPU_HARD_RESET_WRITE_ERR;
+        mc_new_event(bmc_mc, MLX_OEM_SEL_RECORD_TYPE, data);
     }
 
     fclose(freset);
