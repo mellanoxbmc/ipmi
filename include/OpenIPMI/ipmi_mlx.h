@@ -130,6 +130,8 @@
 #define MLX_DELAY_HARD_RESET_CPU 10
 #define MLX_HARD_RESET_CPU_ON    1
 #define MLX_HARD_RESET_CPU_OFF   0
+#define MLX_HARD_RESET_CPU_ON_STR  "1"
+#define MLX_HARD_RESET_CPU_OFF_STR "0"
 
 typedef unsigned int (*mlx_get_expected_fan_speed)(unsigned char tacho_num, unsigned char fan_pwm);
 

@@ -275,7 +275,11 @@ mlx_set_cpu_reset_hard(unsigned char state)
         return IPMI_COULD_NOT_PROVIDE_RESPONSE_CC;
     }
 
-    rv = write(fd, &state, 1);
+    if (state)
+        rv = write(fd, MLX_HARD_RESET_CPU_ON_STR, sizeof(MLX_HARD_RESET_CPU_ON_STR));
+    else
+        rv = write(fd, MLX_HARD_RESET_CPU_OFF_STR, sizeof(MLX_HARD_RESET_CPU_OFF_STR));
+
     if (rv == -1)
         bmc_mc->sysinfo->log(bmc_mc->sysinfo, SETUP_ERROR, NULL,"ERROR writing %u to %s ", state, MLX_CPU_HARD_RESET);
     close(fd);
