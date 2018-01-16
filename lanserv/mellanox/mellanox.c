@@ -260,20 +260,34 @@ static int
 mlx_set_cpu_reset_hard(unsigned char state)
 {
     FILE *freset;
-    freset = fopen(MLX_CPU_HARD_RESET, "rw");
+    int fd;
     char line[MLX_READ_BUF_SIZE];
     unsigned char data[MLX_EVENT_TO_SEL_BUF_SIZE];
     int val = !state;
     int rv;
 
+    fd = open(MLX_CPU_HARD_RESET, O_WRONLY);
+    if (fd == -1) {
+        bmc_mc->sysinfo->log(bmc_mc->sysinfo, SETUP_ERROR, NULL,"Cannot open %s file  for writing", MLX_CPU_HARD_RESET);
+        memset(data, 0, MLX_EVENT_TO_SEL_BUF_SIZE);
+        data[1] = MLX_CPU_HARD_RESET_OPEN_ERR;
+        mc_new_event(bmc_mc, MLX_OEM_SEL_RECORD_TYPE, data);
+        return IPMI_COULD_NOT_PROVIDE_RESPONSE_CC;
+    }
+
+    rv = write(fd, &state, 1);
+    if (rv == -1)
+        bmc_mc->sysinfo->log(bmc_mc->sysinfo, SETUP_ERROR, NULL,"ERROR writing %u to %s ", state, MLX_CPU_HARD_RESET);
+    close(fd);
+
+    freset = fopen(MLX_CPU_HARD_RESET, "r");
     if (!freset) {
+        bmc_mc->sysinfo->log(bmc_mc->sysinfo, SETUP_ERROR, NULL,"Cannot open %s for reading", MLX_CPU_HARD_RESET);
             memset(data, 0, MLX_EVENT_TO_SEL_BUF_SIZE);
             data[1] = MLX_CPU_HARD_RESET_OPEN_ERR;
             mc_new_event(bmc_mc, MLX_OEM_SEL_RECORD_TYPE, data);
             return IPMI_COULD_NOT_PROVIDE_RESPONSE_CC;
     }
-
-    fprintf(freset, "%u", state);
 
     memset(line, 0, sizeof(line));
     rv = fread(line, 1, sizeof(line), freset);
@@ -282,10 +296,12 @@ mlx_set_cpu_reset_hard(unsigned char state)
         val = strtol(line, NULL, 0);
         if (errno == ERANGE) {
             val = !state;
+            bmc_mc->sysinfo->log(bmc_mc->sysinfo, SETUP_ERROR, NULL,"Read %s failed", MLX_CPU_HARD_RESET);
         }
     }
 
     if(val != state) {
+        bmc_mc->sysinfo->log(bmc_mc->sysinfo, SETUP_ERROR, NULL,"Write %u to %s failed (%i)", state, MLX_CPU_HARD_RESET, val);
         memset(data, 0, MLX_EVENT_TO_SEL_BUF_SIZE);
         data[1] = MLX_CPU_HARD_RESET_WRITE_ERR;
         mc_new_event(bmc_mc, MLX_OEM_SEL_RECORD_TYPE, data);
@@ -293,6 +309,12 @@ mlx_set_cpu_reset_hard(unsigned char state)
 
     fclose(freset);
     return 0;
+}
+
+static void
+mlx_cpu_go_timeout(void *cb_data)
+{
+    mlx_set_cpu_reset_hard(MLX_HARD_RESET_CPU_ON);
 }
 
 static void 
@@ -2802,6 +2824,13 @@ ipmi_sim_module_init(sys_data_t *sys, const char *initstr_i)
         tv.tv_sec = MLX_CPU_STATUS_MONITOR_TIMEOUT;
         tv.tv_usec = 0;
         sys->start_timer(mlx_cpu_status_monitor_timer, &tv);
+    }
+
+    rv = sys->alloc_timer(sys, mlx_cpu_go_timeout, sys, &sys_devices.cpu_go_timer);
+    if (rv) {
+        int errval = errno;
+        sys->log(sys, SETUP_ERROR, NULL, "Unable to create CPU GO timer");
+        return errval;
     }
 
     rv = sys->alloc_timer(sys, mlx_system_reset_timeout, sys, &mlx_system_reset_timer);

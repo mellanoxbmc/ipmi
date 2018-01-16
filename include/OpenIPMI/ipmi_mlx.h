@@ -167,8 +167,11 @@ struct mlx_devices_data {
     unsigned int *fan_speed_front;
     unsigned int *fan_speed_rear;
     mlx_thermal_hist_data_t thermal_history[MLX_THERMAL_HISTORY_MAX];
+    ipmi_timer_t *cpu_go_timer;
 };
 
 struct mlx_devices_data sys_devices;
+
+#define MLX_CPU_GO_TIMEOUT       10
 
 #endif /* _IPMI_MLX_H */

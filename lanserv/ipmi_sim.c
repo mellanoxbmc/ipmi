@@ -1767,9 +1767,9 @@ main(int argc, const char *argv[])
     system(cmd);
 
 /*CPU go*/
-    memset(cmd, 0, sizeof(cmd));
-    sprintf(cmd, "(sleep %i;echo %i > %s)&", MLX_DELAY_HARD_RESET_CPU, MLX_HARD_RESET_CPU_ON, MLX_CPU_HARD_RESET);
-    system(cmd);
+    tv.tv_sec = MLX_CPU_GO_TIMEOUT;
+    tv.tv_usec = 0;
+    sysinfo.start_timer(sys_devices.cpu_go_timer, &tv);
 #endif
 
     data.os_hnd->operation_loop(data.os_hnd);
