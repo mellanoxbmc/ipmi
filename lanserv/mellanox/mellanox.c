@@ -91,6 +91,9 @@ static unsigned int mlx_fan_speed_rear_profile1[] = {18000, 5400, 5400, 5400, 72
 #define MLX_LED_BLINK_OFF 0
 #define MLX_LED_BLINK_3HZ 3
 #define MLX_LED_BLINK_6HZ 6
+#define MLX_LED_BLINK_OFF_STR "0"
+#define MLX_LED_BLINK_3HZ_STR "83"
+#define MLX_LED_BLINK_6HZ_STR "167"
 
 /* FRU links */
 #define MLX_PSU1_EEPROM      "/bsp/fru/psu1_eeprom"
@@ -227,6 +230,9 @@ static ipmi_timer_t *mlx_cpu_status_monitor_timer = NULL;
 
 #define MLX_SYSTEM_RESET_TIMEOUT               1
 static ipmi_timer_t *mlx_system_reset_timer = NULL;
+
+#define MLX_ZERO_STR   "0"
+#define MLX_ONE_STR    "1"
 
 static void
 mlx_cpu_status_monitor_timeout(void *cb_data)
@@ -382,18 +388,24 @@ static void mlx_sel_time_update(lmc_data_t    *mc)
 
 static unsigned char mlx_set_fan_enable(const char* fname)
 {
-    FILE *f_en;
+    int f_en;
+    int rv;
 
-    f_en = fopen(fname, "w");
+    f_en = open(fname, O_WRONLY);
 
-    if (!f_en) {
-            printf("\nUnable to open %s file", fname);
+    if (f_en == -1) {
+            bmc_mc->sysinfo->log(bmc_mc->sysinfo, SETUP_ERROR, NULL, "Unable to open file %s", fname);
             return IPMI_DESTINATION_UNAVAILABLE_CC;
-    } else
-        fprintf(f_en, "%u", 1);
+    } else {
+        rv = write(f_en, MLX_ONE_STR, sizeof(MLX_ONE_STR));
+        if (rv == -1) {
+            bmc_mc->sysinfo->log(bmc_mc->sysinfo, SETUP_ERROR, NULL,"ERROR writing to %s ", fname);
+            close(f_en);
+            return IPMI_DESTINATION_UNAVAILABLE_CC;
+        }
+    }
 
-    fclose(f_en);
-
+    close(f_en);
     return 0;
 }
 
@@ -409,8 +421,10 @@ handle_set_fan_speed_cmd (lmc_data_t    *mc,
                 unsigned int  *rdata_len,
                 void          *cb_data)
 {
-    FILE *f_pwm;
+    int f_pwm;
+    int rv;
     unsigned char pwm = 0;
+    char* val;
 
     pwm = msg->data[0];
     if (pwm > sys_devices.fan_pwm_max) {
@@ -419,10 +433,10 @@ handle_set_fan_speed_cmd (lmc_data_t    *mc,
         return;
     }
 
-    f_pwm = fopen(MLX_FAN_PWM_FILE, "w");
+    f_pwm = open(MLX_FAN_PWM_FILE, O_WRONLY);
 
-    if (!f_pwm) {
-            printf("\nUnable to open pwm file");
+    if (f_pwm == -1 ) {
+            mc->sysinfo->log(mc->sysinfo, SETUP_ERROR, NULL, "Unable to open file %s", MLX_FAN_PWM_FILE);
             rdata[0] = IPMI_COULD_NOT_PROVIDE_RESPONSE_CC;
             *rdata_len = 1;
             return;
@@ -430,13 +444,23 @@ handle_set_fan_speed_cmd (lmc_data_t    *mc,
         if (IPMI_DESTINATION_UNAVAILABLE_CC == mlx_set_fan_enable(MLX_FAN_PWM_ENABLE_FILE)) {
             rdata[0] = IPMI_COULD_NOT_PROVIDE_RESPONSE_CC;
             *rdata_len = 1;
-            fclose(f_pwm);
+            close(f_pwm);
             return;
-    } else
-        fprintf(f_pwm, "%u", pwm);
+        } else {
+            asprintf(&val, "%i", pwm);
+            rv = write(f_pwm, val, strlen(val));
+            free(val);
+            if (rv == -1) {
+                bmc_mc->sysinfo->log(bmc_mc->sysinfo, SETUP_ERROR, NULL,"ERROR writing to %s ", MLX_FAN_PWM_FILE);
+                rdata[0] = IPMI_COULD_NOT_PROVIDE_RESPONSE_CC;
+                *rdata_len = 1;
+                close(f_pwm);
+                return;
+            }
+        }
     }
 
-    fclose(f_pwm);
+    close(f_pwm);
     rdata[0] = 0;
     *rdata_len = 1;
 }
@@ -490,10 +514,11 @@ mlx_set_led_command(unsigned char led,
                             unsigned char color,
                             unsigned char cmd)
 {
-    FILE *fbrightness;
-    FILE *ftrigger;
+    int fbrightness;
+    int rv;
     char fname[MLX_FILE_NAME_SIZE];
     char cmd_trigger[MLX_SYS_CMD_BUF_SIZE];
+    char *val;
 
     memset(fname, 0, sizeof(fname));
     memset(cmd_trigger, 0, sizeof(cmd_trigger));
@@ -537,16 +562,25 @@ mlx_set_led_command(unsigned char led,
         break;
     }
 
-    fbrightness = fopen(fname, "w");
+    fbrightness = open(fname, O_WRONLY);
 
-    if (!fbrightness) {
+    if (fbrightness == -1) {
+        bmc_mc->sysinfo->log(bmc_mc->sysinfo, SETUP_ERROR, NULL, "Unable to open file %s", fname);
         return IPMI_COULD_NOT_PROVIDE_RESPONSE_CC;
     }
 
-    fprintf(fbrightness, "%u", cmd);
+    asprintf(&val, "%i", cmd);
+    rv = write(fbrightness, val, strlen(val));
+    free(val);
+    if (rv == -1) {
+        bmc_mc->sysinfo->log(bmc_mc->sysinfo, SETUP_ERROR, NULL,"ERROR writing to %s ", fname);
+        close(fbrightness);
+        return IPMI_COULD_NOT_PROVIDE_RESPONSE_CC;
+    }
+
     system(cmd_trigger);
 
-    fclose(fbrightness);
+    close(fbrightness);
 
     return 0;
 }
@@ -646,7 +680,8 @@ handle_set_led_state(lmc_data_t    *mc,
 
 static int set_led_trigger_timer(unsigned char color, char led_number)
 {
-    FILE *f_trigger;
+    int f_trigger;
+    int rv;
     char fname[MLX_FILE_NAME_SIZE];
 
     memset(fname, 0, sizeof(fname));
@@ -671,12 +706,19 @@ static int set_led_trigger_timer(unsigned char color, char led_number)
         break;
     }
 
-    f_trigger = fopen(fname, "w");
-    if (!f_trigger)
+    f_trigger = open(fname, O_WRONLY);
+    if (f_trigger == -1) {
+        bmc_mc->sysinfo->log(bmc_mc->sysinfo, SETUP_ERROR, NULL,"Failed to open %s ", fname);
         return IPMI_COULD_NOT_PROVIDE_RESPONSE_CC;
+    }
 
-    fprintf(f_trigger, "timer");
-    fclose(f_trigger);
+    rv = write(f_trigger, MLX_LED_TIMER, sizeof(MLX_LED_TIMER));
+    if (rv == -1) {
+        bmc_mc->sysinfo->log(bmc_mc->sysinfo, SETUP_ERROR, NULL,"ERROR writing to %s ", fname);
+        close(f_trigger);
+        return IPMI_COULD_NOT_PROVIDE_RESPONSE_CC;
+    }
+    close(f_trigger);
 
     return 0;
 }
@@ -713,8 +755,9 @@ handle_set_led_blinking (lmc_data_t    *mc,
     unsigned char led;
     unsigned char time;
     unsigned char color;
-    FILE *f_delayon;
-    FILE *f_delayoff;
+    int f_delayon;
+    int f_delayoff;
+    int rv;
     char fname[MLX_FILE_NAME_SIZE];
 
     if (check_msg_length(msg, 3, rdata, rdata_len))
@@ -748,26 +791,26 @@ handle_set_led_blinking (lmc_data_t    *mc,
         case MLX_LED_COLOR_RED:
             memset(fname, 0, sizeof(fname));
             sprintf(fname, "%sred/%s", MLX_LED_STATUS_FILE, MLX_LED_DELAY_OFF);
-            f_delayoff = fopen(fname, "w");
+            f_delayoff = open(fname, O_WRONLY);
             memset(fname, 0, sizeof(fname));
             sprintf(fname, "%sred/%s", MLX_LED_STATUS_FILE, MLX_LED_DELAY_ON);
-            f_delayon = fopen(fname, "w");
+            f_delayon = open(fname, O_WRONLY);
             break;
         case MLX_LED_COLOR_GREEN:
             memset(fname, 0, sizeof(fname));
             sprintf(fname, "%sgreen/%s", MLX_LED_STATUS_FILE, MLX_LED_DELAY_OFF);
-            f_delayoff = fopen(fname, "w");
+            f_delayoff = open(fname, O_WRONLY);
             memset(fname, 0, sizeof(fname));
             sprintf(fname, "%sgreen/%s", MLX_LED_STATUS_FILE, MLX_LED_DELAY_ON);
-            f_delayon = fopen(fname, "w");
+            f_delayon = open(fname, O_WRONLY);
             break;
         case MLX_LED_COLOR_AMBER:
             memset(fname, 0, sizeof(fname));
             sprintf(fname, "%samber/%s", MLX_LED_STATUS_FILE, MLX_LED_DELAY_OFF);
-            f_delayoff = fopen(fname, "w");
+            f_delayoff = open(fname, O_WRONLY);
             memset(fname, 0, sizeof(fname));
             sprintf(fname, "%samber/%s", MLX_LED_STATUS_FILE, MLX_LED_DELAY_ON);
-            f_delayon = fopen(fname, "w");
+            f_delayon = open(fname, O_WRONLY);
             break;
         default:
             break;
@@ -785,29 +828,29 @@ handle_set_led_blinking (lmc_data_t    *mc,
         case MLX_LED_COLOR_RED:
             memset(fname, 0, sizeof(fname));
             sprintf(fname, "%sred/%u/%s", MLX_LED_FAN_FILE, led - sys_devices.status_led_number, MLX_LED_DELAY_OFF);
-            f_delayoff = fopen(fname, "w");
+            f_delayoff = open(fname, O_WRONLY);
             memset(fname, 0, sizeof(fname));
             sprintf(fname, "%sred/%u/%s", MLX_LED_FAN_FILE, led - sys_devices.status_led_number,MLX_LED_DELAY_ON);
-            f_delayon = fopen(fname, "w");
+            f_delayon = open(fname, O_WRONLY);
             break;
         case MLX_LED_COLOR_GREEN:
             memset(fname, 0, sizeof(fname));
             sprintf(fname, "%sgreen/%u/%s", MLX_LED_FAN_FILE, led - sys_devices.status_led_number, MLX_LED_DELAY_OFF);
-            f_delayoff = fopen(fname, "w");
+            f_delayoff = open(fname, O_WRONLY);
             memset(fname, 0, sizeof(fname));
             sprintf(fname, "%sgreen/%u/%s", MLX_LED_FAN_FILE, led - sys_devices.status_led_number,MLX_LED_DELAY_ON);
-            f_delayon = fopen(fname, "w");
+            f_delayon = open(fname, O_WRONLY);
             break;
         default:
             break;
         }
     }
 
-    if (!f_delayon || !f_delayoff) {
-        if (f_delayoff)
-            fclose(f_delayoff);
-        if (f_delayon)
-            fclose(f_delayon);
+    if ((f_delayon == -1) || (f_delayoff == -1)) {
+        if (f_delayoff != -1)
+            close(f_delayoff);
+        if (f_delayon != -1)
+            close(f_delayon);
 
         rdata[0] = IPMI_COULD_NOT_PROVIDE_RESPONSE_CC;
         *rdata_len = 1;
@@ -816,26 +859,46 @@ handle_set_led_blinking (lmc_data_t    *mc,
 
     switch (time) {
     case MLX_LED_BLINK_OFF:
-        fprintf(f_delayoff, "%u", 0);
-        fprintf(f_delayon, "%u", 0);
+        rv = write(f_delayoff, MLX_LED_BLINK_OFF_STR, sizeof(MLX_LED_BLINK_OFF_STR));
+        if (rv == -1)
+            goto out_err;
+        rv = write(f_delayon, MLX_LED_BLINK_OFF_STR, sizeof(MLX_LED_BLINK_OFF_STR));
+        if (rv == -1)
+            goto out_err;
         break;
     case MLX_LED_BLINK_3HZ:
-        fprintf(f_delayoff, "%u", 83);
-        fprintf(f_delayon, "%u", 83);
+        rv = write(f_delayoff, MLX_LED_BLINK_3HZ_STR, sizeof(MLX_LED_BLINK_3HZ_STR));
+        if (rv == -1)
+            goto out_err;
+        rv = write(f_delayon, MLX_LED_BLINK_3HZ_STR, sizeof(MLX_LED_BLINK_3HZ_STR));
+        if (rv == -1)
+            goto out_err;
         break;
     case MLX_LED_BLINK_6HZ:
-        fprintf(f_delayoff, "%u", 167);
-        fprintf(f_delayon, "%u", 167);
+        rv = write(f_delayoff, MLX_LED_BLINK_6HZ_STR, sizeof(MLX_LED_BLINK_6HZ_STR));
+        if (rv == -1)
+            goto out_err;
+        rv = write(f_delayon, MLX_LED_BLINK_6HZ_STR, sizeof(MLX_LED_BLINK_6HZ_STR));
+        if (rv == -1)
+            goto out_err;
         break;
     default:
         break;
     }
 
-    fclose(f_delayon);
-    fclose(f_delayoff);
+    close(f_delayon);
+    close(f_delayoff);
 
     rdata[0] = 0;
     *rdata_len = 1;
+    return;
+
+ out_err:
+    rdata[0] = IPMI_COULD_NOT_PROVIDE_RESPONSE_CC;
+    *rdata_len = 1;
+    close(f_delayon);
+    close(f_delayoff);
+    return;
 }
 
 
@@ -995,12 +1058,13 @@ handle_bmc_cold_reset(lmc_data_t    *mc,
 			  void          *cb_data)
 {
     sys_data_t *sys = cb_data;
-    FILE *freset;
+    int freset;
+    int rv;
 
-    freset = fopen(MLX_BMC_SOFT_RESET, "w");
+    freset = open(MLX_BMC_SOFT_RESET, O_WRONLY);
 
-    if (!freset) {
-            printf("\nUnable to open reset file");
+    if (freset == -1) {
+            mc->sysinfo->log(mc->sysinfo, DEBUG, NULL, "Unable to open file %s", MLX_BMC_SOFT_RESET);
             rdata[0] = IPMI_COULD_NOT_PROVIDE_RESPONSE_CC;
             *rdata_len = 1;
             return;
@@ -1011,10 +1075,17 @@ handle_bmc_cold_reset(lmc_data_t    *mc,
         if (mlx_reset_monitor_timer)
             sys->free_timer(mlx_reset_monitor_timer);
 
-        fprintf(freset, "%u", 0);
+        rv = write(freset, MLX_ZERO_STR, sizeof(MLX_ZERO_STR));
+        if (rv == -1) {
+            bmc_mc->sysinfo->log(bmc_mc->sysinfo, SETUP_ERROR, NULL,"ERROR writing to %s ", MLX_BMC_SOFT_RESET);
+            close(freset);
+            rdata[0] = IPMI_COULD_NOT_PROVIDE_RESPONSE_CC;
+            *rdata_len = 1;
+            return;
+        }
     }
 
-    fclose(freset);
+    close(freset);
     rdata[0] = 0;
     *rdata_len = 1;
 }
@@ -1150,7 +1221,7 @@ handle_cpu_soft_reset(lmc_data_t    *mc,
                       unsigned int  *rdata_len,
                       void          *cb_data)
 {
-    FILE *freset;
+    int freset;
     unsigned char cpu_reboot_cmd = 0;
     char trigger[MLX_SYS_CMD_BUF_SIZE];
     FILE *ftrigger;
@@ -1167,15 +1238,22 @@ handle_cpu_soft_reset(lmc_data_t    *mc,
         }
     }
 
-    freset = fopen(MLX_CPU_SOFT_RESET, "w");
+    freset = open(MLX_CPU_SOFT_RESET, O_WRONLY);
 
-    if (!freset) {
-            printf("\nUnable to open reset file");
+    if (freset == -1) {
+            mc->sysinfo->log(mc->sysinfo, DEBUG, NULL, "Unable to open file %s", MLX_CPU_SOFT_RESET);
             rdata[0] = IPMI_COULD_NOT_PROVIDE_RESPONSE_CC;
             *rdata_len = 1;
             return;
     } else {
-        fprintf(freset, "%u", 0);
+        rv = write(freset, MLX_ZERO_STR, sizeof(MLX_ZERO_STR));
+        if (rv == -1) {
+            bmc_mc->sysinfo->log(bmc_mc->sysinfo, SETUP_ERROR, NULL,"ERROR writing to %s ", MLX_CPU_SOFT_RESET);
+            close(freset);
+            rdata[0] = IPMI_COULD_NOT_PROVIDE_RESPONSE_CC;
+            *rdata_len = 1;
+            return;
+        }
 
         /* sel status LED to green to enable delay_off/delay_on */
         mlx_set_led_command(1, MLX_LED_COLOR_GREEN, 1);
@@ -1193,7 +1271,7 @@ handle_cpu_soft_reset(lmc_data_t    *mc,
             sys->log(sys, OS_ERROR, NULL,"Unable to set status LED blinking");
     }
 
-    fclose(freset);
+    close(freset);
 
     if (cpu_reboot_cmd) {
     /* TODO: remove this */
@@ -1224,22 +1302,28 @@ handle_reset_phy(lmc_data_t    *mc,
                      unsigned int  *rdata_len,
                      void          *cb_data)
 {
-    printf("\n %d: %s, %s()", __LINE__, __FILE__, __FUNCTION__);
+    int freset;
+    int rv;
 
-    FILE *freset;
+    freset = open(MLX_RESET_PHY, O_WRONLY);
 
-    freset = fopen(MLX_RESET_PHY, "w");
-
-    if (!freset) {
-            printf("\nUnable to open reset file");
+    if (freset == -1) {
+            mc->sysinfo->log(mc->sysinfo, DEBUG, NULL, "Unable to open file %s", MLX_RESET_PHY);
             rdata[0] = IPMI_COULD_NOT_PROVIDE_RESPONSE_CC;
             *rdata_len = 1;
             return;
     } else {
-        fprintf(freset, "%u", 0);
+        rv = write(freset, MLX_ZERO_STR, sizeof(MLX_ZERO_STR));
+        if (rv == -1) {
+            bmc_mc->sysinfo->log(bmc_mc->sysinfo, SETUP_ERROR, NULL,"ERROR writing to %s ", MLX_RESET_PHY);
+            close(freset);
+            rdata[0] = IPMI_COULD_NOT_PROVIDE_RESPONSE_CC;
+            *rdata_len = 1;
+            return;
+        }
     }
 
-    fclose(freset);
+    close(freset);
     rdata[0] = 0;
     *rdata_len = 1;
 }
@@ -1257,8 +1341,10 @@ handle_set_uart_to_bmc(lmc_data_t    *mc,
                      unsigned int  *rdata_len,
                      void          *cb_data)
 {
-    FILE *fset;
+    int fset;
+    int rv;
     unsigned int uart;
+    char *val;
 
     if (check_msg_length(msg, 1, rdata, rdata_len)) {
         uart = 0;
@@ -1272,18 +1358,27 @@ handle_set_uart_to_bmc(lmc_data_t    *mc,
         }
     }
 
-    fset = fopen(MLX_UART_TO_BMC, "w");
+    fset = open(MLX_UART_TO_BMC, O_WRONLY);
 
-    if (!fset) {
-            printf("\nUnable to open file");
+    if (fset == -1) {
+        mc->sysinfo->log(mc->sysinfo, DEBUG, NULL, "Unable to open file %s", MLX_UART_TO_BMC);
+        rdata[0] = IPMI_COULD_NOT_PROVIDE_RESPONSE_CC;
+        *rdata_len = 1;
+        return;
+    } else {
+        asprintf(&val, "%i", uart);
+        rv = write(fset, val, strlen(val));
+        free(val);
+        if (rv == -1) {
+            bmc_mc->sysinfo->log(bmc_mc->sysinfo, SETUP_ERROR, NULL,"ERROR writing to %s ", MLX_UART_TO_BMC);
+            close(fset);
             rdata[0] = IPMI_COULD_NOT_PROVIDE_RESPONSE_CC;
             *rdata_len = 1;
             return;
-    } else {
-        fprintf(fset, "%u", uart);
+        }
     }
 
-    fclose(fset);
+    close(fset);
     rdata[0] = 0;
     *rdata_len = 1;
 }
@@ -1336,8 +1431,11 @@ handle_thermal_algorithm_set(lmc_data_t    *mc,
                      void          *cb_data)
 {
     unsigned int zone, state;
-    FILE *file;
+    int file;
+    int rv;
     char fname[MLX_FILE_NAME_SIZE];
+    char enable_buf[] = "enabled";
+    char disable_buf[] = "disabled";
 
     if (check_msg_length(msg, 2, rdata, rdata_len))
         return;
@@ -1358,21 +1456,29 @@ handle_thermal_algorithm_set(lmc_data_t    *mc,
 
     memset(fname, 0, sizeof(fname));
     sprintf(fname, MLX_THERMAL_ZONE, zone);
-    file = fopen(fname, "w");
+    file = open(fname, O_WRONLY);
 
-    if (!file) {
+    if (file == -1) {
+        mc->sysinfo->log(mc->sysinfo, SETUP_ERROR, NULL,"Failed to open %s ", fname);
         rdata[0] = IPMI_COULD_NOT_PROVIDE_RESPONSE_CC;
         *rdata_len = 1;
-     return;
-    } else {
-        if (state) 
-            fprintf(file, "enabled");
-        else
-            fprintf(file, "disabled");
-
-        fclose(file);
+        return;
     }
 
+    if (state) 
+        rv = write(file, enable_buf, sizeof(enable_buf));
+    else
+        rv = write(file, disable_buf, sizeof(disable_buf));
+
+    if (rv == -1) {
+        mc->sysinfo->log(mc->sysinfo, SETUP_ERROR, NULL,"ERROR writing to %s ", fname);
+        close(file);
+        rdata[0] = IPMI_COULD_NOT_PROVIDE_RESPONSE_CC;
+        *rdata_len = 1;
+        return;
+    }
+
+    close(file);
     rdata[0] = 0;
     *rdata_len = 1;
 }
@@ -1425,25 +1531,28 @@ static void handle_get_last_processed_event(lmc_data_t    *mc,
 
 static unsigned char mlx_chassis_power_on_off(unsigned char val)
 {
-    FILE *file;
+    int file;
     char cmd[MLX_SYS_CMD_BUF_SIZE];
+    char *buf;
 
-    file = fopen(MLX_PS1_ON, "w");
+    asprintf(&buf, "%i", !val);
 
-    if (!file)
+    file = open(MLX_PS1_ON, O_WRONLY);
+
+    if (file == -1)
         goto ps2_on;
 
-    fprintf(file, "%u", !val);
-    fclose(file);
+    write(file, buf, strlen(buf));
+    close(file);
 
  ps2_on:
-    file = fopen(MLX_PS2_ON, "w");
+    file = open(MLX_PS2_ON, O_WRONLY);
 
-    if (!file)
+    if (file == -1)
         goto out;
 
-    fprintf(file, "%u", !val);
-    fclose(file);
+    write(file, buf, strlen(buf));
+    close(file);
 
     /* set "Disabled" state on power-off */
     memset(cmd, 0, sizeof(cmd));
@@ -1451,6 +1560,8 @@ static unsigned char mlx_chassis_power_on_off(unsigned char val)
         system(cmd);
 
  out:
+    free(buf);
+
     if (val) 
         chassis_status |= val;
     else {
@@ -1469,19 +1580,23 @@ static void
 mlx_system_reset_timeout(void *cb_data)
 {
     sys_data_t *sys = cb_data;
-    FILE *freset;
+    int freset;
+    int rv;
 
-    freset = fopen(MLX_SYS_HARD_RESET, "w");
+    freset = open(MLX_SYS_HARD_RESET, O_WRONLY);
 
-    if (!freset)
+    if (freset == -1)
         sys->log(sys, SETUP_ERROR, NULL, "Unable to open %s file", MLX_SYS_HARD_RESET);
     else{
+        rv = write(freset, MLX_ZERO_STR, sizeof(MLX_ZERO_STR));
+        if (rv == -1) {
+            bmc_mc->sysinfo->log(bmc_mc->sysinfo, SETUP_ERROR, NULL,"ERROR writing to %s ", MLX_SYS_HARD_RESET);
+        }
         mlx_add_event_to_sel(sys->mc, IPMI_SENSOR_TYPE_SYSTEM_EVENT, 0 , 
                              MLX_EVENT_ASSERTED, IPMI_EVENT_READING_TYPE_SENSOR_SPECIFIC, MLX_SYS_BOOT_EVENT);
-        fprintf(freset, "%u", 0);
     }
 
-    fclose(freset);
+    close(freset);
 }
 
 /*
@@ -2019,8 +2134,6 @@ mlx_overheat_monitor_timeout(void *cb_data)
                 goto cpu_temp_retry;
 
             mlx_thermal_hist_set(MLX_CPU_HISTORY, cpu_temp);
-
-            file = fopen(MLX_CPU_HARD_RESET, "w");
 
             if (mlx_set_cpu_reset_hard(MLX_HARD_RESET_CPU_OFF))
                 sys->log(sys, OS_ERROR, NULL, "CPU temperature is too high! Unable to power-off the CPU!");
@@ -2628,19 +2741,28 @@ mlx_sel_list_full_handler(lmc_data_t *mc)
 int
 mlx_chassis_power_cycle()
 {
-    FILE *freset;
-    freset = fopen(MLX_SYS_POWER_CYCLE, "w");
+    int freset;
+    int rv;
 
-    if (!freset) {
+    freset = open(MLX_SYS_POWER_CYCLE, O_WRONLY);
+
+    if (freset == -1) {
         return ETXTBSY;
     } else {
-        fprintf(freset, "%u", 0);
+        rv = write(freset, MLX_ZERO_STR, sizeof(MLX_ZERO_STR));
+        if (rv == -1)
+            goto out_err;
         usleep(100);
-        fprintf(freset, "%u", 1);
+        rv = write(freset, MLX_ONE_STR, sizeof(MLX_ONE_STR));
+        if (rv == -1)
+            goto out_err;
     }
 
-    fclose(freset);
+    close(freset);
     return 0;
+ out_err:
+    close(freset);
+    return ETXTBSY;
 }
 
 int
