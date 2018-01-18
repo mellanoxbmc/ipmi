@@ -197,7 +197,7 @@ static ipmi_timer_t *mlx_fans_monitor_timer = NULL;
  */
 static ipmi_timer_t *mlx_overheat_monitor_timer = NULL;
 #define MLX_OVERHEAT_MONITOR_TIMEOUT          5
-#define MLX_CPU_TEMP_CHECK_RETRY_CNTR         3
+#define MLX_CPU_TEMP_CHECK_RETRY_CNTR         5
 #define MLX_CPU_TEMPERATURE_FILE              "/bsp/thermal/cpu_temp"
 #define MLX_ASIC_TEMPERATURE_FILE             "/bsp/thermal/asic_temp"
 #define MLX_ASIC_TEMP_SHUTDOWN_FILE           "/bsp/reset/asic_temp_shutdown"
@@ -315,6 +315,7 @@ mlx_set_cpu_reset_hard(unsigned char state)
         memset(data, 0, MLX_EVENT_TO_SEL_BUF_SIZE);
         data[1] = MLX_CPU_HARD_RESET_WRITE_ERR;
         mc_new_event(bmc_mc, MLX_OEM_SEL_RECORD_TYPE, data);
+        return IPMI_COULD_NOT_PROVIDE_RESPONSE_CC;
     }
 
     fclose(freset);
@@ -324,7 +325,14 @@ mlx_set_cpu_reset_hard(unsigned char state)
 static void
 mlx_cpu_go_timeout(void *cb_data)
 {
-    mlx_set_cpu_reset_hard(MLX_HARD_RESET_CPU_ON);
+    sys_data_t *sys = cb_data;
+    int rv = 0;
+
+    rv = mlx_set_cpu_reset_hard(MLX_HARD_RESET_CPU_ON);
+    if (rv)
+        sys->log(sys, INFO, NULL, "CPU-GO action failed!");
+    else
+        sys->log(sys, INFO, NULL, "CPU-GO action done!");
 }
 
 static void 
@@ -2130,8 +2138,10 @@ mlx_overheat_monitor_timeout(void *cb_data)
     if(cpu_temp > 0) {
         if (cpu_temp > MLX_CPU_MAX_TEMP) {
 
-            if (cpu_temp_retry_cntr++ < MLX_CPU_TEMP_CHECK_RETRY_CNTR)
+            if (cpu_temp_retry_cntr++ < MLX_CPU_TEMP_CHECK_RETRY_CNTR) {
+                sys->log(sys, DEBUG, NULL, "Re-test CPU (%ld)", cpu_temp);
                 goto cpu_temp_retry;
+            }
 
             mlx_thermal_hist_set(MLX_CPU_HISTORY, cpu_temp);
 
@@ -3088,6 +3098,8 @@ ipmi_sim_module_post_init(sys_data_t *sys)
     mlx_sel_time_update(sys->mc);
 
     poh_start_point = 0;
+
+    sys->log(sys, INFO, NULL, "mlx_ipmid post init done!");
 
     return 0;
 }
