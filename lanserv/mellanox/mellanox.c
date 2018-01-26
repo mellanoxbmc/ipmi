@@ -1860,7 +1860,7 @@ handle_set_timezone(lmc_data_t    *mc,
     system(cmd);
 
     memset(cmd, 0, sizeof(cmd));
-    sprintf(cmd, "echo %s > /etc/timezone");
+    sprintf(cmd, "echo %s > /etc/timezone", tz);
     system(cmd);
 
     system("timedatectl set-local-rtc 1");
