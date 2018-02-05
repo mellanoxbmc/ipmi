@@ -147,6 +147,15 @@ if [ "$1" == "add" ]; then
     for i in /bsp/fan/tacho[1-8]_en; do echo 1 > $i; done
     echo 1 > /bsp/fan/pwm_en
     echo 6 > /bsp/fan/pwm
+
+    status_led.py 0x70 1 0x4
+    status_led.py 0x71 1 0x4
+    status_led.py 0x72 1 0x4
+    status_led.py 0x73 1 0x4
+    status_led.py 0x74 1 0x4
+    status_led.py 0x75 1 0x4
+    status_led.py 0x76 1 0x4
+    status_led.py 0x77 1 0x4
   fi
   if [ "$2" == "fan_4_10" ]; then
     mkdir -p /bsp/fan/
@@ -492,6 +501,15 @@ else
     unlink /bsp/fan/tacho8_rpm
     unlink /bsp/fan/pwm_en
     unlink /bsp/fan/pwm
+
+    status_led.py 0x70 0 0x4
+    status_led.py 0x71 0 0x4
+    status_led.py 0x72 0 0x4
+    status_led.py 0x73 0 0x4
+    status_led.py 0x74 0 0x4
+    status_led.py 0x75 0 0x4
+    status_led.py 0x76 0 0x4
+    status_led.py 0x77 0 0x4
   fi
   if [ "$2" == "fan_4_10" ]; then
     unlink /bsp/fan/tacho1_rpm

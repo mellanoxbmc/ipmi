@@ -2430,14 +2430,24 @@ mlx_status_led_control(unsigned char num,
         switch (num) {
         case MLX_FAN1_1_SENSOR_NUM:
         case MLX_FAN1_2_SENSOR_NUM:
+            if (access(MLX_FAN1_EEPROM, F_OK) == 0)
+                if (sprintf(status_led_run_str,"status_led.py 0x%02x %d 0x%02x\n",num, direction, type))
+                    system(status_led_run_str);
         case MLX_FAN2_1_SENSOR_NUM:
         case MLX_FAN2_2_SENSOR_NUM:
+            if (access(MLX_FAN2_EEPROM, F_OK) == 0)
+                if (sprintf(status_led_run_str,"status_led.py 0x%02x %d 0x%02x\n",num, direction, type))
+                    system(status_led_run_str);
         case MLX_FAN3_1_SENSOR_NUM:
         case MLX_FAN3_2_SENSOR_NUM:
+            if (access(MLX_FAN3_EEPROM, F_OK) == 0)
+                if (sprintf(status_led_run_str,"status_led.py 0x%02x %d 0x%02x\n",num, direction, type))
+                    system(status_led_run_str);
         case MLX_FAN4_1_SENSOR_NUM:
         case MLX_FAN4_2_SENSOR_NUM:
-            if (sprintf(status_led_run_str,"status_led.py 0x%02x %d 0x%02x\n",num, direction, type))
-                 system(status_led_run_str);
+            if (access(MLX_FAN4_EEPROM, F_OK) == 0)
+                if (sprintf(status_led_run_str,"status_led.py 0x%02x %d 0x%02x\n",num, direction, type))
+                    system(status_led_run_str);
             break;
         default:
             break;
