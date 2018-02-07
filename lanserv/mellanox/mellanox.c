@@ -2162,7 +2162,7 @@ mlx_overheat_monitor_timeout(void *cb_data)
         }
         mlx_thermal_hist_set(MLX_CPU_HISTORY, cpu_temp);
     } else {
-        syslog(LOG_ERR, "MLX_CPU_TEMPERATURE_FILE read neagtive value: %d", cpu_temp);
+        syslog(LOG_ERR, "MLX_CPU_TEMPERATURE_FILE read negative value: %d", cpu_temp);
     }
 
     /* asic temp monitoring */
